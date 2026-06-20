@@ -7,7 +7,7 @@ import { User, Mail, Lock, Compass } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { trpc } from "~/trpc/client";
+import { useSignUp } from "~/hooks/api/auth";
 import { toast } from "sonner";
 import { createUserWithEmailAndPasswordInputModel } from "@repo/trpc/client";
 
@@ -15,6 +15,7 @@ type SignUpValues = z.infer<typeof createUserWithEmailAndPasswordInputModel>;
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { createUserWithEmailAndPassword, isPending } = useSignUp();
 
   const {
     register,
@@ -29,18 +30,16 @@ export default function SignUpPage() {
     },
   });
 
-  const registerMutation = trpc.auth.createUserWithEmailAndPassword.useMutation({
-    onSuccess: (data) => {
-      toast.success("Account created successfully! Welcome to the Studio.");
-      router.push("/signIn");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to create account. Please try again.");
-    },
-  });
-
   const onSubmit = (data: SignUpValues) => {
-    registerMutation.mutate(data);
+    createUserWithEmailAndPassword(data, {
+      onSuccess: () => {
+        toast.success("Account created successfully! Welcome to the Studio.");
+        router.push("/signIn");
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to create account. Please try again.");
+      },
+    });
   };
 
   return (
@@ -124,11 +123,11 @@ export default function SignUpPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={registerMutation.isPending}
+              disabled={isPending}
               className="w-full bg-[#0d2137] dark:bg-[#b9c9df] text-[#faf7f0] dark:text-[#0d2137] p-3 font-serif hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] active:bg-[#071321] transition-colors border-2 border-[#0d2137] dark:border-[#b9c9df] shadow-[3px_3px_0px_0px_#8e6e53] dark:shadow-[3px_3px_0px_0px_#d4af37] hover:shadow-[1px_1px_0px_0px_#8e6e53] dark:hover:shadow-[1px_1px_0px_0px_#d4af37] transition-all flex items-center justify-center gap-2 font-semibold uppercase tracking-wider text-xs rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {registerMutation.isPending ? "Registering..." : "Register Apprentice Å"}
-              <Compass className={`size-4 ${registerMutation.isPending ? "animate-spin" : "animate-spin-slow"}`} />
+              {isPending ? "Registering..." : "Register Apprentice Å"}
+              <Compass className={`size-4 ${isPending ? "animate-spin" : "animate-spin-slow"}`} />
             </button>
           </form>
 

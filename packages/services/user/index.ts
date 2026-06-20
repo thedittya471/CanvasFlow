@@ -19,6 +19,26 @@ class UserService {
     return { token }
   }
 
+  private async verifyUserToken(token: string): Promise<generateUserSessionTokenPayloadType> {
+    try {
+      const verificationResult = JWT.verify(token, env.JWT_SECRET) as generateUserSessionTokenPayloadType
+      return verificationResult
+    } catch (error) {
+      throw new Error(`Invalid session token`)
+    }
+  }
+
+  private async getUserInfoById(id: string) {
+    const user = await db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      fullName: usersTable.fullName
+    }).from(usersTable).where(eq(usersTable.id, id))
+
+    if (!user || user.length === 0) throw new Error(`User with Id ${id} does not exist`)
+    return user[0]!
+  }
+
   private async generateHash(password: string, salt: string) {
     return createHmac('sha256', salt).update(password).digest('hex')
   }
@@ -64,10 +84,18 @@ class UserService {
 
     const { token } = await this.generateUserSessionToken({ id: existingUser.id })
 
-    return { 
+    return {
       id: existingUser.id,
       token
     }
+  }
+
+  public async verifyAndDecodeUserSessionToken(token: string) {
+    const { id } = await this.verifyUserToken(token)
+    const userInfo = await this.getUserInfoById(id)
+
+    return { ...userInfo }
+
   }
 
 }

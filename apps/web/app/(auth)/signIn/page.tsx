@@ -7,7 +7,7 @@ import { Mail, Lock, Compass } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { trpc } from "~/trpc/client";
+import { useSignIn } from "~/hooks/api/auth";
 import { toast } from "sonner";
 import { SignInUserWithEmailAndPasswordInputModel } from "@repo/trpc/client";
 
@@ -15,6 +15,7 @@ type SignInValues = z.infer<typeof SignInUserWithEmailAndPasswordInputModel>;
 
 export default function SignInPage() {
   const router = useRouter();
+  const { signInUserWithEmailAndPassword, isPending } = useSignIn();
 
   const {
     register,
@@ -28,18 +29,16 @@ export default function SignInPage() {
     },
   });
 
-  const signInMutation = trpc.auth.SignInUserWithEmailAndPassword.useMutation({
-    onSuccess: (data) => {
-      toast.success("Signed in successfully! Welcome back.");
-      router.push("/");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to sign in. Please try again.");
-    },
-  });
-
   const onSubmit = (data: SignInValues) => {
-    signInMutation.mutate(data);
+    signInUserWithEmailAndPassword(data, {
+      onSuccess: () => {
+        toast.success("Signed in successfully! Welcome back.");
+        router.push("/");
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to sign in. Please try again.");
+      },
+    });
   };
 
   return (
@@ -113,11 +112,11 @@ export default function SignInPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={signInMutation.isPending}
+              disabled={isPending}
               className="w-full bg-[#0d2137] dark:bg-[#b9c9df] text-[#faf7f0] dark:text-[#0d2137] p-3 font-serif hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] active:bg-[#071321] transition-colors border-2 border-[#0d2137] dark:border-[#b9c9df] shadow-[3px_3px_0px_0px_#8e6e53] dark:shadow-[3px_3px_0px_0px_#d4af37] hover:shadow-[1px_1px_0px_0px_#8e6e53] dark:hover:shadow-[1px_1px_0px_0px_#d4af37] transition-all flex items-center justify-center gap-2 font-semibold uppercase tracking-wider text-xs rounded cursor-pointer disabled:opacity-50"
             >
-              {signInMutation.isPending ? "Opening..." : "Open Studio Å"}
-              <Compass className={`size-4 ${signInMutation.isPending ? "animate-spin" : "animate-spin-slow"}`} />
+              {isPending ? "Opening..." : "Open Studio Å"}
+              <Compass className={`size-4 ${isPending ? "animate-spin" : "animate-spin-slow"}`} />
             </button>
           </form>
 

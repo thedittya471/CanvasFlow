@@ -27,3 +27,14 @@ export const SignInUserWithEmailAndPasswordInputModel = z.object({
 export const SignInUserWithEmailAndPasswordOutputModel = z.object({
     id: z.string().describe('id of the user')
 })
+
+export const getLoggedInUserInfoInputModel = z.undefined()
+
+export const getLoggedInUserInfoInputOutputModel = z.object({
+    id: z.string().describe('id of the user'),
+    fullName: z.string().describe('name of the user'),
+    email: z.string().email().describe('email of the user')
+})
+
+export type GetLoggedInUserInfoInputModelType = z.infer<typeof getLoggedInUserInfoInputModel>
+export type GetLoggedInUserInfoInputOutputModelType = z.infer<typeof getLoggedInUserInfoInputOutputModel>
