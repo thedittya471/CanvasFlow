@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import { EB_Garamond, Caveat } from "next/font/google";
 import Sidebar from "~/components/Sidebar";
-import Navbar from "~/components/Navbar";
-import { Menu, X, Compass, Lock } from "lucide-react";
+import { Menu, X, Compass, Lock, Sparkles } from "lucide-react";
 import { DashboardProvider } from "~/providers/dashboard-provider";
 import { useCreateForm } from "~/hooks/api/form";
 import { toast } from "sonner";
@@ -88,7 +87,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           <main className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto max-w-7xl mx-auto w-full">
             {/* Shared Top Navbar */}
-            <Navbar onMenuClick={() => setSidebarOpen(true)} />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#0d2137]/10 dark:border-[#faf7f0]/10 pb-4 gap-4 w-full">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setSidebarOpen(true)} 
+                  className="p-1 hover:bg-[#faf7f0] dark:hover:bg-[#1c1c1e] rounded border border-[#0d2137]/15 dark:border-[#faf7f0]/15 md:hidden cursor-pointer"
+                >
+                  <Menu className="size-5" />
+                </button>
+                <div className="flex items-center gap-2 text-xs uppercase tracking-widest font-serif font-semibold text-[#0d2137]/60 dark:text-[#faf7f0]/60">
+                  <span className="border-b-2 border-[#0d2137] dark:border-white pb-1 pr-1">Overview</span>
+                  <span>/</span>
+                  <span>CanvasFlow</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 self-end sm:self-auto">
+                <span className="text-xs font-serif italic text-[#0d2137]/60 dark:text-[#faf7f0]/60">Studio Report 2026</span>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-[#d4af37]/15 text-[#8e6e53] dark:text-[#d4af37] border border-[#d4af37]/35 rounded-full text-[10px] font-serif font-bold uppercase tracking-wider">
+                  <Sparkles className="size-3 fill-current" />
+                  <span>Pro Workspace</span>
+                </div>
+              </div>
+            </div>
             
             {/* Page Content */}
             <div className="w-full">
