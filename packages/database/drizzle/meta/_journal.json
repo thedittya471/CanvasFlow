@@ -15,6 +15,20 @@
       "when": 1781887129312,
       "tag": "0001_careless_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781981992827,
+      "tag": "0002_closed_king_bedlam",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781982552554,
+      "tag": "0003_abandoned_omega_red",
+      "breakpoints": true
     }
   ]
 }
