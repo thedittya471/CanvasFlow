@@ -1,6 +1,6 @@
 import { db, eq } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
-import { createFormInput, type CreateFormInputType } from "./model"
+import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType } from "./model"
 
 class FormService {
   private async getFormBySlug(slug: string) {
@@ -33,6 +33,25 @@ class FormService {
     return {
       id: insertResult[0].id
     }
+  }
+
+  public async listFormsByUserId(payload: ListFormsByUserIdInputType) {
+    const { userId } = await listFormsByUserIdInput.parseAsync(payload)
+
+    const forms = await db.select({
+      id: formsTable.id,
+      title: formsTable.title,
+      description: formsTable.description,
+      slug: formsTable.slug,
+      isPublished: formsTable.isPublished,
+      isArchived: formsTable.isArchived,
+      isOpen: formsTable.isOpen,
+      createdAt: formsTable.createdAt,
+      updatedAt: formsTable.updatedAt,
+      publishedAt: formsTable.publishedAt,
+    }).from(formsTable).where(eq(formsTable.ownerId, userId))
+
+    return forms
   }
 }
 

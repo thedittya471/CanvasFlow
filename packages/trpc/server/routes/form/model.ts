@@ -12,3 +12,23 @@ export const createFormOutputModel = z.object({
 
 export type CreateFormInputModelType = z.infer<typeof createFormInputModel>
 export type CreateFormOutputModelType = z.infer<typeof createFormOutputModel>
+
+export const listFormsByUserIdInputModel = z.undefined()
+
+export const listFormsByUserIdOutputModel = z.array(
+    z.object({
+        id: z.string().uuid().describe("ID of the form"),
+        title: z.string().describe("Title of the form"),
+        description: z.string().nullable().optional().describe("Description of the form"),
+        slug: z.string().describe("Unique slug for the form"),
+        isPublished: z.boolean().describe("Whether form is published"),
+        isArchived: z.boolean().describe("Whether form is archived"),
+        isOpen: z.boolean().describe("Whether form is open for submissions"),
+        createdAt: z.any().describe("Creation timestamp"),
+        updatedAt: z.any().describe("Last updated timestamp"),
+        publishedAt: z.any().nullable().optional().describe("Published timestamp"),
+    })
+)
+
+export type ListFormsByUserIdInputModelType = z.infer<typeof listFormsByUserIdInputModel>
+export type ListFormsByUserIdOutputModelType = z.infer<typeof listFormsByUserIdOutputModel>

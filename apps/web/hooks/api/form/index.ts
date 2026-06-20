@@ -31,3 +31,27 @@ export const useCreateForm = () => {
         failureCount
     }
 }
+
+export const useListFormsByUserId = () => {
+    const {
+        data: forms,
+        error,
+        failureCount,
+        isError,
+        isSuccess,
+        status,
+        isLoading,
+        refetch
+    } = trpc.form.listFormsByUserId.useQuery()
+
+    return {
+        forms,
+        error,
+        isError,
+        isSuccess,
+        status,
+        failureCount,
+        isLoading,
+        refetch
+    }
+}

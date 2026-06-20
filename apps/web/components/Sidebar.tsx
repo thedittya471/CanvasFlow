@@ -3,16 +3,19 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Plus, 
-  Compass, 
-  PencilRuler, 
-  FileText, 
-  BarChart3, 
+import {
+  Plus,
+  Compass,
+  PencilRuler,
+  FileText,
+  BarChart3,
   ChevronDown,
   X,
   Sun,
-  Moon
+  Moon,
+  Settings,
+  Box,
+  LayoutTemplate
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -39,7 +42,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: "/dashboard", label: "Studio", icon: Compass },
     { href: "/dashboard/sketches", label: "My Sketches", icon: PencilRuler },
     { href: "/dashboard/submissions", label: "Submissions", icon: FileText },
-    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 }
+    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/dashboard/archive", label: "Archive", icon: Box },
+    { href: "/dashboard/templates", label: "Templates", icon: LayoutTemplate },
+    { href: "/dashboard/settings", label: "Settings", icon: Settings }
   ];
 
   return (
@@ -71,7 +77,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </div>
 
-        <button 
+        <button
           onClick={openCreateFormModal}
           className="w-full bg-[#0d2137] dark:bg-[#b9c9df] text-[#faf7f0] dark:text-[#0d2137] py-3 px-4 rounded border-2 border-[#0d2137] dark:border-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] active:bg-[#071321] transition-all flex items-center justify-center gap-2 font-serif text-sm font-semibold uppercase tracking-wider shadow-[3px_3px_0px_0px_#8e6e53] dark:shadow-[3px_3px_0px_0px_#d4af37] hover:shadow-[1px_1px_0px_0px_#8e6e53] dark:hover:shadow-[1px_1px_0px_0px_#d4af37] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
         >
