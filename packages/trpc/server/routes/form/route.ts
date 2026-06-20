@@ -1,7 +1,7 @@
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import { createFormInputModel, createFormOutputModel } from "./model";
-import { formService} from "../../services";
+import { formService } from "../../services";
 
 const TAGS = ["Forms"];
 const getPath = generatePath("/forms");

@@ -124,7 +124,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-[#0d2137] dark:bg-[#b9c9df] text-[#faf7f0] dark:text-[#0d2137] p-3 font-serif hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] active:bg-[#071321] transition-colors border-2 border-[#0d2137] dark:border-[#b9c9df] shadow-[3px_3px_0px_0px_#8e6e53] dark:shadow-[3px_3px_0px_0px_#d4af37] hover:shadow-[1px_1px_0px_0px_#8e6e53] dark:hover:shadow-[1px_1px_0px_0px_#d4af37] transition-all flex items-center justify-center gap-2 font-semibold uppercase tracking-wider text-xs rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full bg-[#0d2137] dark:bg-[#b9c9df] text-[#faf7f0] dark:text-[#0d2137] p-3 font-serif hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] active:bg-[#071321] transition-colors border-2 border-[#0d2137] dark:border-[#b9c9df] shadow-[3px_3px_0px_0px_#8e6e53] dark:shadow-[3px_3px_0px_0px_#d4af37] hover:shadow-[1px_1px_0px_0px_#8e6e53] dark:hover:shadow-[1px_1px_0px_0px_#d4af37] flex items-center justify-center gap-2 font-semibold uppercase tracking-wider text-xs rounded disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {isPending ? "Registering..." : "Register Apprentice Å"}
               <Compass className={`size-4 ${isPending ? "animate-spin" : "animate-spin-slow"}`} />

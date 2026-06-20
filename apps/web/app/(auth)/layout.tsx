@@ -64,7 +64,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               />
             )}
             {/* Dark blueprint gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0d2137]/35 via-transparent to-[#0d2137]/10" />
+            <div className="absolute inset-0 bg-linear-to-t from-[#0d2137]/35 via-transparent to-[#0d2137]/10" />
             
             {/* Branding title and subtitle */}
             <div className="absolute bottom-10 left-10 text-[#faf7f0] select-none">
@@ -83,7 +83,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           style={{
             "--form-translate-x": isSignIn ? "100%" : "0%",
           } as React.CSSProperties}
-          className="absolute top-0 bottom-0 left-0 w-full md:w-1/2 h-full z-10 transition-transform duration-700 ease-in-out flex flex-col justify-between p-8 md:p-12 bg-[#faf7f0] dark:bg-[#141414] md:translate-x-[var(--form-translate-x)] transition-colors duration-300"
+          className="absolute top-0 bottom-0 left-0 w-full md:w-1/2 h-full z-10 transition-transform duration-700 ease-in-out flex flex-col justify-between p-8 md:p-12 bg-[#faf7f0] dark:bg-[#141414] md:translate-x-(--form-translate-x)"
         >
           {children}
         </div>
