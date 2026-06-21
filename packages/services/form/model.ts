@@ -60,3 +60,25 @@ export const submitFormOutput = z.object({
   id: z.string().uuid().describe("ID of the created submission")
 })
 export type SubmitFormOutputType = z.infer<typeof submitFormOutput>
+
+export const formSubmissionValueOutput = z.object({
+  formFieldId: z.string().uuid(),
+  value: z.any()
+})
+
+export const formSubmissionOutput = z.object({
+  id: z.string().uuid(),
+  formId: z.string().uuid(),
+  values: z.array(formSubmissionValueOutput),
+  createdAt: z.any()
+})
+export type FormSubmissionOutputType = z.infer<typeof formSubmissionOutput>
+
+export const getSubmissionsInput = z.object({
+  formId: z.string().uuid().describe("Form ID"),
+  ownerId: z.string().uuid().describe("Owner user ID")
+})
+export type GetSubmissionsInputType = z.infer<typeof getSubmissionsInput>
+
+export const getSubmissionsOutput = z.array(formSubmissionOutput)
+export type GetSubmissionsOutputType = z.infer<typeof getSubmissionsOutput>

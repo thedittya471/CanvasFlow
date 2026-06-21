@@ -20,7 +20,9 @@ import {
     submitFormInputModel,
     submitFormOutputModel,
     listFormFieldsInputModel,
-    listFormFieldsOutputModel
+    listFormFieldsOutputModel,
+    getSubmissionsInputModel,
+    getSubmissionsOutputModel
 } from "./model";
 import { formService, formFieldService } from "../../services";
 
@@ -183,6 +185,21 @@ export const formRouter = router({
         .output(publishFormOutputModel)
         .mutation(async ({ input, ctx }) => {
             const result = await formService.publishForm({ ...input, ownerId: ctx.user.id })
+            return result
+        }),
+
+    getSubmissions: authenticatedProcedure.meta({
+        openapi: {
+            method: "GET",
+            path: getPath("/getSubmissions/{formId}"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(getSubmissionsInputModel)
+        .output(getSubmissionsOutputModel)
+        .query(async ({ input, ctx }) => {
+            const result = await formService.getSubmissions({ formId: input.formId, ownerId: ctx.user.id })
             return result
         }),
 

@@ -1,8 +1,8 @@
-import { db, eq, and } from "@repo/database"
+import { db, eq, and, desc } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
-import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, submitFormInput, type SubmitFormInputType } from "./model"
+import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, submitFormInput, type SubmitFormInputType, getSubmissionsInput, type GetSubmissionsInputType } from "./model"
 
 class FormService {
   private async getFormBySlug(slug: string) {
@@ -149,6 +149,22 @@ class FormService {
     return {
       id: firstResult.id
     }
+  }
+
+  public async getSubmissions(payload: GetSubmissionsInputType) {
+    const { formId, ownerId } = await getSubmissionsInput.parseAsync(payload)
+
+    const formResult = await db.select().from(formsTable).where(and(eq(formsTable.id, formId), eq(formsTable.ownerId, ownerId)))
+    if (!formResult[0]) {
+      throw new Error("Form not found or unauthorized")
+    }
+
+    const submissions = await db.select()
+      .from(formSubmissionsTable)
+      .where(eq(formSubmissionsTable.formId, formId))
+      .orderBy(desc(formSubmissionsTable.createdAt))
+
+    return submissions
   }
 }
 
