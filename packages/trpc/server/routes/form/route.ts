@@ -1,7 +1,20 @@
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createFormInputModel, createFormOutputModel, listFormsByUserIdInputModel, listFormsByUserIdOutputModel } from "./model";
-import { formService } from "../../services";
+import { 
+    createFormInputModel, 
+    createFormOutputModel, 
+    listFormsByUserIdInputModel, 
+    listFormsByUserIdOutputModel,
+    createFormFieldInputModel,
+    createFormFieldOutputModel,
+    updateFormFieldInputModel,
+    updateFormFieldOutputModel,
+    deleteFormFieldInputModel,
+    deleteFormFieldOutputModel,
+    getFormFieldInputModel,
+    getFormFieldOutputModel
+} from "./model";
+import { formService, formFieldService } from "../../services";
 
 const TAGS = ["Forms"];
 const getPath = generatePath("/forms");
@@ -43,5 +56,65 @@ export const formRouter = router({
         .query(async ({ ctx }) => {
             const forms =  await formService.listFormsByUserId({ userId: ctx.user.id })
             return forms
+        }),
+
+    createFormField: authenticatedProcedure.meta({
+        openapi: {
+            method: "POST",
+            path: getPath("/createFormField"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(createFormFieldInputModel)
+        .output(createFormFieldOutputModel)
+        .mutation(async ({ input }) => {
+            const result = await formFieldService.createFormField(input)
+            return result
+        }),
+
+    updateFormField: authenticatedProcedure.meta({
+        openapi: {
+            method: "POST",
+            path: getPath("/updateFormField"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(updateFormFieldInputModel)
+        .output(updateFormFieldOutputModel)
+        .mutation(async ({ input }) => {
+            const result = await formFieldService.updateFormField(input)
+            return result
+        }),
+
+    deleteFormField: authenticatedProcedure.meta({
+        openapi: {
+            method: "POST",
+            path: getPath("/deleteFormField"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(deleteFormFieldInputModel)
+        .output(deleteFormFieldOutputModel)
+        .mutation(async ({ input }) => {
+            const result = await formFieldService.deleteFormField(input)
+            return result
+        }),
+
+    getFormField: authenticatedProcedure.meta({
+        openapi: {
+            method: "GET",
+            path: getPath("/getFormField/{id}"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(getFormFieldInputModel)
+        .output(getFormFieldOutputModel)
+        .query(async ({ input }) => {
+            const result = await formFieldService.getFormField(input)
+            return result
         })
 });

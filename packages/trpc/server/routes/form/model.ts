@@ -32,3 +32,14 @@ export const listFormsByUserIdOutputModel = z.array(
 
 export type ListFormsByUserIdInputModelType = z.infer<typeof listFormsByUserIdInputModel>
 export type ListFormsByUserIdOutputModelType = z.infer<typeof listFormsByUserIdOutputModel>
+
+export {
+    createFormFieldInput as createFormFieldInputModel,
+    createFormFieldOutput as createFormFieldOutputModel,
+    updateFormFieldInput as updateFormFieldInputModel,
+    updateFormFieldOutput as updateFormFieldOutputModel,
+    deleteFormFieldInput as deleteFormFieldInputModel,
+    deleteFormFieldOutput as deleteFormFieldOutputModel,
+    getFormFieldInput as getFormFieldInputModel,
+    getFormFieldOutput as getFormFieldOutputModel
+} from "@repo/services/form-field/model"

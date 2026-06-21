@@ -233,7 +233,7 @@ export default function SketchesPage() {
             return (
               <div
                 key={form.id}
-                className="relative overflow-hidden bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/10 dark:border-white/5 p-4 rounded shadow-[0_1px_2px_rgba(13,33,55,0.05)] group hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(13,33,55,0.06)] transition-all duration-250 flex flex-col justify-between min-h-[360px] max-w-[320px] w-full mx-auto"
+                className="relative overflow-hidden bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/10 dark:border-white/5 p-4 rounded shadow-[0_1px_2px_rgba(13,33,55,0.05)] group hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(13,33,55,0.06)] transition-all duration-250 flex flex-col justify-between min-h-90 max-w-[320px] w-full mx-auto"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"

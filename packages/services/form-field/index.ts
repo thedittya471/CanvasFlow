@@ -107,12 +107,13 @@ class FormFieldService {
         const { id } = await getFormFieldInput.parseAsync(payload)
 
         const result = await db.select().from(formFieldsTable).where(eq(formFieldsTable.id, id))
+        const field = result[0]
 
-        if (!result || result.length === 0) {
+        if (!field) {
             throw new Error("Form field not found")
         }
 
-        return result[0]
+        return field
     }
 }
 
