@@ -280,4 +280,36 @@ export const usePublishForm = () => {
     }
 }
 
+export const useSubmitForm = () => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: submitFormAsync,
+        mutate: submitForm,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isPending,
+        isSuccess,
+        status
+    } = trpc.form.submitForm.useMutation({
+        onSuccess: async () => {
+            await utils.form.invalidate()
+        }
+    })
+
+    return {
+        submitFormAsync,
+        submitForm,
+        error,
+        isError,
+        isIdle,
+        isPending,
+        isSuccess,
+        status,
+        failureCount
+    }
+}
+
 

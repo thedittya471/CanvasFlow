@@ -17,6 +17,8 @@ import {
     getFormOutputModel,
     getFormByIdOutputModel,
     publishFormOutputModel,
+    submitFormInputModel,
+    submitFormOutputModel,
     listFormFieldsInputModel,
     listFormFieldsOutputModel
 } from "./model";
@@ -181,6 +183,21 @@ export const formRouter = router({
         .output(publishFormOutputModel)
         .mutation(async ({ input, ctx }) => {
             const result = await formService.publishForm({ ...input, ownerId: ctx.user.id })
+            return result
+        }),
+
+    submitForm: publicProcedure.meta({
+        openapi: {
+            method: "POST",
+            path: getPath("/submitForm"),
+            tags: TAGS,
+            protect: false
+        }
+    })
+        .input(submitFormInputModel)
+        .output(submitFormOutputModel)
+        .mutation(async ({ input }) => {
+            const result = await formService.submitForm(input)
             return result
         })
 });

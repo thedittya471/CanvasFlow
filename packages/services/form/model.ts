@@ -44,3 +44,19 @@ export const publishFormOutput = z.object({
   id: z.string().uuid().describe("ID of the published form")
 })
 export type PublishFormOutputType = z.infer<typeof publishFormOutput>
+
+export const submitFormValueInput = z.object({
+  formFieldId: z.string().uuid(),
+  value: z.any()
+})
+
+export const submitFormInput = z.object({
+  formId: z.string().uuid().describe("ID of the form to submit"),
+  values: z.array(submitFormValueInput).describe("Field values submitted")
+})
+export type SubmitFormInputType = z.infer<typeof submitFormInput>
+
+export const submitFormOutput = z.object({
+  id: z.string().uuid().describe("ID of the created submission")
+})
+export type SubmitFormOutputType = z.infer<typeof submitFormOutput>

@@ -1,7 +1,8 @@
 import { db, eq, and } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
-import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType } from "./model"
+import { formSubmissionsTable } from "@repo/database/models/form-submission"
+import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, submitFormInput, type SubmitFormInputType } from "./model"
 
 class FormService {
   private async getFormBySlug(slug: string) {
@@ -111,6 +112,38 @@ class FormService {
     const firstResult = result[0]
     if (!firstResult) {
       throw new Error("Form not found or unauthorized")
+    }
+
+    return {
+      id: firstResult.id
+    }
+  }
+
+  public async submitForm(payload: SubmitFormInputType) {
+    const { formId, values } = await submitFormInput.parseAsync(payload)
+
+    const formResult = await db.select().from(formsTable).where(eq(formsTable.id, formId))
+    const form = formResult[0]
+    if (!form) {
+      throw new Error("Form not found")
+    }
+    if (!form.isPublished) {
+      throw new Error("Form is not published yet")
+    }
+    if (!form.isOpen) {
+      throw new Error("Form is closed for submissions")
+    }
+
+    const insertResult = await db.insert(formSubmissionsTable).values({
+      formId,
+      values
+    }).returning({
+      id: formSubmissionsTable.id
+    })
+
+    const firstResult = insertResult[0]
+    if (!firstResult) {
+      throw new Error("Failed to submit form")
     }
 
     return {
