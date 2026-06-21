@@ -56,11 +56,14 @@ export {
     getFormOutput as getFormOutputModel,
     getFormByIdOutput as getFormByIdOutputModel,
     publishFormOutput as publishFormOutputModel,
+    getDashboardStatsOutput as getDashboardStatsOutputModel
+} from "@repo/services/form/model"
+
+export {
     submitFormInput as submitFormInputModel,
     submitFormOutput as submitFormOutputModel,
     getSubmissionsOutput as getSubmissionsOutputModel,
     recordViewInput as recordViewInputModel,
-    recordViewOutput as recordViewOutputModel,
-    getDashboardStatsOutput as getDashboardStatsOutputModel
-} from "@repo/services/form/model"
+    recordViewOutput as recordViewOutputModel
+} from "@repo/services/form-submission/model"
 

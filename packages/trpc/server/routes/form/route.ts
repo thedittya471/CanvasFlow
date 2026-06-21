@@ -28,7 +28,7 @@ import {
     recordViewOutputModel,
     getDashboardStatsOutputModel
 } from "./model";
-import { formService, formFieldService } from "../../services";
+import { formService, formFieldService, formSubmissionService } from "../../services";
 
 const TAGS = ["Forms"];
 const getPath = generatePath("/forms");
@@ -203,7 +203,7 @@ export const formRouter = router({
         .input(getSubmissionsInputModel)
         .output(getSubmissionsOutputModel)
         .query(async ({ input, ctx }) => {
-            const result = await formService.getSubmissions({ formId: input.formId, ownerId: ctx.user.id })
+            const result = await formSubmissionService.getSubmissions({ formId: input.formId, ownerId: ctx.user.id })
             return result
         }),
 
@@ -218,7 +218,7 @@ export const formRouter = router({
         .input(recordViewInputModel)
         .output(recordViewOutputModel)
         .mutation(async ({ input }) => {
-            const result = await formService.recordView(input)
+            const result = await formSubmissionService.recordView(input)
             return result
         }),
 
@@ -248,7 +248,7 @@ export const formRouter = router({
         .input(submitFormInputModel)
         .output(submitFormOutputModel)
         .mutation(async ({ input }) => {
-            const result = await formService.submitForm(input)
+            const result = await formSubmissionService.submitForm(input)
             return result
         })
 });

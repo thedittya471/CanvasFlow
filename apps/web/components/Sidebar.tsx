@@ -41,7 +41,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const links = [
     { href: "/dashboard", label: "Studio", icon: Compass },
     { href: "/dashboard/sketches", label: "My Sketches", icon: PencilRuler },
-    { href: "/dashboard/submissions", label: "Submissions", icon: FileText },
     { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/dashboard/archive", label: "Archive", icon: Box },
     { href: "/dashboard/templates", label: "Templates", icon: LayoutTemplate },
