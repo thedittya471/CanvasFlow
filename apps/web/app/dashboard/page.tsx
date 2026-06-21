@@ -12,17 +12,34 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useDashboard } from "~/providers/dashboard-provider";
+import { useGetDashboardStats } from "~/hooks/api/form";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  XAxis,
+  YAxis,
+  Tooltip as ChartTooltip,
+  Area
+} from "recharts";
 
 export default function DashboardPage() {
   const { openCreateFormModal } = useDashboard();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  const { stats, isLoading } = useGetDashboardStats();
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const isDark = mounted && theme === "dark";
+
+  const totalSketches = stats?.totalSketches ?? 0;
+  const publishedSketches = stats?.publishedSketches ?? 0;
+  const totalResponses = stats?.totalResponses ?? 0;
+  const responsesThisMonth = stats?.responsesThisMonth ?? 0;
+  const activePercent = totalSketches > 0 ? Math.round((publishedSketches / totalSketches) * 100) : 0;
 
   return (
     <div className="space-y-8">
@@ -48,29 +65,29 @@ export default function DashboardPage() {
         {[
           {
             title: "Total Sketches",
-            val: "1",
-            sub: "0 published",
+            val: isLoading ? "..." : String(totalSketches),
+            sub: `${publishedSketches} published`,
             footer: "Forms Created",
             icon: DraftingCompass
           },
           {
             title: "Active Sketches",
-            val: "0",
-            sub: "0% of all forms",
+            val: isLoading ? "..." : String(publishedSketches),
+            sub: `${activePercent}% of all forms`,
             footer: "Currently Published",
             icon: PencilRuler
           },
           {
             title: "Total Responses",
-            val: "0",
-            sub: "No prior month data",
+            val: isLoading ? "..." : String(totalResponses),
+            sub: "Across all active forms",
             footer: "Across All Forms",
             icon: Layers
           },
           {
             title: "This Month",
-            val: "0",
-            sub: "No responses last month",
+            val: isLoading ? "..." : String(responsesThisMonth),
+            sub: "Submissions collected",
             footer: "Responses Collected",
             icon: TrendingUp
           }
@@ -133,8 +150,8 @@ export default function DashboardPage() {
           {/* Blueprint grid lines overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.075)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.075)_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none" />
 
-          {/* Blueprint Blueprint Specs overlay */}
-          <div className="absolute top-6 left-6 text-white/50 border border-white/20 p-2.5 rounded font-mono text-[9px] uppercase leading-relaxed select-none tracking-wider bg-[#0d2137]/20 backdrop-blur-sm pointer-events-none">
+          {/* Blueprint Specs overlay */}
+          <div className="absolute top-6 left-6 text-white/50 border border-white/20 p-2.5 rounded font-mono text-[9px] uppercase leading-relaxed select-none tracking-wider bg-[#0d2137]/20 backdrop-blur-sm pointer-events-none z-20">
             Fig. 01 — Flow Analysis
             <br />
             Scale: 1:100
@@ -144,23 +161,43 @@ export default function DashboardPage() {
             Elevation North
           </div>
 
-          {/* Centered Empty Overlay Card */}
-          <div className="relative z-10 bg-white dark:bg-[#1c1c1e] p-8 max-w-sm mx-4 text-center border-2 border-[#0d2137] dark:border-[#2a2a2a] shadow-[4px_4px_0px_0px_#0d2137] dark:shadow-[4px_4px_0px_0px_#2a2a2a] rounded">
-            <div className="w-12 h-12 rounded-full border border-[#0d2137]/15 dark:border-[#faf7f0]/15 flex items-center justify-center mx-auto mb-4 bg-[#faf7f0] dark:bg-[#2c2c2e]">
-              <Inbox className="size-6 text-[#8e6e53] dark:text-[#d4af37]" />
+          {!stats || stats.trends.length === 0 || stats.trends.every(t => t.count === 0) ? (
+            /* Centered Empty Overlay Card */
+            <div className="relative z-10 bg-white dark:bg-[#1c1c1e] p-8 max-w-sm mx-4 text-center border-2 border-[#0d2137] dark:border-[#2a2a2a] shadow-[4px_4px_0px_0px_#0d2137] dark:shadow-[4px_4px_0px_0px_#2a2a2a] rounded">
+              <div className="w-12 h-12 rounded-full border border-[#0d2137]/15 dark:border-[#faf7f0]/15 flex items-center justify-center mx-auto mb-4 bg-[#faf7f0] dark:bg-[#2c2c2e]">
+                <Inbox className="size-6 text-[#8e6e53] dark:text-[#d4af37]" />
+              </div>
+              <h4 className="text-xs uppercase tracking-widest font-serif font-bold text-[#0d2137] dark:text-white">Awaiting Input Data</h4>
+              <p className="text-xs text-[#0d2137]/60 dark:text-[#faf7f0]/60 font-serif mt-2 leading-relaxed">
+                Publish your first sketch to begin tracking audience engagement and architectural metrics.
+              </p>
             </div>
-            <h4 className="text-xs uppercase tracking-widest font-serif font-bold text-[#0d2137] dark:text-white">Awaiting Input Data</h4>
-            <p className="text-xs text-[#0d2137]/60 dark:text-[#faf7f0]/60 font-serif mt-2 leading-relaxed">
-              Publish your first sketch to begin tracking audience engagement and architectural metrics.
-            </p>
-          </div>
+          ) : (
+            <div className="absolute inset-x-8 bottom-6 top-20 text-[10px] font-mono text-white/70">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.trends}>
+                  <XAxis dataKey="date" stroke="#ffffff" opacity={0.4} />
+                  <YAxis stroke="#ffffff" opacity={0.4} />
+                  <ChartTooltip 
+                    contentStyle={{ 
+                      background: "#1c1c1e", 
+                      borderColor: "#2a2a2a", 
+                      color: "#ffffff",
+                      fontFamily: "var(--font-garamond)" 
+                    }} 
+                  />
+                  <Area type="monotone" dataKey="count" stroke="#b9c9df" fill="#b9c9df" fillOpacity={0.25} strokeWidth={2.5} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Recent Blueprints */}
       <div className="space-y-4">
         <div className="flex justify-between items-center pb-2 border-b border-[#0d2137]/10 dark:border-[#faf7f0]/10">
-          <h3 className="text-2xl font-serif font-bold text-[#0d2137] dark:text-white">Recent Blueprints</h3>
+          <h3 className="text-2xl font-serif font-bold text-[#0d2137] dark:text-white">Recent Canvas</h3>
           <button className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#8e6e53] dark:text-[#d4af37] hover:underline cursor-pointer flex items-center gap-1">
             <span>View All</span>
             <span>→</span>
@@ -168,28 +205,43 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Blueprint Item 1 */}
-          <div className="bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-5 rounded shadow-[4px_4px_0px_0px_#0d2137] dark:shadow-[4px_4px_0px_0px_#2a2a2a] flex items-center justify-between hover:-translate-y-0.5 transition-all duration-300">
-            <div className="flex items-center gap-4">
-              {/* Draft Badge icon */}
-              <div className="w-14 h-16 border border-[#0d2137]/15 dark:border-[#faf7f0]/15 bg-[#faf7f0] dark:bg-[#2c2c2e] rounded flex flex-col items-center justify-center p-2 text-center select-none shrink-0">
-                <FileText className="size-5 text-[#8e6e53] dark:text-[#d4af37] mb-1" />
-                <span className="text-[8px] font-bold tracking-widest text-[#0d2137]/50 dark:text-[#faf7f0]/50 uppercase font-sans">Draft</span>
-              </div>
-              <div>
-                <h4 className="font-serif font-bold text-lg text-[#0d2137] dark:text-white">Quarterly Feedback Loop</h4>
-                <p className="text-xs text-[#0d2137]/50 dark:text-[#faf7f0]/50 font-serif mt-0.5">Created January 24, 2026</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full border border-[#0d2137] dark:border-white bg-[#0d2137] text-white dark:bg-[#2c2c2e] flex items-center justify-center font-bold text-[9px]">
-                  DM
+          {isLoading ? (
+            <div className="py-8 text-center text-xs font-serif italic text-[#0d2137]/50 dark:text-white/45 md:col-span-2">Loading...</div>
+          ) : !stats || stats.recentForms.length === 0 ? (
+            <div className="py-8 text-center text-xs font-serif italic text-[#0d2137]/50 dark:text-white/45 md:col-span-2">No canvas found.</div>
+          ) : (
+            stats.recentForms.map((item) => {
+              const initials = "DM";
+              return (
+                <div key={item.id} className="bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-5 rounded shadow-[4px_4px_0px_0px_#0d2137] dark:shadow-[4px_4px_0px_0px_#2a2a2a] flex items-center justify-between hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-16 border border-[#0d2137]/15 dark:border-[#faf7f0]/15 bg-[#faf7f0] dark:bg-[#2c2c2e] rounded flex flex-col items-center justify-center p-2 text-center select-none shrink-0">
+                      <FileText className="size-5 text-[#8e6e53] dark:text-[#d4af37] mb-1" />
+                      <span className="text-[8px] font-bold tracking-widest text-[#0d2137]/50 dark:text-[#faf7f0]/50 uppercase font-sans">
+                        {item.isPublished ? "Public" : "Draft"}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="font-serif font-bold text-lg text-[#0d2137] dark:text-white">{item.title}</h4>
+                      <p className="text-xs text-[#0d2137]/50 dark:text-[#faf7f0]/50 font-serif mt-0.5">
+                        Created {new Date(item.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full border border-[#0d2137] dark:border-white bg-[#0d2137] text-white dark:bg-[#2c2c2e] flex items-center justify-center font-bold text-[9px]">
+                        {initials}
+                      </div>
+                      <span className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/70 dark:text-[#faf7f0]/70">
+                        {item.submissionsCount} Responses
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/70 dark:text-[#faf7f0]/70">0 Responses</span>
-              </div>
-            </div>
-          </div>
+              );
+            })
+          )}
 
           {/* Start New Blueprint Item */}
           <button 
@@ -203,7 +255,7 @@ export default function DashboardPage() {
               <div className="w-8 h-8 rounded-full border border-[#0d2137]/25 dark:border-[#faf7f0]/25 flex items-center justify-center bg-white dark:bg-[#2c2c2e] group-hover:scale-105 transition-transform">
                 <Plus className="size-4 text-[#8e6e53] dark:text-[#d4af37]" />
               </div>
-              <span className="text-xs uppercase tracking-widest font-serif font-bold text-[#8e6e53] dark:text-[#d4af37]">Start New Blueprint</span>
+              <span className="text-xs uppercase tracking-widest font-serif font-bold text-[#8e6e53] dark:text-[#d4af37]">Start New Canvas</span>
             </div>
           </button>
         </div>

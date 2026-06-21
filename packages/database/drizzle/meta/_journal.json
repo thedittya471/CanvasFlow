@@ -43,6 +43,13 @@
       "when": 1782036584724,
       "tag": "0005_fine_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782040273998,
+      "tag": "0006_nifty_maximus",
+      "breakpoints": true
     }
   ]
 }

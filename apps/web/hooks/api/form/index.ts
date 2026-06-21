@@ -186,7 +186,7 @@ export const useGetForm = (id: string) => {
         status,
         isLoading,
         refetch
-    } = trpc.form.getForm.useQuery({ id })
+    } = trpc.form.getForm.useQuery({ id }, { enabled: !!id && id.length === 36 })
 
     return {
         form,
@@ -234,7 +234,7 @@ export const useGetFormById = (id: string) => {
         status,
         isLoading,
         refetch
-    } = trpc.form.getFormById.useQuery({ id })
+    } = trpc.form.getFormById.useQuery({ id }, { enabled: !!id && id.length === 36 })
 
     return {
         form,
@@ -322,10 +322,56 @@ export const useGetSubmissions = (formId: string) => {
         status,
         isLoading,
         refetch
-    } = trpc.form.getSubmissions.useQuery({ formId })
+    } = trpc.form.getSubmissions.useQuery({ formId }, { enabled: !!formId && formId.length === 36, refetchInterval: 3000 })
 
     return {
         submissions,
+        error,
+        isError,
+        isSuccess,
+        status,
+        failureCount,
+        isLoading,
+        refetch
+    }
+}
+
+export const useRecordView = () => {
+    const {
+        mutateAsync: recordViewAsync,
+        mutate: recordView,
+        error,
+        isError,
+        isPending,
+        isSuccess,
+        status
+    } = trpc.form.recordView.useMutation()
+
+    return {
+        recordViewAsync,
+        recordView,
+        error,
+        isError,
+        isPending,
+        isSuccess,
+        status
+    }
+}
+
+export const useGetDashboardStats = () => {
+    const {
+        data: stats,
+        error,
+        failureCount,
+        isError,
+        isSuccess,
+        status,
+        isLoading,
+        refetch
+    } = trpc.form.getDashboardStats.useQuery(undefined, { refetchInterval: 3000 })
+
+    return {
+        stats,
         error,
         isError,
         isSuccess,

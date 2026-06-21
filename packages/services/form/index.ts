@@ -1,8 +1,9 @@
-import { db, eq, and, desc } from "@repo/database"
+import { db, eq, and, desc, inArray } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
-import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, submitFormInput, type SubmitFormInputType, getSubmissionsInput, type GetSubmissionsInputType } from "./model"
+import { formViewsTable } from "@repo/database/models/form-view"
+import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, submitFormInput, type SubmitFormInputType, getSubmissionsInput, type GetSubmissionsInputType, recordViewInput, type RecordViewInputType, getDashboardStatsInput, type GetDashboardStatsInputType } from "./model"
 
 class FormService {
   private async getFormBySlug(slug: string) {
@@ -164,7 +165,118 @@ class FormService {
       .where(eq(formSubmissionsTable.formId, formId))
       .orderBy(desc(formSubmissionsTable.createdAt))
 
-    return submissions
+    const viewsResult = await db.select()
+      .from(formViewsTable)
+      .where(eq(formViewsTable.formId, formId))
+
+    const viewsCount = viewsResult.length
+
+    const deviceMap = { desktop: 0, mobile: 0, tablet: 0 }
+    viewsResult.forEach(v => {
+      const dev = v.deviceType.toLowerCase()
+      if (dev.includes('mobile')) deviceMap.mobile++
+      else if (dev.includes('tablet')) deviceMap.tablet++
+      else deviceMap.desktop++
+    })
+
+    const deviceViews = Object.entries(deviceMap).map(([device, count]) => ({
+      device,
+      count
+    }))
+
+    return {
+      submissions,
+      viewsCount,
+      deviceViews
+    }
+  }
+
+  public async recordView(payload: RecordViewInputType) {
+    const { formId, deviceType } = await recordViewInput.parseAsync(payload)
+
+    await db.insert(formViewsTable).values({
+      formId,
+      deviceType
+    })
+
+    return { success: true }
+  }
+
+  public async getDashboardStats(payload: GetDashboardStatsInputType) {
+    const { userId } = await getDashboardStatsInput.parseAsync(payload)
+
+    const forms = await db.select().from(formsTable).where(eq(formsTable.ownerId, userId))
+    const totalSketches = forms.length
+    const publishedSketches = forms.filter(f => f.isPublished).length
+    const formIds = forms.map(f => f.id)
+
+    if (formIds.length === 0) {
+      return {
+        totalSketches: 0,
+        publishedSketches: 0,
+        totalResponses: 0,
+        responsesThisMonth: 0,
+        recentForms: [],
+        trends: []
+      }
+    }
+
+    const submissions = await db.select()
+      .from(formSubmissionsTable)
+      .where(inArray(formSubmissionsTable.formId, formIds))
+      .orderBy(desc(formSubmissionsTable.createdAt))
+
+    const totalResponses = submissions.length
+
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+    const responsesThisMonth = submissions.filter(s => new Date(s.createdAt) >= startOfMonth).length
+
+    const recentFormsRaw = [...forms]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4)
+
+    const recentForms = recentFormsRaw.map(f => {
+      const subsCount = submissions.filter(s => s.formId === f.id).length
+      return {
+        id: f.id,
+        title: f.title,
+        createdAt: f.createdAt,
+        isPublished: f.isPublished,
+        submissionsCount: subsCount
+      }
+    })
+
+    const trendsMap: Record<string, number> = {}
+    const today = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today)
+      d.setDate(today.getDate() - i)
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      trendsMap[dateStr] = 0
+    }
+
+    submissions.forEach(s => {
+      const dateStr = new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      if (trendsMap[dateStr] !== undefined) {
+        trendsMap[dateStr]++
+      }
+    })
+
+    const trends = Object.entries(trendsMap).map(([date, count]) => ({
+      date,
+      count
+    }))
+
+    return {
+      totalSketches,
+      publishedSketches,
+      totalResponses,
+      responsesThisMonth,
+      recentForms,
+      trends
+    }
   }
 }
 

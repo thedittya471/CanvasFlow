@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { useGetFormById, useSubmitForm } from "~/hooks/api/form";
+import { useGetFormById, useSubmitForm, useRecordView } from "~/hooks/api/form";
 import { Star, Calendar, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
@@ -39,6 +39,7 @@ export default function PublicFormPage() {
 
   const { form, isLoading, error } = useGetFormById(formId);
   const { submitForm, isPending } = useSubmitForm();
+  const { recordView } = useRecordView();
 
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -47,7 +48,17 @@ export default function PublicFormPage() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (formId) {
+      const ua = window.navigator.userAgent.toLowerCase();
+      let deviceType = "desktop";
+      if (/tablet|ipad|playbook|silk/i.test(ua)) {
+        deviceType = "tablet";
+      } else if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile|webos/i.test(ua)) {
+        deviceType = "mobile";
+      }
+      recordView({ formId, deviceType });
+    }
+  }, [formId, recordView]);
 
   const isDark = mounted && theme === "dark";
 

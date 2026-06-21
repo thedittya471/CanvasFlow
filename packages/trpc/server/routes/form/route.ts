@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import { 
@@ -22,7 +23,10 @@ import {
     listFormFieldsInputModel,
     listFormFieldsOutputModel,
     getSubmissionsInputModel,
-    getSubmissionsOutputModel
+    getSubmissionsOutputModel,
+    recordViewInputModel,
+    recordViewOutputModel,
+    getDashboardStatsOutputModel
 } from "./model";
 import { formService, formFieldService } from "../../services";
 
@@ -200,6 +204,36 @@ export const formRouter = router({
         .output(getSubmissionsOutputModel)
         .query(async ({ input, ctx }) => {
             const result = await formService.getSubmissions({ formId: input.formId, ownerId: ctx.user.id })
+            return result
+        }),
+
+    recordView: publicProcedure.meta({
+        openapi: {
+            method: "POST",
+            path: getPath("/recordView"),
+            tags: TAGS,
+            protect: false
+        }
+    })
+        .input(recordViewInputModel)
+        .output(recordViewOutputModel)
+        .mutation(async ({ input }) => {
+            const result = await formService.recordView(input)
+            return result
+        }),
+
+    getDashboardStats: authenticatedProcedure.meta({
+        openapi: {
+            method: "GET",
+            path: getPath("/getDashboardStats"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(z.undefined())
+        .output(getDashboardStatsOutputModel)
+        .query(async ({ ctx }) => {
+            const result = await formService.getDashboardStats({ userId: ctx.user.id })
             return result
         }),
 

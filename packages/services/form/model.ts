@@ -80,5 +80,47 @@ export const getSubmissionsInput = z.object({
 })
 export type GetSubmissionsInputType = z.infer<typeof getSubmissionsInput>
 
-export const getSubmissionsOutput = z.array(formSubmissionOutput)
+export const getSubmissionsOutput = z.object({
+  submissions: z.array(formSubmissionOutput),
+  viewsCount: z.number(),
+  deviceViews: z.array(z.object({
+    device: z.string(),
+    count: z.number()
+  }))
+})
 export type GetSubmissionsOutputType = z.infer<typeof getSubmissionsOutput>
+
+export const recordViewInput = z.object({
+  formId: z.string().uuid().describe("Form ID"),
+  deviceType: z.string().describe("Device type (mobile, tablet, desktop)")
+})
+export type RecordViewInputType = z.infer<typeof recordViewInput>
+
+export const recordViewOutput = z.object({
+  success: z.boolean()
+})
+export type RecordViewOutputType = z.infer<typeof recordViewOutput>
+
+export const getDashboardStatsInput = z.object({
+  userId: z.string().uuid().describe("Owner user ID")
+})
+export type GetDashboardStatsInputType = z.infer<typeof getDashboardStatsInput>
+
+export const getDashboardStatsOutput = z.object({
+  totalSketches: z.number(),
+  publishedSketches: z.number(),
+  totalResponses: z.number(),
+  responsesThisMonth: z.number(),
+  recentForms: z.array(z.object({
+    id: z.string().uuid(),
+    title: z.string(),
+    createdAt: z.any(),
+    isPublished: z.boolean(),
+    submissionsCount: z.number()
+  })),
+  trends: z.array(z.object({
+    date: z.string(),
+    count: z.number()
+  }))
+})
+export type GetDashboardStatsOutputType = z.infer<typeof getDashboardStatsOutput>
