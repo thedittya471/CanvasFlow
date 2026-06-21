@@ -1,4 +1,4 @@
-import { db, eq, and, desc, inArray } from "@repo/database"
+import { db, eq, and, desc, inArray, gte } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
@@ -24,6 +24,24 @@ class FormService {
 
   public async createForm(payload: CreateFormInputType) {
     const { title, description, slug, ownerId } = await createFormInput.parseAsync(payload)
+
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    const existingForms = await db
+      .select()
+      .from(formsTable)
+      .where(
+        and(
+          eq(formsTable.ownerId, ownerId),
+          gte(formsTable.createdAt, startOfMonth)
+        )
+      )
+
+    if (existingForms.length >= 5) {
+      throw new Error("You have reached the limit of 5 forms per month for the Free tier.")
+    }
 
     const existingForm = await this.getFormBySlug(slug)
     if (existingForm) {

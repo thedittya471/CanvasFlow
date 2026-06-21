@@ -1,4 +1,4 @@
-import { db, eq, and, desc } from "@repo/database"
+import { db, eq, and, desc, inArray, gte } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
 import { formViewsTable } from "@repo/database/models/form-view"
@@ -25,6 +25,28 @@ class FormSubmissionService {
     }
     if (!form.isOpen) {
       throw new Error("Form is closed for submissions")
+    }
+
+    const ownerForms = await db.select({ id: formsTable.id }).from(formsTable).where(eq(formsTable.ownerId, form.ownerId))
+    const formIds = ownerForms.map(f => f.id)
+
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    if (formIds.length > 0) {
+      const monthSubmissions = await db
+        .select()
+        .from(formSubmissionsTable)
+        .where(
+          and(
+            inArray(formSubmissionsTable.formId, formIds),
+            gte(formSubmissionsTable.createdAt, startOfMonth)
+          )
+        )
+      if (monthSubmissions.length >= 100) {
+        throw new Error("This workspace has reached the limit of 100 submissions per month for the Free tier.")
+      }
     }
 
     const insertResult = await db.insert(formSubmissionsTable).values({
