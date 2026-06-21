@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Plus,
   Compass,
@@ -11,12 +11,15 @@ import {
   BarChart3,
   ChevronDown,
   X,
+  Wallet,
   Settings,
   Box,
-  LayoutTemplate
+  LayoutTemplate,
+  LogOut
 } from "lucide-react";
 
 import { useDashboard } from "~/providers/dashboard-provider";
+import { useGetLoggedInUserInfo, useSignOut } from "~/hooks/api/auth";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,15 +28,34 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { openCreateFormModal } = useDashboard();
+  const { userInfo } = useGetLoggedInUserInfo();
+  const { signOut } = useSignOut();
+
+  const handleLogout = () => {
+    signOut(undefined, {
+      onSuccess: () => {
+        router.push("/");
+      }
+    });
+  };
+
+  const fullName = userInfo?.fullName || "Dittya Maity";
+  const email = userInfo?.email || "dittyamity@gmail.com";
+  const initials = fullName
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "DM";
 
   const links = [
     { href: "/dashboard", label: "Studio", icon: Compass },
     { href: "/dashboard/sketches", label: "My Sketches", icon: PencilRuler },
     { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/dashboard/archive", label: "Archive", icon: Box },
     { href: "/dashboard/templates", label: "Templates", icon: LayoutTemplate },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings }
+    { href: "/dashboard/pricing", label: "Pricing", icon: Wallet }
   ];
 
   return (
@@ -84,19 +106,26 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       <div className="border-t border-[#0d2137]/15 dark:border-[#faf7f0]/15 pt-4 mt-auto">
-        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[#faf7f0]/40 dark:hover:bg-[#2c2c2e]/40 transition-colors cursor-pointer">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full border-2 border-[#0d2137] dark:border-[#faf7f0] bg-[#faf7f0] dark:bg-[#2c2c2e] flex items-center justify-center font-serif font-bold text-sm">
-              DM
+        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[#faf7f0]/40 dark:hover:bg-[#2c2c2e]/40 transition-colors">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 rounded-full border-2 border-[#0d2137] dark:border-[#faf7f0] bg-[#faf7f0] dark:bg-[#2c2c2e] flex items-center justify-center font-serif font-bold text-sm shrink-0">
+              {initials}
             </div>
             <div className="text-left overflow-hidden">
-              <p className="font-serif text-sm font-bold truncate">Dittya Maity</p>
-              <p className="text-[10px] text-[#0d2137]/60 dark:text-[#faf7f0]/60 truncate">dittyamity@gmail.com</p>
+              <p className="font-serif text-sm font-bold truncate text-[#0d2137] dark:text-[#faf7f0]">{fullName}</p>
+              <p className="text-[10px] text-[#0d2137]/60 dark:text-[#faf7f0]/60 truncate">{email}</p>
             </div>
           </div>
-          <ChevronDown className="size-4 text-[#0d2137]/60 dark:text-[#faf7f0]/60 shrink-0" />
+          <button 
+            onClick={handleLogout}
+            title="Log Out"
+            className="p-1.5 rounded hover:bg-red-500/10 text-[#0d2137]/60 dark:text-[#faf7f0]/60 hover:text-red-600 transition-colors cursor-pointer shrink-0"
+          >
+            <LogOut className="size-4.5" />
+          </button>
         </div>
       </div>
     </aside>
   );
 }
+

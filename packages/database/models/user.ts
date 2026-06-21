@@ -5,7 +5,10 @@ import {
   timestamp,
   boolean,
   text,
+  pgEnum,
 } from "drizzle-orm/pg-core";
+
+export const subscriptionTypeEnum = pgEnum("subscription_type", ["Free", "Pro", "Pro+", "Business"]);
 
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -17,6 +20,8 @@ export const usersTable = pgTable("users", {
 
   salt: text("salt"),
   password: text("password"),
+
+  plan: subscriptionTypeEnum("plan").notNull().default("Free"),
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),

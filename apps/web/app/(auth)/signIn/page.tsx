@@ -33,7 +33,7 @@ export default function SignInPage() {
     signInUserWithEmailAndPassword(data, {
       onSuccess: () => {
         toast.success("Signed in successfully! Welcome back.");
-        router.push("/");
+        router.push("/dashboard");
       },
       onError: (error) => {
         toast.error(error.message || "Failed to sign in. Please try again.");

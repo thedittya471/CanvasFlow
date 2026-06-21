@@ -34,7 +34,7 @@ export default function SignUpPage() {
     createUserWithEmailAndPassword(data, {
       onSuccess: () => {
         toast.success("Account created successfully! Welcome to the Studio.");
-        router.push("/signIn");
+        router.push("/dashboard");
       },
       onError: (error) => {
         toast.error(error.message || "Failed to create account. Please try again.");

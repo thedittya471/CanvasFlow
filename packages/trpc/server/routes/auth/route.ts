@@ -8,10 +8,12 @@ import {
   signInInputModel,
   signInOutputModel,
   SignInUserWithEmailAndPasswordInputModel,
-  SignInUserWithEmailAndPasswordOutputModel
+  SignInUserWithEmailAndPasswordOutputModel,
+  signOutInputModel,
+  signOutOutputModel
 } from "./model";
 import { userService } from "../../services";
-import { getAuthenticationCookie, setAuthenticationCookie } from "../../utils/cookie";
+import { getAuthenticationCookie, setAuthenticationCookie, clearAuthenticationCookie } from "../../utils/cookie";
 import { SignInUserWithEmailAndPasswordInput } from "@repo/services/user/model";
 import { usersTable } from "../../../../database/models/user";
 
@@ -81,5 +83,20 @@ export const authRouter = router({
         email,
         fullName
       }
+    }),
+
+  signOut: publicProcedure.meta({
+    openapi: {
+      method: "POST",
+      path: getPath("/signOut"),
+      tags: TAGS,
+    }
+  })
+    .input(signOutInputModel)
+    .output(signOutOutputModel)
+    .mutation(async ({ ctx }) => {
+      clearAuthenticationCookie(ctx)
+      return { success: true }
     })
 });
+

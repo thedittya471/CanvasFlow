@@ -50,6 +50,13 @@
       "when": 1782040273998,
       "tag": "0006_nifty_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782060892108,
+      "tag": "0007_green_mentallo",
+      "breakpoints": true
     }
   ]
 }

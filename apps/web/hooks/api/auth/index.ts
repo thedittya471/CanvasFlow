@@ -82,4 +82,31 @@ export const useGetLoggedInUserInfo = () => {
         status,
         failureCount
     }
-}   
+}
+
+export const useSignOut = () => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: signOutAsync,
+        mutate: signOut,
+        error,
+        isPending,
+        isSuccess,
+        status
+    } = trpc.auth.signOut.useMutation({
+        onSuccess: async () => {
+            utils.auth.getLoggedInUserInfo.setData(undefined, undefined)
+        }
+    })
+
+    return {
+        signOutAsync,
+        signOut,
+        error,
+        isPending,
+        isSuccess,
+        status
+    }
+}
+   

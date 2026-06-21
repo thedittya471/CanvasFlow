@@ -38,3 +38,9 @@ export const getLoggedInUserInfoInputOutputModel = z.object({
 
 export type GetLoggedInUserInfoInputModelType = z.infer<typeof getLoggedInUserInfoInputModel>
 export type GetLoggedInUserInfoInputOutputModelType = z.infer<typeof getLoggedInUserInfoInputOutputModel>
+
+export const signOutInputModel = z.object({}).optional()
+export const signOutOutputModel = z.object({
+    success: z.boolean()
+})
+
