@@ -12,7 +12,11 @@ import {
     deleteFormFieldInputModel,
     deleteFormFieldOutputModel,
     getFormFieldInputModel,
-    getFormFieldOutputModel
+    getFormFieldOutputModel,
+    getFormInputModel,
+    getFormOutputModel,
+    listFormFieldsInputModel,
+    listFormFieldsOutputModel
 } from "./model";
 import { formService, formFieldService } from "../../services";
 
@@ -115,6 +119,36 @@ export const formRouter = router({
         .output(getFormFieldOutputModel)
         .query(async ({ input }) => {
             const result = await formFieldService.getFormField(input)
+            return result
+        }),
+
+    getForm: authenticatedProcedure.meta({
+        openapi: {
+            method: "GET",
+            path: getPath("/getForm/{id}"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(getFormInputModel)
+        .output(getFormOutputModel)
+        .query(async ({ input }) => {
+            const result = await formService.getForm(input)
+            return result
+        }),
+
+    listFormFields: authenticatedProcedure.meta({
+        openapi: {
+            method: "GET",
+            path: getPath("/listFormFields/{formId}"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(listFormFieldsInputModel)
+        .output(listFormFieldsOutputModel)
+        .query(async ({ input }) => {
+            const result = await formFieldService.listFormFields(input)
             return result
         })
 });

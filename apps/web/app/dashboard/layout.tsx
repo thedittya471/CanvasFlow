@@ -7,6 +7,7 @@ import { Menu, X, Compass, Lock, Sparkles } from "lucide-react";
 import { DashboardProvider } from "~/providers/dashboard-provider";
 import { useCreateForm } from "~/hooks/api/form";
 import { toast } from "sonner";
+import { useRouter, usePathname } from "next/navigation";
 
 const ebGaramond = EB_Garamond({
   subsets: ["latin"],
@@ -19,8 +20,12 @@ const caveat = Caveat({
 });
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  
+  const isBuilderPage = pathname.includes("/dashboard/sketches/") && pathname !== "/dashboard/sketches";
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -49,12 +54,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     createForm(
       { title, description: description || undefined, slug },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           toast.success("Blueprint created successfully!");
           setCreateModalOpen(false);
           setTitle("");
           setDescription("");
           setSlug("");
+          router.push(`/dashboard/sketches/${data.id}`);
         },
         onError: (err) => {
           toast.error(err.message || "Failed to create blueprint sketch.");
@@ -62,6 +68,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     );
   };
+
+  if (isBuilderPage) {
+    return (
+      <div className={`${ebGaramond.variable} ${caveat.variable} font-sans min-h-screen bg-[#faf7f0] dark:bg-[#121212] text-[#0d2137] dark:text-[#faf7f0] transition-colors duration-300`}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <DashboardProvider value={{ openCreateFormModal: () => setCreateModalOpen(true) }}>

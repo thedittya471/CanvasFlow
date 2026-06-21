@@ -8,7 +8,9 @@ import {
     deleteFormFieldInput,
     type DeleteFormFieldInputType,
     getFormFieldInput,
-    type GetFormFieldInputType
+    type GetFormFieldInputType,
+    listFormFieldsInput,
+    type ListFormFieldsInputType
 } from "./model"
 
 class FormFieldService {
@@ -114,6 +116,17 @@ class FormFieldService {
         }
 
         return field
+    }
+
+    public async listFormFields(payload: ListFormFieldsInputType) {
+        const { formId } = await listFormFieldsInput.parseAsync(payload)
+
+        const result = await db.select()
+            .from(formFieldsTable)
+            .where(eq(formFieldsTable.formId, formId))
+            .orderBy(formFieldsTable.index)
+
+        return result
     }
 }
 

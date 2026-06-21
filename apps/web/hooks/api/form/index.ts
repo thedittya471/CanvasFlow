@@ -176,3 +176,52 @@ export const useGetFormField = (id: string) => {
     }
 }
 
+export const useGetForm = (id: string) => {
+    const {
+        data: form,
+        error,
+        failureCount,
+        isError,
+        isSuccess,
+        status,
+        isLoading,
+        refetch
+    } = trpc.form.getForm.useQuery({ id })
+
+    return {
+        form,
+        error,
+        isError,
+        isSuccess,
+        status,
+        failureCount,
+        isLoading,
+        refetch
+    }
+}
+
+export const useListFormFields = (formId: string) => {
+    const {
+        data: fields,
+        error,
+        failureCount,
+        isError,
+        isSuccess,
+        status,
+        isLoading,
+        refetch
+    } = trpc.form.listFormFields.useQuery({ formId })
+
+    return {
+        fields,
+        error,
+        isError,
+        isSuccess,
+        status,
+        failureCount,
+        isLoading,
+        refetch
+    }
+}
+
+

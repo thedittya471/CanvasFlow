@@ -86,3 +86,12 @@ export const getFormFieldOutput = z.object({
 
 export type GetFormFieldInputType = z.infer<typeof getFormFieldInput>
 export type GetFormFieldOutputType = z.infer<typeof getFormFieldOutput>
+
+export const listFormFieldsInput = z.object({
+    formId: z.string().uuid().describe("ID of the parent form")
+})
+export type ListFormFieldsInputType = z.infer<typeof listFormFieldsInput>
+
+export const listFormFieldsOutput = z.array(getFormFieldOutput)
+export type ListFormFieldsOutputType = z.infer<typeof listFormFieldsOutput>
+

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import {
   Search,
   ChevronDown,
@@ -290,17 +291,17 @@ export default function SketchesPage() {
                 <div className="relative z-10 flex gap-2 mt-5">
                   {isPublished ? (
                     <>
-                      <button className="flex-1 bg-[#0d2137] dark:bg-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] text-[#faf7f0] dark:text-[#0d2137] border border-[#0d2137] dark:border-[#b9c9df] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
+                      <Link href={`/dashboard/sketches/${form.id}`} className="flex-1 bg-[#0d2137] dark:bg-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] text-[#faf7f0] dark:text-[#0d2137] border border-[#0d2137] dark:border-[#b9c9df] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
                         Open Sketch
-                      </button>
+                      </Link>
                       <button className="border border-[#0d2137]/20 dark:border-white/20 hover:border-[#0d2137] dark:hover:border-white text-[#0d2137] dark:text-[#faf7f0] p-2 rounded-md transition-colors cursor-pointer">
                         <Share2 className="size-3.5" />
                       </button>
                     </>
                   ) : (
-                    <button className="w-full bg-[#3b5e82] hover:bg-[#4a729c] text-white border border-[#3b5e82] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
+                    <Link href={`/dashboard/sketches/${form.id}`} className="w-full bg-[#3b5e82] hover:bg-[#4a729c] text-white border border-[#3b5e82] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
                       Continue Drawing
-                    </button>
+                    </Link>
                   )}
                 </div>
               </div>

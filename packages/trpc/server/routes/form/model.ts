@@ -41,5 +41,13 @@ export {
     deleteFormFieldInput as deleteFormFieldInputModel,
     deleteFormFieldOutput as deleteFormFieldOutputModel,
     getFormFieldInput as getFormFieldInputModel,
-    getFormFieldOutput as getFormFieldOutputModel
+    getFormFieldOutput as getFormFieldOutputModel,
+    listFormFieldsInput as listFormFieldsInputModel,
+    listFormFieldsOutput as listFormFieldsOutputModel
 } from "@repo/services/form-field/model"
+
+export {
+    getFormInput as getFormInputModel,
+    getFormOutput as getFormOutputModel
+} from "@repo/services/form/model"
+

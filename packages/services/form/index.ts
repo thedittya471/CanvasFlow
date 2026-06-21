@@ -1,12 +1,23 @@
 import { db, eq } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
-import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType } from "./model"
+import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType } from "./model"
 
 class FormService {
   private async getFormBySlug(slug: string) {
     const result = await db.select().from(formsTable).where(eq(formsTable.slug, slug))
     if (!result || result.length === 0) return null
     return result[0]
+  }
+
+  public async getForm(payload: GetFormInputType) {
+    const { id } = await getFormInput.parseAsync(payload)
+
+    const result = await db.select().from(formsTable).where(eq(formsTable.id, id))
+    const form = result[0]
+    if (!form) {
+      throw new Error("Form not found")
+    }
+    return form
   }
 
   public async createForm(payload: CreateFormInputType) {
