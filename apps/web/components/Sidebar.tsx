@@ -11,13 +11,10 @@ import {
   BarChart3,
   ChevronDown,
   X,
-  Sun,
-  Moon,
   Settings,
   Box,
   LayoutTemplate
 } from "lucide-react";
-import { useTheme } from "next-themes";
 
 import { useDashboard } from "~/providers/dashboard-provider";
 
@@ -29,14 +26,6 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { openCreateFormModal } = useDashboard();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && theme === "dark";
 
   const links = [
     { href: "/dashboard", label: "Studio", icon: Compass },
@@ -61,15 +50,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {mounted && (
-              <button
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="p-1.5 rounded border border-[#0d2137]/15 dark:border-[#faf7f0]/15 hover:bg-[#faf7f0]/50 dark:hover:bg-[#2c2c2e]/50 text-[#0d2137] dark:text-[#faf7f0] transition-colors cursor-pointer"
-                title="Toggle Theme"
-              >
-                {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-              </button>
-            )}
             <button className="md:hidden p-1 text-[#0d2137] dark:text-[#faf7f0]" onClick={onClose}>
               <X className="size-5" />
             </button>
