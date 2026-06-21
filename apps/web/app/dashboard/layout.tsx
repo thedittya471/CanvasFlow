@@ -24,6 +24,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [activePlan, setActivePlan] = useState("Free");
+
+  React.useEffect(() => {
+    const updatePlan = () => {
+      setActivePlan(localStorage.getItem("cf-active-plan") || "Free");
+    };
+    updatePlan();
+    window.addEventListener("activePlanChanged", updatePlan);
+    window.addEventListener("storage", updatePlan);
+    return () => {
+      window.removeEventListener("activePlanChanged", updatePlan);
+      window.removeEventListener("storage", updatePlan);
+    };
+  }, []);
   
   const isBuilderPage = pathname.includes("/dashboard/sketches/") && pathname !== "/dashboard/sketches";
   
@@ -120,7 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="text-xs font-serif italic text-[#0d2137]/60 dark:text-[#faf7f0]/60">Studio Report 2026</span>
                 <div className="flex items-center gap-1.5 px-3 py-1 bg-[#d4af37]/15 text-[#8e6e53] dark:text-[#d4af37] border border-[#d4af37]/35 rounded-full text-[10px] font-serif font-bold uppercase tracking-wider">
                   <Sparkles className="size-3 fill-current" />
-                  <span>Pro Workspace</span>
+                  <span>{activePlan} Workspace</span>
                 </div>
               </div>
             </div>
