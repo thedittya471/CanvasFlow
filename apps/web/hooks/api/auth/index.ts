@@ -14,7 +14,10 @@ export const useSignUp = () => {
         isSuccess,
         status
     } = trpc.auth.createUserWithEmailAndPassword.useMutation({
-        onSuccess: async () => {
+        onSuccess: async (data) => {
+            if (data?.token) {
+                document.cookie = `authentication-token=${data.token}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+            }
             await utils.auth.getLoggedInUserInfo.invalidate()
         }
     })
@@ -46,7 +49,10 @@ export const useSignIn = () => {
         isSuccess,
         status
     } = trpc.auth.signInUserWithEmailAndPassword.useMutation({
-        onSuccess: async () => {
+        onSuccess: async (data) => {
+            if (data?.token) {
+                document.cookie = `authentication-token=${data.token}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+            }
             await utils.auth.getLoggedInUserInfo.invalidate()
         }
     })
@@ -96,6 +102,7 @@ export const useSignOut = () => {
         status
     } = trpc.auth.signOut.useMutation({
         onSuccess: async () => {
+            document.cookie = "authentication-token=; path=/; max-age=0; SameSite=Lax";
             utils.auth.getLoggedInUserInfo.setData(undefined, undefined)
         }
     })
