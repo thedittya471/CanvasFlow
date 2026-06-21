@@ -51,7 +51,8 @@ import {
   useListFormFields, 
   useCreateFormField, 
   useUpdateFormField, 
-  useDeleteFormField 
+  useDeleteFormField,
+  usePublishForm
 } from "~/hooks/api/form";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
@@ -247,6 +248,7 @@ function BuilderCanvas() {
   const { createFormField } = useCreateFormField();
   const { updateFormField } = useUpdateFormField();
   const { deleteFormField } = useDeleteFormField();
+  const { publishForm, isPending: publishPending } = usePublishForm();
 
   // Local React Flow Nodes / Edges State
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -564,8 +566,24 @@ function BuilderCanvas() {
             <span>Preview</span>
           </button>
 
-          <button className="bg-[#0d2137] dark:bg-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] text-white dark:text-[#0d2137] border border-[#0d2137] dark:border-[#b9c9df] py-1.5 px-4 text-[10px] uppercase font-serif font-bold tracking-widest rounded transition-all cursor-pointer">
-            Publish
+          <button 
+            onClick={() => {
+              publishForm(
+                { id: formId },
+                {
+                  onSuccess: () => {
+                    toast.success("Form published successfully");
+                  },
+                  onError: (err) => {
+                    toast.error(err.message || "Failed to publish form");
+                  }
+                }
+              );
+            }}
+            disabled={publishPending}
+            className="bg-[#0d2137] dark:bg-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] text-white dark:text-[#0d2137] border border-[#0d2137] dark:border-[#b9c9df] py-1.5 px-4 text-[10px] uppercase font-serif font-bold tracking-widest rounded transition-all cursor-pointer disabled:opacity-50"
+          >
+            {publishPending ? "Publishing..." : "Publish"}
           </button>
         </div>
       </header>
@@ -1019,7 +1037,7 @@ function BuilderCanvas() {
                 <h4 className="text-xs font-serif font-bold text-[#0d2137] dark:text-white uppercase tracking-wider">
                   No Selection
                 </h4>
-                <p className="text-[10px] text-[#0d2137]/50 dark:text-white/40 leading-relaxed font-serif italic max-w-[180px] mx-auto mt-1">
+                <p className="text-[10px] text-[#0d2137]/50 dark:text-white/40 leading-relaxed font-serif italic max-w-45 mx-auto mt-1">
                   Click on any node to view and configure its blueprint parameters.
                 </p>
               </div>
