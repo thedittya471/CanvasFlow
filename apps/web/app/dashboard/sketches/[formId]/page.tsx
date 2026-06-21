@@ -568,6 +568,18 @@ function BuilderCanvas() {
 
           <button 
             onClick={() => {
+              const url = `${window.location.origin}/forms/${formId}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Share link copied to clipboard!");
+            }}
+            className="flex items-center gap-1.5 bg-[#faf7f0]/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
+          >
+            <Share2 className="size-3.5" />
+            <span>Share</span>
+          </button>
+
+          <button 
+            onClick={() => {
               publishForm(
                 { id: formId },
                 {
