@@ -20,6 +20,7 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
 const allowedOrigins = [
   "http://localhost:3000",
   "https://canvas-flow-web.vercel.app",
+  "https://canvas-flow-web-git-main-dittya-maitys-projects.vercel.app"
 ];
 
 app.use(

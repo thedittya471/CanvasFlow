@@ -20,6 +20,7 @@ export const createTRPCHttpBatchClientClient = (opts?: CreateTRPCHttpBatchClient
       const token = match ? match[2] : null;
 
       const headers = new Headers(options?.headers);
+      headers.set("ngrok-skip-browser-warning", "true");
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
