@@ -15,6 +15,8 @@ import {
     getFormFieldOutputModel,
     getFormInputModel,
     getFormOutputModel,
+    getFormByIdOutputModel,
+    publishFormOutputModel,
     listFormFieldsInputModel,
     listFormFieldsOutputModel
 } from "./model";
@@ -149,6 +151,36 @@ export const formRouter = router({
         .output(listFormFieldsOutputModel)
         .query(async ({ input }) => {
             const result = await formFieldService.listFormFields(input)
+            return result
+        }),
+
+    getFormById: publicProcedure.meta({
+        openapi: {
+            method: "GET",
+            path: getPath("/getFormById/{id}"),
+            tags: TAGS,
+            protect: false
+        }
+    })
+        .input(getFormInputModel)
+        .output(getFormByIdOutputModel)
+        .query(async ({ input }) => {
+            const result = await formService.getFormById(input)
+            return result
+        }),
+
+    publishForm: authenticatedProcedure.meta({
+        openapi: {
+            method: "POST",
+            path: getPath("/publishForm"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(getFormInputModel)
+        .output(publishFormOutputModel)
+        .mutation(async ({ input, ctx }) => {
+            const result = await formService.publishForm({ ...input, ownerId: ctx.user.id })
             return result
         })
 });

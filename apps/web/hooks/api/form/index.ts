@@ -224,4 +224,60 @@ export const useListFormFields = (formId: string) => {
     }
 }
 
+export const useGetFormById = (id: string) => {
+    const {
+        data: form,
+        error,
+        failureCount,
+        isError,
+        isSuccess,
+        status,
+        isLoading,
+        refetch
+    } = trpc.form.getFormById.useQuery({ id })
+
+    return {
+        form,
+        error,
+        isError,
+        isSuccess,
+        status,
+        failureCount,
+        isLoading,
+        refetch
+    }
+}
+
+export const usePublishForm = () => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: publishFormAsync,
+        mutate: publishForm,
+        error,
+        failureCount,
+        isError,
+        isIdle,
+        isPending,
+        isSuccess,
+        status
+    } = trpc.form.publishForm.useMutation({
+        onSuccess: async () => {
+            await utils.form.invalidate()
+        }
+    })
+
+    return {
+        publishFormAsync,
+        publishForm,
+        error,
+        isError,
+        isIdle,
+        isPending,
+        isSuccess,
+        status,
+        failureCount
+    }
+}
+
 

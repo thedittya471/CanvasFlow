@@ -48,6 +48,8 @@ export {
 
 export {
     getFormInput as getFormInputModel,
-    getFormOutput as getFormOutputModel
+    getFormOutput as getFormOutputModel,
+    getFormByIdOutput as getFormByIdOutputModel,
+    publishFormOutput as publishFormOutputModel
 } from "@repo/services/form/model"
 

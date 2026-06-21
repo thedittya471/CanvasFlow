@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { getFormFieldOutput } from '../form-field/model'
 
 export const createFormInput = z.object({
   title: z.string().min(1).max(150).describe("Title of the form"),
@@ -33,3 +34,13 @@ export const getFormOutput = z.object({
   publishedAt: z.any().nullable().optional(),
 })
 export type GetFormOutputType = z.infer<typeof getFormOutput>
+
+export const getFormByIdOutput = getFormOutput.extend({
+  fields: z.array(getFormFieldOutput)
+})
+export type GetFormByIdOutputType = z.infer<typeof getFormByIdOutput>
+
+export const publishFormOutput = z.object({
+  id: z.string().uuid().describe("ID of the published form")
+})
+export type PublishFormOutputType = z.infer<typeof publishFormOutput>

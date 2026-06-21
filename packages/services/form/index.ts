@@ -1,5 +1,6 @@
-import { db, eq } from "@repo/database"
+import { db, eq, and } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
+import { formFieldsTable } from "@repo/database/models/form-field"
 import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType } from "./model"
 
 class FormService {
@@ -63,6 +64,58 @@ class FormService {
     }).from(formsTable).where(eq(formsTable.ownerId, userId))
 
     return forms
+  }
+
+  public async getFormById(payload: GetFormInputType) {
+    const { id } = await getFormInput.parseAsync(payload)
+
+    const rows = await db
+      .select({
+        form: formsTable,
+        field: formFieldsTable,
+      })
+      .from(formsTable)
+      .leftJoin(formFieldsTable, eq(formsTable.id, formFieldsTable.formId))
+      .where(eq(formsTable.id, id))
+      .orderBy(formFieldsTable.index)
+
+    const firstRow = rows[0]
+    if (!firstRow) {
+      throw new Error("Form not found")
+    }
+
+    const form = firstRow.form
+    const fields = rows
+      .map((r) => r.field)
+      .filter((f): f is NonNullable<typeof f> => !!(f && f.id))
+
+    return {
+      ...form,
+      fields,
+    }
+  }
+
+  public async publishForm(payload: GetFormInputType & { ownerId: string }) {
+    const { id } = await getFormInput.parseAsync(payload)
+
+    const result = await db.update(formsTable)
+      .set({
+        isPublished: true,
+        publishedAt: new Date()
+      })
+      .where(and(eq(formsTable.id, id), eq(formsTable.ownerId, payload.ownerId)))
+      .returning({
+        id: formsTable.id
+      })
+
+    const firstResult = result[0]
+    if (!firstResult) {
+      throw new Error("Form not found or unauthorized")
+    }
+
+    return {
+      id: firstResult.id
+    }
   }
 }
 
