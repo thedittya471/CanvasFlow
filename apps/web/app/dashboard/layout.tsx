@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { EB_Garamond, Caveat } from "next/font/google";
+import Image from "next/image";
 import Sidebar from "~/components/Sidebar";
 import { Menu, X, Compass, Lock, Sparkles } from "lucide-react";
 import { DashboardProvider } from "~/providers/dashboard-provider";
@@ -98,9 +99,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between p-4 border-b border-[#0d2137]/15 dark:border-[#faf7f0]/15 bg-[#faf7f0] dark:bg-[#121212] z-40">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded border border-[#0d2137] dark:border-[#faf7f0] flex items-center justify-center font-serif font-bold bg-[#faf7f0] dark:bg-[#1c1c1e]">
-              CF
-            </div>
+            <Image
+              src="/logo-removebg-preview.png"
+              alt="CanvasFlow Logo"
+              width={40}
+              height={40}
+              className="rounded object-contain"
+            />
             <span className="font-serif font-semibold text-lg tracking-tight">CanvasFlow</span>
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 cursor-pointer">

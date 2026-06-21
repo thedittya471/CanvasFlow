@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ReactFlow,
   Background,
@@ -150,9 +151,13 @@ export default function LandingPage() {
       {/* Top Navbar */}
       <nav className="border-b-2 border-[#0d2137]/15 px-8 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#0d2137] flex items-center justify-center font-bold text-[#faf7f0]">
-            CF
-          </div>
+          <Image
+            src="/logo-removebg-preview.png"
+            alt="CanvasFlow Logo"
+            width={40}
+            height={40}
+            className="rounded-lg object-contain"
+          />
           <span className="font-serif font-bold text-lg tracking-tight">CanvasFlow</span>
         </div>
 
@@ -235,7 +240,13 @@ export default function LandingPage() {
           <div className="col-span-3 border-r-2 border-[#0d2137] bg-[#f3ebd8] p-4 flex flex-col justify-between">
             <div className="space-y-6 text-left">
               <div className="flex items-center gap-2 text-[#0d2137] font-serif font-bold text-xs">
-                <div className="w-5 h-5 rounded bg-[#faf8f5] border-2 border-[#0d2137] flex items-center justify-center text-[9px] text-[#0d2137] font-bold">CF</div>
+                <Image
+                  src="/logo-removebg-preview.png"
+                  alt="CanvasFlow Logo"
+                  width={28}
+                  height={28}
+                  className="rounded object-contain"
+                />
                 <span>CanvasFlow</span>
               </div>
               <div className="space-y-4">
@@ -516,9 +527,13 @@ export default function LandingPage() {
       <footer className="border-t border-[#0d2137]/15 py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#0d2137] flex items-center justify-center font-bold text-[#faf7f0] shadow-[2px_2px_0px_0px_#8e6e53]">
-              CF
-            </div>
+            <Image
+              src="/logo-removebg-preview.png"
+              alt="CanvasFlow Logo"
+              width={40}
+              height={40}
+              className="rounded-lg object-contain shadow-[2px_2px_0px_0px_#8e6e53]"
+            />
             <span className="font-serif font-bold text-sm text-[#0d2137]">CanvasFlow</span>
           </div>
           <p className="text-[10px] text-[#0d2137]/50 font-sans">

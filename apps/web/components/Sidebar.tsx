@@ -18,6 +18,7 @@ import {
   LogOut
 } from "lucide-react";
 
+import Image from "next/image";
 import { useDashboard } from "~/providers/dashboard-provider";
 import { useGetLoggedInUserInfo, useSignOut } from "~/hooks/api/auth";
 
@@ -63,9 +64,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg border-2 border-[#0d2137] dark:border-[#b9c9df] flex items-center justify-center font-serif font-bold bg-[#faf7f0] dark:bg-[#2c2c2e]">
-              CF
-            </div>
+            <Image
+              src="/logo-removebg-preview.png"
+              alt="CanvasFlow Logo"
+              width={44}
+              height={44}
+              className="rounded-lg object-contain"
+            />
             <div>
               <h1 className="font-serif font-semibold text-lg leading-tight tracking-tight text-[#0d2137] dark:text-white">CanvasFlow</h1>
               <p className="text-[9px] tracking-widest text-[#0d2137]/60 dark:text-[#faf7f0]/60 uppercase font-bold">Workspace</p>

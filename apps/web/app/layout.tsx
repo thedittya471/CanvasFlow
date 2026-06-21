@@ -15,6 +15,9 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "CanvasFlow",
   description: "Form Builder",
+  icons: {
+    icon: "/logo-removebg-preview.png",
+  },
 };
 
 export default function RootLayout({
