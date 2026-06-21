@@ -55,7 +55,14 @@ export function setAuthenticationCookie(ctx: TRPCContext, accessToken: string){
 }
 
 export function getAuthenticationCookie(ctx: TRPCContext){
-    return ctx.getCookie(AUTHENTICATION_COOKIE_NAME)
+    const cookie = ctx.getCookie(AUTHENTICATION_COOKIE_NAME)
+    if (cookie) return cookie
+
+    const authHeader = ctx.req?.headers?.authorization
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        return authHeader.substring(7)
+    }
+    return undefined
 }
 
 export function clearAuthenticationCookie(ctx: TRPCContext){
