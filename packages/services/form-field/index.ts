@@ -53,7 +53,7 @@ class FormFieldService {
             throw new Error("Failed to create form field")
         }
 
-        return {   
+        return {
             id: insertResult[0].id,
             labelKey,
             index
@@ -63,9 +63,28 @@ class FormFieldService {
     public async updateFormField(payload: UpdateFormFieldInputType) {
         const { id, label, placeholder, isRequired, index, type, options, description } = await updateFormFieldInput.parseAsync(payload)
 
+        const existingFieldResult = await db.select().from(formFieldsTable).where(eq(formFieldsTable.id, id))
+        const existingField = existingFieldResult[0]
+        if (!existingField) {
+            throw new Error("Form field not found")
+        }
+
+        let newLabelKey: string | undefined = undefined
+        const currentLabel = label !== undefined ? label : existingField.label
+        const isCurrentlyUntitledKey = existingField.labelKey.startsWith("untitled") || existingField.labelKey === "field"
+        const isNewCustomLabel = currentLabel !== "" && !currentLabel.toLowerCase().startsWith("untitled")
+
+        if (isCurrentlyUntitledKey && isNewCustomLabel) {
+            newLabelKey = currentLabel
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "") || "field"
+        }
+
         const updateResult = await db.update(formFieldsTable)
             .set({
                 ...(label !== undefined ? { label } : {}),
+                ...(newLabelKey !== undefined ? { labelKey: newLabelKey } : {}),
                 ...(placeholder !== undefined ? { placeholder } : {}),
                 ...(isRequired !== undefined ? { isRequired } : {}),
                 ...(index !== undefined ? { index } : {}),

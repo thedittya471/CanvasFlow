@@ -21,7 +21,7 @@ export const fieldTypeZodEnum = z.enum([
 
 export const createFormFieldInput = z.object({
     formId: z.string().uuid().describe("ID of the parent form"),
-    label: z.string().min(1, "Label is required").max(255, "Label is too long"),
+    label: z.string().max(255, "Label is too long"),
     placeholder: z.string().max(255).optional().nullable(),
     isRequired: z.boolean().default(false),
     index: z.union([z.number(), z.string()]).transform(val => String(val)).optional().describe("Fractional index for sorting"),
@@ -32,7 +32,7 @@ export const createFormFieldInput = z.object({
 
 export const updateFormFieldInput = z.object({
     id: z.string().uuid().describe("ID of the field to update"),
-    label: z.string().min(1, "Label cannot be empty").max(255).optional(),
+    label: z.string().max(255).optional(),
     placeholder: z.string().max(255).optional().nullable(),
     isRequired: z.boolean().optional(),
     index: z.union([z.number(), z.string()]).transform(val => String(val)).optional().describe("Fractional index for sorting"),

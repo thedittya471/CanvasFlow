@@ -3,13 +3,13 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ReactFlow, 
-  ReactFlowProvider, 
-  Background, 
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
   BackgroundVariant,
-  Controls, 
-  useNodesState, 
+  Controls,
+  useNodesState,
   useEdgesState,
   useReactFlow,
   Handle,
@@ -19,18 +19,18 @@ import {
   Edge
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { 
-  Type, 
-  AlignLeft, 
-  Mail, 
-  Binary, 
-  Phone, 
-  Link2, 
-  List, 
-  CheckSquare, 
-  Star, 
-  Calendar, 
-  Clock, 
+import {
+  Type,
+  AlignLeft,
+  Mail,
+  Binary,
+  Phone,
+  Link2,
+  List,
+  CheckSquare,
+  Star,
+  Calendar,
+  Clock,
   ToggleLeft,
   ChevronLeft,
   Settings,
@@ -46,11 +46,11 @@ import {
   Plus,
   Minus
 } from "lucide-react";
-import { 
-  useGetForm, 
-  useListFormFields, 
-  useCreateFormField, 
-  useUpdateFormField, 
+import {
+  useGetForm,
+  useListFormFields,
+  useCreateFormField,
+  useUpdateFormField,
   useDeleteFormField,
   usePublishForm
 } from "~/hooks/api/form";
@@ -97,7 +97,7 @@ const FormFieldNode = ({ data, selected }: { data: any; selected: boolean }) => 
 
   return (
     <div className={`w-72 bg-[#faf8f5] dark:bg-[#1c1c1e] border-2 rounded transition-all select-none duration-200 cursor-pointer shadow-[3px_3px_0px_0px_rgba(13,33,55,0.05)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.02)] ${selected ? 'border-[#3b5e82] dark:border-[#d4af37] ring-1 ring-[#3b5e82]/20 dark:ring-[#d4af37]/20 shadow-[5px_5px_0px_0px_#3b5e82] dark:shadow-[5px_5px_0px_0px_#d4af37]' : 'border-[#0d2137]/15 dark:border-white/10 hover:border-[#0d2137]/30 dark:hover:border-white/20'}`}>
-      
+
       {/* Top Dotted DND Handle Indicator */}
       <div className="h-1.5 bg-cover opacity-30 border-b border-[#0d2137]/10 dark:border-white/10" style={{ backgroundImage: "radial-gradient(#0d2137 1px, transparent 1px)", backgroundSize: "4px 4px" }} />
 
@@ -118,9 +118,9 @@ const FormFieldNode = ({ data, selected }: { data: any; selected: boolean }) => 
         {/* Node Body */}
         <div className="space-y-1.5">
           <h4 className="font-serif font-bold text-[#0d2137] dark:text-white text-[14px] leading-snug line-clamp-2">
-            {field.label}
+            {field.label || `Untitled ${field.type.replace("_", " ").toLowerCase()}`}
           </h4>
-          
+
           {field.description && (
             <p className="text-[10px] text-[#0d2137]/50 dark:text-white/40 leading-relaxed font-serif italic">
               {field.description}
@@ -196,7 +196,7 @@ const FormFieldNode = ({ data, selected }: { data: any; selected: boolean }) => 
                 <span className={!(field.options as any)?.defaultValue ? "font-bold text-[#8e6e53] dark:text-[#d4af37]" : "opacity-50"}>
                   {(field.options as any)?.inactiveLabel || "No"}
                 </span>
-                
+
                 <div className={`relative inline-flex h-4.5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out ${(field.options as any)?.defaultValue ? 'bg-[#3b5e82] dark:bg-[#d4af37]' : 'bg-[#0d2137]/15 dark:bg-white/10'}`}>
                   <span className={`pointer-events-none inline-block size-3.5 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${(field.options as any)?.defaultValue ? 'translate-x-4.5' : 'translate-x-0'}`} />
                 </div>
@@ -215,15 +215,15 @@ const FormFieldNode = ({ data, selected }: { data: any; selected: boolean }) => 
       </div>
 
       {/* Handles */}
-      <Handle 
-        type="target" 
-        position={Position.Top} 
-        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }} 
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }}
       />
-      <Handle 
-        type="source" 
-        position={Position.Bottom} 
-        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }} 
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }}
       />
     </div>
   );
@@ -244,7 +244,7 @@ function BuilderCanvas() {
   // tRPC Hooks
   const { form, isLoading: formLoading } = useGetForm(formId);
   const { fields, isLoading: fieldsLoading } = useListFormFields(formId);
-  
+
   const { createFormField } = useCreateFormField();
   const { updateFormField } = useUpdateFormField();
   const { deleteFormField } = useDeleteFormField();
@@ -348,7 +348,7 @@ function BuilderCanvas() {
     createFormField(
       {
         formId,
-        label: defaultLabel,
+        label: "",
         type: type as any,
         isRequired: false,
         options: { position }
@@ -523,20 +523,20 @@ function BuilderCanvas() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-[#faf7f0] dark:bg-[#121212] font-sans transition-colors duration-300">
-      
+
       {/* Dynamic Top Bar Header */}
       <header className="h-16 px-6 border-b border-[#0d2137]/15 dark:border-white/10 flex items-center justify-between bg-white dark:bg-[#1c1c1e] z-10">
-        
+
         {/* Left Actions */}
         <div className="flex items-center gap-4">
-          <Link 
-            href="/dashboard/sketches" 
+          <Link
+            href="/dashboard/sketches"
             className="flex items-center gap-1 text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137]/65 dark:text-white/65 hover:text-[#0d2137] dark:hover:text-white transition-colors cursor-pointer pr-3 border-r border-[#0d2137]/15 dark:border-white/10"
           >
             <ChevronLeft className="size-4" />
             <span>Catalog</span>
           </Link>
-          
+
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-serif font-bold text-[#0d2137] dark:text-white leading-none">
@@ -566,7 +566,7 @@ function BuilderCanvas() {
             <span>Preview</span>
           </button>
 
-          <button 
+          <button
             onClick={() => {
               const url = `${window.location.origin}/forms/${formId}`;
               navigator.clipboard.writeText(url);
@@ -578,7 +578,7 @@ function BuilderCanvas() {
             <span>Share</span>
           </button>
 
-          <button 
+          <button
             onClick={() => {
               publishForm(
                 { id: formId },
@@ -602,7 +602,7 @@ function BuilderCanvas() {
 
       {/* Main Workspace split */}
       <div className="flex-1 flex overflow-hidden">
-        
+
         {/* Left Side Panel (FIELDS list) */}
         <aside className="w-64 bg-white dark:bg-[#1c1c1e] border-r border-[#0d2137]/15 dark:border-white/10 flex flex-col">
           <div className="p-4 border-b border-[#0d2137]/10 dark:border-white/10">
@@ -643,7 +643,7 @@ function BuilderCanvas() {
         </aside>
 
         {/* Middle Canvas Area */}
-        <main 
+        <main
           ref={reactFlowWrapper}
           className="flex-1 h-full relative"
           onDragOver={onDragOver}
@@ -668,37 +668,37 @@ function BuilderCanvas() {
             proOptions={{ hideAttribution: true }}
           >
             {/* Custom Grid Background styling */}
-            <Background 
+            <Background
               variant={BackgroundVariant.Dots}
-              color={isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(13, 33, 55, 0.3)"} 
-              gap={16} 
+              color={isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(13, 33, 55, 0.3)"}
+              gap={16}
               size={1.5}
             />
 
             {/* Custom Controls panel styled to match design */}
             <Panel position="bottom-left" className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137]/15 dark:border-white/10 rounded-md p-1 shadow-[2px_2px_0px_0px_rgba(13,33,55,0.05)] flex flex-col gap-1 z-10">
-              <button 
+              <button
                 onClick={() => zoomIn()}
                 title="Zoom In"
                 className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center"
               >
                 <Plus className="size-3.5" />
               </button>
-              <button 
+              <button
                 onClick={() => zoomOut()}
                 title="Zoom Out"
                 className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center"
               >
                 <Minus className="size-3.5" />
               </button>
-              <button 
+              <button
                 onClick={() => fitView({ duration: 400 })}
                 title="Fit View"
                 className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center"
               >
                 <Maximize2 className="size-3.5" />
               </button>
-              <button 
+              <button
                 onClick={() => setIsLocked(!isLocked)}
                 title={isLocked ? "Unlock Canvas" : "Lock Canvas"}
                 className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center border-t border-[#0d2137]/10 dark:border-white/10 pt-1.5 mt-0.5"
@@ -719,7 +719,7 @@ function BuilderCanvas() {
             <>
               {/* Active selection settings */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                
+
                 {/* Section Header */}
                 <div className="flex justify-between items-center pb-4 border-b border-[#0d2137]/10 dark:border-white/10">
                   <div className="flex items-center gap-2">
@@ -781,7 +781,7 @@ function BuilderCanvas() {
                     <h4 className="text-xs font-serif font-bold text-[#0d2137] dark:text-white">Required Input</h4>
                     <p className="text-[9px] text-[#0d2137]/50 dark:text-white/40 font-serif italic leading-none mt-0.5">Require responders to answer</p>
                   </div>
-                  
+
                   <button
                     onClick={() => handleRequiredChange(!isRequired)}
                     className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${isRequired ? 'bg-[#3b5e82] dark:bg-[#d4af37]' : 'bg-[#0d2137]/10 dark:bg-white/10'}`}
@@ -966,7 +966,7 @@ function BuilderCanvas() {
                     <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
                       Toggle Configuration
                     </label>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-serif text-[#0d2137]/70 dark:text-white/60 font-bold">Default Value</span>
                       <button
@@ -1030,7 +1030,7 @@ function BuilderCanvas() {
 
               {/* Delete button wrapper */}
               <div className="p-6 border-t border-[#0d2137]/10 dark:border-white/10 bg-[#faf8f5]/30">
-                <button 
+                <button
                   onClick={handleDeleteField}
                   className="w-full flex items-center justify-center gap-2 p-2.5 border border-red-500/25 hover:border-red-500/50 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 rounded text-xs font-serif font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
