@@ -8,11 +8,13 @@ const ONE_MONTH = 30 * ONE_DAY
 const ONE_YEAR = 12 * ONE_MONTH
 
 
+const isProd = (process.env.NODE_ENV as string) === "production" || (process.env.NODE_ENV as string) === "prod";
+
 const defaultCookieOptions: CookieOptions = {
     path: '/',
     httpOnly: true,
-    secure: false,
-    sameSite: "strict",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
     maxAge: ONE_YEAR
 }
 
@@ -38,8 +40,8 @@ export function clearCookieFactory(res: Response) {
         res.clearCookie(name, {
             path: '/',
             httpOnly: true,
-            secure: false,
-            sameSite: "strict"
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax"
         })
     }
 }
