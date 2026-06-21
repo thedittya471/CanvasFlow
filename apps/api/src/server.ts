@@ -21,7 +21,7 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
 if (env.NODE_ENV !== "prod") {
   app.use(
     cors({
-      origin: "http://localhost:3000",
+      origin: "https://canvas-flow-web.vercel.app",
       credentials: true,
     }),
   );
