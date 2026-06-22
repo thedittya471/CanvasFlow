@@ -32,24 +32,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const { openCreateFormModal } = useDashboard();
   const { userInfo } = useGetLoggedInUserInfo();
-  const { signOut } = useSignOut();
+  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
+  const { signOutAsync } = useSignOut();
 
-  const handleLogout = () => {
-    signOut(undefined, {
-      onSuccess: () => {
-        router.push("/");
-      }
-    });
+  const handleLogout = async () => {
+    await signOutAsync();
+    window.location.href = "/";
   };
 
-  const fullName = userInfo?.fullName || "Dittya Maity";
-  const email = userInfo?.email || "dittyamity@gmail.com";
+  const isUserLoading = !userInfo;
+  const fullName = userInfo?.fullName || "";
+  const email = userInfo?.email || "";
   const initials = fullName
     .split(" ")
+    .filter(Boolean)
     .map(n => n[0])
     .join("")
     .slice(0, 2)
-    .toUpperCase() || "DM";
+    .toUpperCase();
 
   const links = [
     { href: "/dashboard", label: "Studio", icon: Compass },
@@ -60,7 +60,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   ];
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-screen bg-[#f3ebd8] dark:bg-[#1a1a1c] border-r-2 border-[#0d2137] dark:border-[#2a2a2a] flex flex-col justify-between p-6 transform transition-transform duration-300 md:translate-x-0 md:sticky md:top-0 overflow-hidden ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+    <>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-screen bg-[#f3ebd8] dark:bg-[#1a1a1c] border-r-2 border-[#0d2137] dark:border-[#2a2a2a] flex flex-col justify-between p-6 transform transition-transform duration-300 md:translate-x-0 md:sticky md:top-0 overflow-hidden ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -113,16 +114,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div className="border-t border-[#0d2137]/15 dark:border-[#faf7f0]/15 pt-4 mt-auto">
         <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[#faf7f0]/40 dark:hover:bg-[#2c2c2e]/40 transition-colors">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-full border-2 border-[#0d2137] dark:border-[#faf7f0] bg-[#faf7f0] dark:bg-[#2c2c2e] flex items-center justify-center font-serif font-bold text-sm shrink-0">
-              {initials}
-            </div>
-            <div className="text-left overflow-hidden">
-              <p className="font-serif text-sm font-bold truncate text-[#0d2137] dark:text-[#faf7f0]">{fullName}</p>
-              <p className="text-[10px] text-[#0d2137]/60 dark:text-[#faf7f0]/60 truncate">{email}</p>
-            </div>
+            {isUserLoading ? (
+              <>
+                <div className="w-10 h-10 rounded-full bg-[#0d2137]/10 dark:bg-[#faf7f0]/10 animate-pulse shrink-0" />
+                <div className="space-y-1.5 overflow-hidden">
+                  <div className="h-3.5 w-24 bg-[#0d2137]/10 dark:bg-[#faf7f0]/10 rounded animate-pulse" />
+                  <div className="h-2.5 w-32 bg-[#0d2137]/10 dark:bg-[#faf7f0]/10 rounded animate-pulse" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-10 h-10 rounded-full border-2 border-[#0d2137] dark:border-[#faf7f0] bg-[#faf7f0] dark:bg-[#2c2c2e] flex items-center justify-center font-serif font-bold text-sm shrink-0">
+                  {initials}
+                </div>
+                <div className="text-left overflow-hidden">
+                  <p className="font-serif text-sm font-bold truncate text-[#0d2137] dark:text-[#faf7f0]">{fullName}</p>
+                  <p className="text-[10px] text-[#0d2137]/60 dark:text-[#faf7f0]/60 truncate">{email}</p>
+                </div>
+              </>
+            )}
           </div>
           <button 
-            onClick={handleLogout}
+            onClick={() => setShowConfirmLogout(true)}
             title="Log Out"
             className="p-1.5 rounded hover:bg-red-500/10 text-[#0d2137]/60 dark:text-[#faf7f0]/60 hover:text-red-600 transition-colors cursor-pointer shrink-0"
           >
@@ -130,7 +143,30 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+
+      {showConfirmLogout && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#f3ebd8] dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-6 rounded-lg max-w-sm w-full mx-4 shadow-[4px_4px_0px_0px_#8e6e53] dark:shadow-[4px_4px_0px_0px_#d4af37]">
+            <h3 className="font-serif font-semibold text-lg text-[#0d2137] dark:text-white mb-2">Confirm Log Out</h3>
+            <p className="text-sm text-[#0d2137]/80 dark:text-[#faf7f0]/80 mb-6 font-serif">Are you sure you want to log out of CanvasFlow?</p>
+            <div className="flex justify-end gap-3 font-serif">
+              <button 
+                onClick={() => setShowConfirmLogout(false)}
+                className="px-4 py-2 text-sm font-semibold border-2 border-[#0d2137] dark:border-[#faf7f0] rounded text-[#0d2137] dark:text-[#faf7f0] hover:bg-[#0d2137]/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm font-semibold bg-[#e15a5a] text-white border-2 border-[#0d2137] dark:border-[#2a2a2a] rounded hover:bg-[#d04949] transition-colors cursor-pointer"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
-

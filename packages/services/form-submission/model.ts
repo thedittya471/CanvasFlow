@@ -31,7 +31,7 @@ export type FormSubmissionOutputType = z.infer<typeof formSubmissionOutput>
 
 export const getSubmissionsInput = z.object({
   formId: z.string().uuid().describe("Form ID"),
-  ownerId: z.string().uuid().describe("Owner user ID")
+  ownerId: z.string().describe("Owner user ID")
 })
 export type GetSubmissionsInputType = z.infer<typeof getSubmissionsInput>
 

@@ -16,7 +16,10 @@ export const createTRPCHttpBatchClientClient = (opts?: CreateTRPCHttpBatchClient
   return c({
     url,
     fetch(fetchUrl, options) {
-      const match = typeof document !== "undefined" && document.cookie.match(new RegExp('(^| )authentication-token=([^;]+)'));
+      const match = typeof document !== "undefined" && (
+        document.cookie.match(new RegExp('(^| )better-auth.session_token=([^;]+)')) ||
+        document.cookie.match(new RegExp('(^| )__Secure-better-auth.session_token=([^;]+)'))
+      );
       const token = match ? match[2] : null;
 
       const headers = new Headers(options?.headers);

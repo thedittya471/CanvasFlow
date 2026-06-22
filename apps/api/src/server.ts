@@ -6,7 +6,8 @@ import * as trpcExpress from "@trpc/server/adapters/express";
 import { generateOpenApiDocument, createOpenApiExpressMiddleware } from "trpc-to-openapi";
 import cookieParser from 'cookie-parser'
 
-import { serverRouter, createContext } from "@repo/trpc/server";
+import { serverRouter, createContext, auth } from "@repo/trpc/server";
+import { toNodeHandler } from "better-auth/node";
 
 import { env } from "./env";
 
@@ -62,6 +63,8 @@ app.use("/docs", async (req, res, next) => {
     next(error);
   }
 });
+
+app.all("/api/auth/{*splat}", toNodeHandler(auth));
 
 app.use(
   "/api",

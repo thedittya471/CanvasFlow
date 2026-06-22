@@ -12,7 +12,7 @@ import {
     pgEnum,
     unique
 } from "drizzle-orm/pg-core"
-import { usersTable } from "./user"
+import { usersTable } from "./auth"
 import { formsTable } from "./form"
 
 

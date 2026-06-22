@@ -5,17 +5,14 @@ import {
   createUserWithEmailAndPasswordOutputModel,
   getLoggedInUserInfoInputModel,
   getLoggedInUserInfoInputOutputModel,
-  signInInputModel,
-  signInOutputModel,
   SignInUserWithEmailAndPasswordInputModel,
   SignInUserWithEmailAndPasswordOutputModel,
   signOutInputModel,
   signOutOutputModel
 } from "./model";
 import { userService } from "../../services";
-import { getAuthenticationCookie, setAuthenticationCookie, clearAuthenticationCookie } from "../../utils/cookie";
-import { SignInUserWithEmailAndPasswordInput } from "@repo/services/user/model";
-import { usersTable } from "../../../../database/models/user";
+import { auth } from "../../auth";
+import { TRPCError } from "@trpc/server";
 
 const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");
@@ -33,15 +30,30 @@ export const authRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { fullName, email, password } = input
 
-      const { id, token } = await userService.createUserWithEmailAndPassword({
-        fullName, email, password
+      const response = await auth.api.signUpEmail({
+        body: {
+          email,
+          password,
+          name: fullName,
+        },
+        asResponse: true,
       })
 
-      setAuthenticationCookie(ctx, token)
+      if (!response.ok) {
+        const errBody: any = await response.json().catch(() => ({}))
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errBody?.message || "Failed to create account",
+        })
+      }
+
+      ctx.setHeaders(response.headers)
+
+      const responseJson: any = await response.json()
 
       return {
-        id,
-        token
+        id: responseJson.user.id,
+        token: ""
       }
     }),
 
@@ -57,13 +69,21 @@ export const authRouter = router({
     .mutation(async ({ input, ctx }) => {
       const { email, password } = input
 
-      const { id, token } = await userService.SignInUserWithEmailAndPassword({ email, password })
+      const response = await auth.api.signInEmail({
+        body: {
+          email,
+          password,
+        },
+        asResponse: true,
+      })
 
-      setAuthenticationCookie(ctx, token)
+      ctx.setHeaders(response.headers)
+
+      const responseJson: any = await response.json()
 
       return {
-        id,
-        token
+        id: responseJson.user.id,
+        token: ""
       }
     }),
 
@@ -78,12 +98,12 @@ export const authRouter = router({
     .input(getLoggedInUserInfoInputModel)
     .output(getLoggedInUserInfoInputOutputModel)
     .query(async ({ ctx }) => {
-      const { id, email, fullName } = await userService.getUserInfoById(ctx.user.id)
+      const { id, email, name } = await userService.getUserInfoById(ctx.user.id)
 
       return {
         id,
         email,
-        fullName
+        fullName: name
       }
     }),
 
@@ -97,8 +117,13 @@ export const authRouter = router({
     .input(signOutInputModel)
     .output(signOutOutputModel)
     .mutation(async ({ ctx }) => {
-      clearAuthenticationCookie(ctx)
+      const response = await auth.api.signOut({
+        headers: new Headers(ctx.req.headers as Record<string, string>),
+        asResponse: true,
+      })
+
+      ctx.setHeaders(response.headers)
+
       return { success: true }
     })
 });
-

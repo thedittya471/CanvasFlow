@@ -1,8 +1,7 @@
-import { db, eq, and, desc, inArray, gte } from "@repo/database"
+import { db, eq, and, desc, inArray, gte, usersTable } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
 import { formViewsTable } from "@repo/database/models/form-view"
-import { usersTable } from "@repo/database/models/user"
 import {
   submitFormInput,
   type SubmitFormInputType,

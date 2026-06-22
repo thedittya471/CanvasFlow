@@ -6,7 +6,7 @@ import {
     boolean,
     text
 } from 'drizzle-orm/pg-core'
-import { usersTable } from './user'
+import { usersTable } from './auth'
 
 export const formsTable = pgTable("forms", {
     id: uuid("id").defaultRandom().primaryKey(),
@@ -16,7 +16,7 @@ export const formsTable = pgTable("forms", {
 
     slug: varchar("slug", { length: 150 }).notNull().unique(),
     
-    ownerId: uuid("owner_id").references(() => usersTable.id, {
+    ownerId: text("owner_id").references(() => usersTable.id, {
         onDelete: "cascade"
     }).notNull(),
 

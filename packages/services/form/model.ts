@@ -5,13 +5,13 @@ export const createFormInput = z.object({
   title: z.string().min(1).max(150).describe("Title of the form"),
   description: z.string().optional().describe("Description of the form"),
   slug: z.string().min(1).max(150).describe("Unique slug for the form URL"),
-  ownerId: z.string().uuid().describe("Owner user ID")
+  ownerId: z.string().describe("Owner user ID")
 })
 
 export type CreateFormInputType = z.infer<typeof createFormInput>
 
 export const listFormsByUserIdInput = z.object({
-  userId: z.string().uuid().describe("Owner user ID")
+  userId: z.string().describe("Owner user ID")
 })
 
 export type ListFormsByUserIdInputType = z.infer<typeof listFormsByUserIdInput>
@@ -46,7 +46,7 @@ export const publishFormOutput = z.object({
 export type PublishFormOutputType = z.infer<typeof publishFormOutput>
 
 export const getDashboardStatsInput = z.object({
-  userId: z.string().uuid().describe("Owner user ID")
+  userId: z.string().describe("Owner user ID")
 })
 export type GetDashboardStatsInputType = z.infer<typeof getDashboardStatsInput>
 

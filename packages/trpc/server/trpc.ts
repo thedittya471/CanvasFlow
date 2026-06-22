@@ -1,9 +1,10 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { OpenApiMeta } from "trpc-to-openapi";
+import type {} from "express-serve-static-core";
+import type {} from "qs";
 
 import { createContext } from "./context";
-import { getAuthenticationCookie } from "./utils/cookie";
-import { userService } from "./services";
+import { auth } from "./auth";
 
 export const tRPCContext = initTRPC
   .meta<OpenApiMeta>()
@@ -17,16 +18,22 @@ export const publicProcedure = tRPCContext.procedure;
 export const authenticatedProcedure = tRPCContext.procedure.use(async options => {
   const { ctx } = options
 
-  const userToken = getAuthenticationCookie(ctx)
-  if (!userToken) throw new Error(`user is not logged in`)
+  const session = await auth.api.getSession({
+    headers: new Headers(ctx.req.headers as Record<string, string>),
+  })
 
-  const { id } = await userService.verifyAndDecodeUserSessionToken(userToken)
+  if (!session) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "User is not logged in",
+    })
+  }
 
   return options.next({
     ctx: {
       ...ctx,
       user: {
-        id
+        id: session.user.id,
       }
     }
   })

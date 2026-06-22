@@ -1,8 +1,7 @@
-import { db, eq, and, desc, inArray, gte } from "@repo/database"
+import { db, eq, and, desc, inArray, gte, usersTable } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
-import { usersTable } from "@repo/database/models/user"
 import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, getDashboardStatsInput, type GetDashboardStatsInputType } from "./model"
 
 class FormService {

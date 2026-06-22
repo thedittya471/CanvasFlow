@@ -171,11 +171,8 @@ export default function LandingPage() {
           <Link href="/dashboard/pricing" className="text-xs font-serif font-semibold hover:text-[#8e6e53] transition-colors flex items-center gap-1">
             Pricing
           </Link>
-          <Link href="/signIn" className="text-xs font-serif font-semibold hover:text-[#8e6e53] transition-colors">
-            Log In
-          </Link>
           <Link
-            href="/signIn"
+            href="/signUp"
             className="px-4 py-2 bg-[#0d2137] text-[#faf7f0] border-2 border-[#0d2137] rounded font-serif font-bold text-xs shadow-[3px_3px_0px_0px_#8e6e53] hover:shadow-[1px_1px_0px_0px_#8e6e53] hover:translate-x-0.5 hover:translate-y-0.5 transition-all cursor-pointer"
           >
             Start Building
@@ -217,14 +214,14 @@ export default function LandingPage() {
 
         <div className="flex items-center justify-center gap-4 pt-2">
           <Link
-            href="/signIn"
+            href="/signUp"
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#0d2137] text-[#faf7f0] border-2 border-[#0d2137] rounded font-serif font-bold text-xs shadow-[4px_4px_0px_0px_#8e6e53] hover:shadow-[1px_1px_0px_0px_#8e6e53] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
           >
             <span>Start Building</span>
             <ArrowRight className="size-4" />
           </Link>
           <Link
-            href="/signIn"
+            href="/signUp"
             className="px-6 py-3 border-2 border-[#0d2137] hover:bg-[#f3ebd8]/30 text-[#0d2137] rounded font-serif font-bold text-xs transition-all shadow-[2px_2px_0px_0px_#8e6e53]"
           >
             Explore Templates
@@ -297,6 +294,7 @@ export default function LandingPage() {
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 fitView
+                fitViewOptions={{ padding: 0.4 }}
               >
                 <Background color="#0d2137" gap={16} />
               </ReactFlow>
@@ -426,7 +424,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <button className="w-full bg-[#0d2137] hover:bg-[#1a3854] text-[#faf7f0] py-2.5 rounded font-serif font-bold uppercase tracking-wider text-xs shadow-[2px_2px_0px_0px_#8e6e53] transition-all">
+            <button className="w-full bg-[#0d2137] text-[#faf7f0] border-2 border-[#0d2137] py-3 rounded font-serif font-bold uppercase tracking-wider text-xs shadow-[4px_4px_0px_0px_#8e6e53] hover:shadow-[1px_1px_0px_0px_#8e6e53] hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
               Submit Survey
             </button>
           </div>
