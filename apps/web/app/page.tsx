@@ -3,6 +3,8 @@
 import React, { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { authClient } from "~/lib/auth-client";
+
 import {
   ReactFlow,
   Background,
@@ -121,6 +123,7 @@ const initialEdges: Edge[] = [
 ];
 
 export default function LandingPage() {
+  const { data: session } = authClient.useSession();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -172,10 +175,10 @@ export default function LandingPage() {
             Pricing
           </Link>
           <Link
-            href="/signUp"
+            href={session ? "/dashboard" : "/signUp"}
             className="px-4 py-2 bg-[#0d2137] text-[#faf7f0] border-2 border-[#0d2137] rounded font-serif font-bold text-xs shadow-[3px_3px_0px_0px_#8e6e53] hover:shadow-[1px_1px_0px_0px_#8e6e53] hover:translate-x-0.5 hover:translate-y-0.5 transition-all cursor-pointer"
           >
-            Start Building
+            {session ? "Dashboard" : "Start Building"}
           </Link>
         </div>
       </nav>
@@ -214,14 +217,14 @@ export default function LandingPage() {
 
         <div className="flex items-center justify-center gap-4 pt-2">
           <Link
-            href="/signUp"
+            href={session ? "/dashboard" : "/signUp"}
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#0d2137] text-[#faf7f0] border-2 border-[#0d2137] rounded font-serif font-bold text-xs shadow-[4px_4px_0px_0px_#8e6e53] hover:shadow-[1px_1px_0px_0px_#8e6e53] hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
           >
-            <span>Start Building</span>
+            <span>{session ? "Go to Dashboard" : "Start Building"}</span>
             <ArrowRight className="size-4" />
           </Link>
           <Link
-            href="/signUp"
+            href={session ? "/dashboard" : "/signUp"}
             className="px-6 py-3 border-2 border-[#0d2137] hover:bg-[#f3ebd8]/30 text-[#0d2137] rounded font-serif font-bold text-xs transition-all shadow-[2px_2px_0px_0px_#8e6e53]"
           >
             Explore Templates

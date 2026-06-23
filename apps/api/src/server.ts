@@ -6,8 +6,10 @@ import * as trpcExpress from "@trpc/server/adapters/express";
 import { generateOpenApiDocument, createOpenApiExpressMiddleware } from "trpc-to-openapi";
 import cookieParser from 'cookie-parser'
 
-import { serverRouter, createContext, auth } from "@repo/trpc/server";
+import { serverRouter, createContext } from "@repo/trpc/server";
+import { auth } from "@repo/trpc/server/auth";
 import { toNodeHandler } from "better-auth/node";
+
 
 import { env } from "./env";
 

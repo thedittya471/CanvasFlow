@@ -1,111 +1,114 @@
-import { trpc } from '~/trpc/client'
+import { authClient } from "~/lib/auth-client";
+import { useState, useEffect } from "react";
 
 export const useSignUp = () => {
-    const utils = trpc.useUtils()
+  const [error, setError] = useState<Error | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
-    const {
-        mutateAsync: createUserWithEmailAndPasswordAsync,
-        mutate: createUserWithEmailAndPassword,
-        error,
-        failureCount,
-        isError,
-        isIdle,
-        isPending,
-        isSuccess,
-        status
-    } = trpc.auth.createUserWithEmailAndPassword.useMutation({
-        onSuccess: async () => {
-            await utils.auth.getLoggedInUserInfo.invalidate()
-        }
-    })
-
-    return {
-        createUserWithEmailAndPasswordAsync,
-        createUserWithEmailAndPassword,
-        error,
-        isError,
-        isIdle,
-        isPending,
-        isSuccess,
-        status,
-        failureCount
+  const createUserWithEmailAndPassword = async (
+    data: any,
+    options?: { onSuccess?: () => void; onError?: (err: Error) => void }
+  ) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const res = await authClient.signUp.email({
+        email: data.email,
+        password: data.password,
+        name: data.fullName,
+      });
+      if (res.error) {
+        throw new Error(res.error.message || "Failed to sign up");
+      }
+      document.cookie = `cf_session=1; path=/; max-age=${60 * 60 * 24 * 7}; secure; samesite=lax`;
+      options?.onSuccess?.();
+    } catch (err: any) {
+      setError(err);
+      options?.onError?.(err);
+    } finally {
+      setIsPending(false);
     }
-}
+  };
+
+  return {
+    createUserWithEmailAndPassword,
+    error,
+    isPending,
+  };
+};
 
 export const useSignIn = () => {
-    const utils = trpc.useUtils()
+  const [error, setError] = useState<Error | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
-    const {
-        mutateAsync: signInUserWithEmailAndPasswordAsync,
-        mutate: signInUserWithEmailAndPassword,
-        error,
-        failureCount,
-        isError,
-        isIdle,
-        isPending,
-        isSuccess,
-        status
-    } = trpc.auth.signInUserWithEmailAndPassword.useMutation({
-        onSuccess: async () => {
-            await utils.auth.getLoggedInUserInfo.invalidate()
-        }
-    })
+  const signInUserWithEmailAndPassword = async (
+    data: any,
+    options?: { onSuccess?: () => void; onError?: (err: Error) => void }
+  ) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const res = await authClient.signIn.email({
+        email: data.email,
+        password: data.password,
+      });
+      if (res.error) {
+        throw new Error(res.error.message || "Failed to sign in");
+      }
+      document.cookie = `cf_session=1; path=/; max-age=${60 * 60 * 24 * 7}; secure; samesite=lax`;
+      options?.onSuccess?.();
 
-    return {
-        signInUserWithEmailAndPasswordAsync,
-        signInUserWithEmailAndPassword,
-        error,
-        isError,
-        isIdle,
-        isPending,
-        isSuccess,
-        status,
-        failureCount
+    } catch (err: any) {
+      setError(err);
+      options?.onError?.(err);
+    } finally {
+      setIsPending(false);
     }
-}
+  };
+
+  return {
+    signInUserWithEmailAndPassword,
+    error,
+    isPending,
+  };
+};
 
 export const useGetLoggedInUserInfo = () => {
-    const {
-        data: userInfo,
-        error,
-        failureCount,
-        isError,
-        isSuccess,
-        status
-    } = trpc.auth.getLoggedInUserInfo.useQuery()
+  const { data: session, error, isPending } = authClient.useSession();
 
-    return {
-        userInfo,
-        error,
-        isError,
-        isSuccess,
-        status,
-        failureCount
-    }
-}
+  return {
+    userInfo: session?.user
+      ? {
+          id: session.user.id,
+          email: session.user.email,
+          fullName: session.user.name,
+        }
+      : null,
+    error,
+    isPending,
+  };
+};
 
 export const useSignOut = () => {
-    const utils = trpc.useUtils()
+  const [error, setError] = useState<Error | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
-    const {
-        mutateAsync: signOutAsync,
-        mutate: signOut,
-        error,
-        isPending,
-        isSuccess,
-        status
-    } = trpc.auth.signOut.useMutation({
-        onSuccess: async () => {
-            utils.auth.getLoggedInUserInfo.setData(undefined, undefined)
-        }
-    })
-
-    return {
-        signOutAsync,
-        signOut,
-        error,
-        isPending,
-        isSuccess,
-        status
+  const signOutAsync = async () => {
+    setIsPending(true);
+    setError(null);
+    try {
+      await authClient.signOut();
+      document.cookie = 'cf_session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=lax';
+    } catch (err: any) {
+      setError(err);
+    } finally {
+      setIsPending(false);
     }
-}
+  };
+
+  return {
+    signOutAsync,
+    error,
+    isPending,
+  };
+};

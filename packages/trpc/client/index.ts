@@ -9,7 +9,3 @@ export type { ServerRouter } from "../server";
 
 export * from "@trpc/client";
 
-export { 
-  createUserWithEmailAndPasswordInputModel, 
-  SignInUserWithEmailAndPasswordInputModel 
-} from "../server/routes/auth/model";

@@ -2,6 +2,7 @@
   "name": "@repo/api",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "node dist/index.js",
     "dev": "dotenv -- tsx watch ./src/index.ts",
@@ -24,13 +25,18 @@
   "dependencies": {
     "@repo/logger": "workspace:*",
     "@repo/trpc": "workspace:*",
+    "@better-auth/drizzle-adapter": "^1.6.20",
     "@scalar/express-api-reference": "^0.8.30",
     "@trpc/server": "^11.8.1",
     "better-auth": "^1.6.20",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
+    "pg": "^8.16.3",
     "trpc-to-openapi": "^3.1.0",
+    "winston": "^3.19.0",
     "zod": "^4.3.5"
   }
 }
