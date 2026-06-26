@@ -58,7 +58,7 @@ export const formFieldsTable = pgTable("form_fields", {
     description: text("description"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").$onUpdate(() => new Date()).notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 
 }, (table) => {
     return {

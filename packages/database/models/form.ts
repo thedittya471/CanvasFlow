@@ -26,7 +26,7 @@ export const formsTable = pgTable("forms", {
     isOpen: boolean("is_open").default(true).notNull(),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").$onUpdate(() => new Date()).notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
     publishedAt: timestamp("published_at"),
 }, (table) => ({
     // Hot path: list/stats/limit queries filter by owner, often ordered by createdAt.

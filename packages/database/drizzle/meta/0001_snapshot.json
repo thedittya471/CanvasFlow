@@ -1,6 +1,6 @@
 {
-  "id": "58cbe2c8-ac37-445f-8752-d1f8be5a7887",
-  "prevId": "06b60a4b-965e-4a87-bd3e-1ba756d459ae",
+  "id": "837941da-c269-45df-a9ca-7c16b16a35a6",
+  "prevId": "65bf73ec-7cfe-4e60-b88e-33740dee849b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -78,13 +78,15 @@
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -135,13 +137,15 @@
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         },
         "ip_address": {
           "name": "ip_address",
@@ -383,7 +387,8 @@
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         },
         "published_at": {
           "name": "published_at",
@@ -522,7 +527,8 @@
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
