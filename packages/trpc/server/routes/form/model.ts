@@ -27,6 +27,7 @@ export const listFormsByUserIdOutputModel = z.array(
         createdAt: z.any().describe("Creation timestamp"),
         updatedAt: z.any().describe("Last updated timestamp"),
         publishedAt: z.any().nullable().optional().describe("Published timestamp"),
+        submissionsCount: z.number().describe("Total number of submissions"),
     })
 )
 
@@ -56,6 +57,8 @@ export {
     getFormOutput as getFormOutputModel,
     getFormByIdOutput as getFormByIdOutputModel,
     publishFormOutput as publishFormOutputModel,
+    deleteFormInput as deleteFormInputModel,
+    deleteFormOutput as deleteFormOutputModel,
     getDashboardStatsOutput as getDashboardStatsOutputModel
 } from "@repo/services/form/model"
 

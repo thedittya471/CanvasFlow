@@ -18,6 +18,8 @@ import {
     getFormOutputModel,
     getFormByIdOutputModel,
     publishFormOutputModel,
+    deleteFormInputModel,
+    deleteFormOutputModel,
     submitFormInputModel,
     submitFormOutputModel,
     listFormFieldsInputModel,
@@ -234,6 +236,21 @@ export const formRouter = router({
         .output(getDashboardStatsOutputModel)
         .query(async ({ ctx }) => {
             const result = await formService.getDashboardStats({ userId: ctx.user.id })
+            return result
+        }),
+
+    deleteForm: authenticatedProcedure.meta({
+        openapi: {
+            method: "POST",
+            path: getPath("/deleteForm"),
+            tags: TAGS,
+            protect: true
+        }
+    })
+        .input(deleteFormInputModel)
+        .output(deleteFormOutputModel)
+        .mutation(async ({ input, ctx }) => {
+            const result = await formService.deleteForm({ id: input.id, ownerId: ctx.user.id })
             return result
         }),
 

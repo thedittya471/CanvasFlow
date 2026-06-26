@@ -2,7 +2,7 @@ import { db, eq, and, inArray, gte, count, usersTable } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
-import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, getDashboardStatsInput, type GetDashboardStatsInputType } from "./model"
+import { createFormInput, type CreateFormInputType, listFormsByUserIdInput, type ListFormsByUserIdInputType, getFormInput, type GetFormInputType, getDashboardStatsInput, type GetDashboardStatsInputType, deleteFormInput, type DeleteFormInputType } from "./model"
 
 class FormService {
   private async getFormBySlug(slug: string) {
@@ -79,18 +79,24 @@ class FormService {
   public async listFormsByUserId(payload: ListFormsByUserIdInputType) {
     const { userId } = await listFormsByUserIdInput.parseAsync(payload)
 
-    const forms = await db.select({
-      id: formsTable.id,
-      title: formsTable.title,
-      description: formsTable.description,
-      slug: formsTable.slug,
-      isPublished: formsTable.isPublished,
-      isArchived: formsTable.isArchived,
-      isOpen: formsTable.isOpen,
-      createdAt: formsTable.createdAt,
-      updatedAt: formsTable.updatedAt,
-      publishedAt: formsTable.publishedAt,
-    }).from(formsTable).where(eq(formsTable.ownerId, userId))
+    const forms = await db
+      .select({
+        id: formsTable.id,
+        title: formsTable.title,
+        description: formsTable.description,
+        slug: formsTable.slug,
+        isPublished: formsTable.isPublished,
+        isArchived: formsTable.isArchived,
+        isOpen: formsTable.isOpen,
+        createdAt: formsTable.createdAt,
+        updatedAt: formsTable.updatedAt,
+        publishedAt: formsTable.publishedAt,
+        submissionsCount: count(formSubmissionsTable.id),
+      })
+      .from(formsTable)
+      .leftJoin(formSubmissionsTable, eq(formsTable.id, formSubmissionsTable.formId))
+      .where(eq(formsTable.ownerId, userId))
+      .groupBy(formsTable.id)
 
     return forms
   }
@@ -145,6 +151,18 @@ class FormService {
     return {
       id: firstResult.id
     }
+  }
+
+  public async deleteForm(payload: DeleteFormInputType & { ownerId: string }) {
+    const { id } = await deleteFormInput.parseAsync(payload)
+
+    const result = await db.delete(formsTable)
+      .where(and(eq(formsTable.id, id), eq(formsTable.ownerId, payload.ownerId)))
+      .returning({ id: formsTable.id })
+
+    if (!result[0]) throw new Error("Form not found or unauthorized")
+
+    return { success: true }
   }
 
   public async getDashboardStats(payload: GetDashboardStatsInputType) {

@@ -32,6 +32,7 @@ export const useCreateForm = () => {
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     publishedAt: null,
+                    submissionsCount: 0,
                 }
                 return old ? [optimistic, ...old] : [optimistic]
             })
@@ -451,3 +452,30 @@ export const useGetDashboardStats = () => {
 }
 
 
+
+export const useDeleteForm = () => {
+    const utils = trpc.useUtils()
+
+    const {
+        mutateAsync: deleteFormAsync,
+        mutate: deleteForm,
+        error,
+        isPending,
+        isSuccess,
+        status
+    } = trpc.form.deleteForm.useMutation({
+        onSuccess: () => {
+            void utils.form.listFormsByUserId.invalidate()
+            void utils.form.getDashboardStats.invalidate()
+        }
+    })
+
+    return {
+        deleteFormAsync,
+        deleteForm,
+        error,
+        isPending,
+        isSuccess,
+        status
+    }
+}

@@ -45,6 +45,16 @@ export const publishFormOutput = z.object({
 })
 export type PublishFormOutputType = z.infer<typeof publishFormOutput>
 
+export const deleteFormInput = z.object({
+  id: z.string().uuid().describe("Form ID to delete"),
+})
+export type DeleteFormInputType = z.infer<typeof deleteFormInput>
+
+export const deleteFormOutput = z.object({
+  success: z.boolean().describe("Whether deletion was successful")
+})
+export type DeleteFormOutputType = z.infer<typeof deleteFormOutput>
+
 export const getDashboardStatsInput = z.object({
   userId: z.string().describe("Owner user ID")
 })

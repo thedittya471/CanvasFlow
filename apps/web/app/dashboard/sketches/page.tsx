@@ -9,16 +9,18 @@ import {
   ArrowLeft,
   ArrowRight,
   Share2,
-  MoreVertical,
-  Pin
+  Pin,
+  Trash2
 } from "lucide-react";
-import { useListFormsByUserId } from "~/hooks/api/form";
+import { useListFormsByUserId, useDeleteForm } from "~/hooks/api/form";
 import { useDashboard } from "~/providers/dashboard-provider";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 
 export default function SketchesPage() {
   const { forms, isLoading } = useListFormsByUserId();
   const { openCreateFormModal } = useDashboard();
+  const { deleteFormAsync, isPending: isDeleting } = useDeleteForm();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -27,6 +29,9 @@ export default function SketchesPage() {
   const [filter, setFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const itemsPerPage = 6;
+
+  // Confirm-delete state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -74,16 +79,22 @@ export default function SketchesPage() {
     return processedForms.slice(start, start + itemsPerPage);
   }, [processedForms, page]);
 
+  const handleDelete = async (formId: string) => {
+    try {
+      await deleteFormAsync({ id: formId });
+      toast.success("Blueprint deleted from catalog");
+      setConfirmDeleteId(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete form");
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     try {
       return new Date(dateStr).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
+        month: "short", day: "numeric", year: "numeric"
       });
-    } catch {
-      return "Jan 1, 2026";
-    }
+    } catch { return "Jan 1, 2026"; }
   };
 
   const getRelativeTime = (dateStr: string) => {
@@ -95,29 +106,12 @@ export default function SketchesPage() {
       if (diffHours < 24) return `${diffHours} Hour${diffHours === 1 ? "" : "s"} Ago`;
       const diffDays = Math.floor(diffHours / 24);
       return `${diffDays} Day${diffDays === 1 ? "" : "s"} Ago`;
-    } catch {
-      return "2 Hours Ago";
-    }
+    } catch { return "2 Hours Ago"; }
   };
 
   const getRefNo = (id: string, title: string) => {
-    const letters = title
-      .split(" ")
-      .map(w => w[0])
-      .filter(Boolean)
-      .join("")
-      .slice(0, 3)
-      .toUpperCase();
+    const letters = title.split(" ").map(w => w[0]).filter(Boolean).join("").slice(0, 3).toUpperCase();
     return `REF. NO: ${id.slice(0, 4).toUpperCase()}-${letters || "SK"}`;
-  };
-
-  const getResponsesCount = (id: string) => {
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-      hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const count = Math.abs(hash) % 150;
-    return count;
   };
 
   const getIllustration = (title: string, index: number) => {
@@ -130,8 +124,46 @@ export default function SketchesPage() {
     return num === 1 ? "/card-1.png" : `/card${num}.png`;
   };
 
+  const confirmDeleteForm = forms?.find(f => f.id === confirmDeleteId);
+
   return (
     <div className="space-y-8">
+      {/* Confirm delete dialog */}
+      {confirmDeleteId && confirmDeleteForm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0d2137]/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] dark:shadow-[6px_6px_0px_0px_#2a2a2a] max-w-sm w-full mx-4 space-y-4">
+            <div className="space-y-1">
+              <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-red-500 block">
+                — Permanent Action
+              </span>
+              <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">
+                Delete Blueprint?
+              </h3>
+              <p className="text-sm text-[#0d2137]/70 dark:text-white/60 font-serif leading-relaxed">
+                <span className="font-bold text-[#0d2137] dark:text-white">&ldquo;{confirmDeleteForm.title}&rdquo;</span> and all its fields and submissions will be permanently removed. This cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/20 dark:border-white/20 rounded text-[#0d2137]/70 dark:text-white/70 hover:bg-[#0d2137]/5 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDeleteId)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white rounded cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Trash2 className="size-3.5" />
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-serif font-bold text-[#0d2137]/60 dark:text-[#faf7f0]/60">
@@ -226,18 +258,17 @@ export default function SketchesPage() {
           {paginatedForms.map((form, index) => {
             const isPublished = form.isPublished;
             const illustration = getIllustration(form.title, index);
-            const responses = getResponsesCount(form.id);
-
+            const responses = form.submissionsCount ?? 0;
             const isSecondCard = index % 3 === 1;
             const isThirdCard = index % 3 === 2;
 
             return (
               <div
                 key={form.id}
-                className="relative overflow-hidden bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/10 dark:border-white/5 p-4 rounded shadow-[0_1px_2px_rgba(13,33,55,0.05)] group hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(13,33,55,0.06)] transition-all duration-250 flex flex-col justify-between min-h-90 max-w-[320px] w-full mx-auto"
+                className="relative overflow-visible bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/10 dark:border-white/5 p-4 rounded shadow-[0_1px_2px_rgba(13,33,55,0.05)] group hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(13,33,55,0.06)] transition-all duration-250 flex flex-col justify-between min-h-90 max-w-[320px] w-full mx-auto"
               >
                 <div
-                  className="absolute inset-0 bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"
+                  className="absolute inset-0 rounded bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"
                   style={{ backgroundImage: isDark ? "url('/dark-card-background.png')" : "url('/card-background.png')" }}
                 />
 
@@ -250,7 +281,6 @@ export default function SketchesPage() {
                 <div className="relative z-10 space-y-4">
                   <div className="h-32 w-full border border-[#0d2137]/10 dark:border-white/10 rounded overflow-hidden relative bg-[#faf7f0] dark:bg-[#2c2c2e]">
                     <div className="absolute inset-0 bg-cover bg-center opacity-70 dark:opacity-30 mix-blend-luminosity group-hover:scale-103 transition-transform duration-500" style={{ backgroundImage: `url('${illustration}')` }} />
-
                     {isPublished && isSecondCard && (
                       <div className="absolute top-2 left-2 z-20 text-[#244f75] dark:text-[#b9c9df] font-caveat font-bold text-lg -rotate-12 select-none pointer-events-none tracking-wide">
                         Top Secret
@@ -263,8 +293,17 @@ export default function SketchesPage() {
                       <h3 className="font-serif font-bold text-xl text-[#0d2137] dark:text-white group-hover:text-[#8e6e53] dark:group-hover:text-[#d4af37] transition-colors line-clamp-1">
                         {form.title}
                       </h3>
-                      <button className="text-[#0d2137]/40 dark:text-[#faf7f0]/40 hover:text-[#0d2137] dark:hover:text-white p-0.5 rounded cursor-pointer shrink-0">
-                        <MoreVertical className="size-4" />
+
+                      {/* Delete button — always visible */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(form.id);
+                        }}
+                        title="Delete blueprint"
+                        className="text-[#0d2137]/30 dark:text-white/30 hover:text-red-500 dark:hover:text-red-400 p-0.5 rounded cursor-pointer shrink-0 transition-colors"
+                      >
+                        <Trash2 className="size-4" />
                       </button>
                     </div>
                     <p className="text-[9px] text-[#0d2137]/50 dark:text-[#faf7f0]/50 tracking-wider font-serif uppercase font-bold">
@@ -315,7 +354,6 @@ export default function SketchesPage() {
           <div className="text-sm font-serif italic text-[#0d2137]/70 dark:text-[#faf7f0]/70 select-none">
             Page {page} of {totalPages} <span className="font-sans not-italic text-[10px] mx-1">•</span> Cataloged in Atelier Records
           </div>
-
           <div className="flex gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
