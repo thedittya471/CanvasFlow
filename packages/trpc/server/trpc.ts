@@ -1,7 +1,5 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { OpenApiMeta } from "trpc-to-openapi";
-import type { } from "express-serve-static-core";
-import type { } from "qs";
 
 import { createContext } from "./context";
 import { auth } from "./auth";
