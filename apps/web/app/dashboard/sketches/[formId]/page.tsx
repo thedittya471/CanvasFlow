@@ -11,38 +11,12 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
-  Handle,
-  Position,
   Panel,
   Node,
-  Edge
+  Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import {
-  Type,
-  AlignLeft,
-  Mail,
-  Binary,
-  Phone,
-  Link2,
-  List,
-  CheckSquare,
-  Star,
-  Calendar,
-  Clock,
-  ToggleLeft,
-  ChevronLeft,
-  Settings,
-  Trash2,
-  Lock,
-  Unlock,
-  Maximize2,
-  Save,
-  Eye,
-  Share2,
-  Plus,
-  Minus
-} from "lucide-react";
+import { Lock, Unlock, Maximize2, Plus, Minus } from "lucide-react";
 import {
   useGetForm,
   useListFormFields,
@@ -50,188 +24,17 @@ import {
   useUpdateFormField,
   useDeleteFormField,
   usePublishForm,
-  useDeleteForm
+  useDeleteForm,
 } from "~/hooks/api/form";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { useDashboard } from "~/providers/dashboard-provider";
-
-// Define field metadata for the left sidebar
-const AVAILABLE_FIELDS = [
-  { type: "TEXT", label: "Short Text", icon: Type, description: "Single line input" },
-  { type: "TEXTAREA", label: "Long Text", icon: AlignLeft, description: "Multi-line input" },
-  { type: "EMAIL", label: "Email", icon: Mail, description: "Email address input" },
-  { type: "NUMBER", label: "Number", icon: Binary, description: "Numeric value input" },
-  { type: "PHONE", label: "Phone", icon: Phone, description: "Telephone number input" },
-  { type: "URL", label: "URL", icon: Link2, description: "Website link input" },
-  { type: "SELECT", label: "Single Select", icon: List, description: "Dropdown menu" },
-  { type: "CHECKBOX", label: "Checkbox", icon: CheckSquare, description: "Multiple checkboxes" },
-  { type: "RATING", label: "Rating", icon: Star, description: "Star selection" },
-  { type: "DATE", label: "Date", icon: Calendar, description: "Calendar selection" },
-  { type: "TIME", label: "Time", icon: Clock, description: "Time selection" },
-  { type: "TOGGLE", label: "Toggle", icon: ToggleLeft, description: "Switch switch toggle" }
-];
-
-// Helper to get matching icon for field type
-const getFieldIcon = (type: string) => {
-  const match = AVAILABLE_FIELDS.find(f => f.type === type);
-  return match ? match.icon : Type;
-};
-
-// Helper to get matching choices array
-const getFieldOptionsArray = (field: any): string[] => {
-  if (Array.isArray(field.options)) {
-    return field.options;
-  }
-  if (field.options && typeof field.options === "object" && Array.isArray(field.options.choices)) {
-    return field.options.choices;
-  }
-  return ["Option 1", "Option 2"]; // default fallback
-};
-
-// Custom Node Component to match sketches theme
-const FormFieldNode = ({ data, selected }: { data: any; selected: boolean }) => {
-  const { field } = data;
-  const IconComponent = getFieldIcon(field.type);
-
-  return (
-    <div className={`w-72 bg-[#faf8f5] dark:bg-[#1c1c1e] border-2 rounded transition-all select-none duration-200 cursor-pointer shadow-[3px_3px_0px_0px_rgba(13,33,55,0.05)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.02)] ${selected ? 'border-[#3b5e82] dark:border-[#d4af37] ring-1 ring-[#3b5e82]/20 dark:ring-[#d4af37]/20 shadow-[5px_5px_0px_0px_#3b5e82] dark:shadow-[5px_5px_0px_0px_#d4af37]' : 'border-[#0d2137]/15 dark:border-white/10 hover:border-[#0d2137]/30 dark:hover:border-white/20'}`}>
-
-      {/* Top Dotted DND Handle Indicator */}
-      <div className="h-1.5 bg-cover opacity-30 border-b border-[#0d2137]/10 dark:border-white/10" style={{ backgroundImage: "radial-gradient(#0d2137 1px, transparent 1px)", backgroundSize: "4px 4px" }} />
-
-      <div className="p-4 space-y-3">
-        {/* Node Header */}
-        <div className="flex justify-between items-center text-[9px] font-serif uppercase tracking-widest text-[#0d2137]/50 dark:text-white/50 font-bold">
-          <div className="flex items-center gap-1.5">
-            <IconComponent className="size-3" />
-            <span>{field.type.replace("_", " ")} Node</span>
-          </div>
-          {field.isRequired && (
-            <span className="bg-[#244f75]/10 dark:bg-[#d4af37]/15 text-[#244f75] dark:text-[#d4af37] px-1.5 py-0.5 rounded border border-[#244f75]/20 dark:border-[#d4af37]/25 text-[8px] font-bold">
-              Req
-            </span>
-          )}
-        </div>
-
-        {/* Node Body */}
-        <div className="space-y-1.5">
-          <h4 className="font-serif font-bold text-[#0d2137] dark:text-white text-[14px] leading-snug line-clamp-2">
-            {field.label || `Untitled ${field.type.replace("_", " ").toLowerCase()}`}
-          </h4>
-
-          {field.description && (
-            <p className="text-[10px] text-[#0d2137]/50 dark:text-white/40 leading-relaxed font-serif italic">
-              {field.description}
-            </p>
-          )}
-
-          {/* Simulated Input Field (Sketches Style) */}
-          <div className="pt-1">
-            {field.type === "SELECT" ? (
-              <div className="flex flex-col gap-1.5 mt-1 border border-[#0d2137]/10 dark:border-white/5 p-2 rounded bg-white/40 dark:bg-black/10">
-                {getFieldOptionsArray(field).slice(0, 3).map((opt, i) => (
-                  <div key={i} className="flex items-center justify-between text-[10px] font-serif text-[#0d2137]/65 dark:text-white/60">
-                    <span>{opt}</span>
-                    <span className="text-[8px] opacity-40">▼</span>
-                  </div>
-                ))}
-                {getFieldOptionsArray(field).length > 3 && (
-                  <div className="text-[8px] font-serif italic text-center text-[#0d2137]/45 dark:text-white/35 pt-0.5">
-                    + {getFieldOptionsArray(field).length - 3} more options
-                  </div>
-                )}
-              </div>
-            ) : field.type === "CHECKBOX" ? (
-              <div className="flex flex-col gap-1.5 mt-1">
-                {getFieldOptionsArray(field).slice(0, 3).map((opt, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[10px] font-serif text-[#0d2137]/65 dark:text-white/60">
-                    <div className="size-3 border border-[#0d2137]/25 dark:border-white/20 rounded-sm" />
-                    <span>{opt}</span>
-                  </div>
-                ))}
-                {getFieldOptionsArray(field).length > 3 && (
-                  <div className="text-[8px] font-serif italic text-[#0d2137]/45 dark:text-white/35 pl-5 pt-0.5">
-                    + {getFieldOptionsArray(field).length - 3} more options
-                  </div>
-                )}
-              </div>
-            ) : field.type === "RATING" ? (
-              <div className="flex items-center gap-1 mt-1">
-                {Array.from({ length: (field.options as any)?.max || 5 }).map((_, i) => (
-                  <Star key={i} className="size-3.5 text-[#0d2137]/25 dark:text-white/20 fill-transparent" />
-                ))}
-              </div>
-            ) : field.type === "DATE" ? (
-              <div className="border-b border-[#0d2137]/15 dark:border-white/15 py-1 text-[11px] font-serif text-[#0d2137]/65 dark:text-white/50 tracking-wide select-none flex justify-between items-center">
-                <span>
-                  {(field.options as any)?.minDate || (field.options as any)?.maxDate ? (
-                    <span className="italic text-[10px] opacity-85">
-                      {(field.options as any)?.minDate ? `From ${(field.options as any).minDate}` : ""}
-                      {(field.options as any)?.maxDate ? ` to ${(field.options as any).maxDate}` : ""}
-                    </span>
-                  ) : (
-                    field.placeholder || "Select a date..."
-                  )}
-                </span>
-                <Calendar className="size-3.5 opacity-40 shrink-0" />
-              </div>
-            ) : field.type === "TIME" ? (
-              <div className="border-b border-[#0d2137]/15 dark:border-white/15 py-1 text-[11px] font-serif text-[#0d2137]/65 dark:text-white/50 tracking-wide select-none flex justify-between items-center">
-                <span>
-                  {(field.options as any)?.minTime || (field.options as any)?.maxTime ? (
-                    <span className="italic text-[10px] opacity-85">
-                      {(field.options as any)?.minTime ? `From ${(field.options as any).minTime}` : ""}
-                      {(field.options as any)?.maxTime ? ` to ${(field.options as any).maxTime}` : ""}
-                    </span>
-                  ) : (
-                    field.placeholder || "Select a time..."
-                  )}
-                </span>
-                <Clock className="size-3.5 opacity-40 shrink-0" />
-              </div>
-            ) : field.type === "TOGGLE" ? (
-              <div className="flex items-center justify-between py-1.5 text-[11px] font-serif text-[#0d2137]/65 dark:text-white/60">
-                <span className={!(field.options as any)?.defaultValue ? "font-bold text-[#8e6e53] dark:text-[#d4af37]" : "opacity-50"}>
-                  {(field.options as any)?.inactiveLabel || "No"}
-                </span>
-
-                <div className={`relative inline-flex h-4.5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out ${(field.options as any)?.defaultValue ? 'bg-[#3b5e82] dark:bg-[#d4af37]' : 'bg-[#0d2137]/15 dark:bg-white/10'}`}>
-                  <span className={`pointer-events-none inline-block size-3.5 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${(field.options as any)?.defaultValue ? 'translate-x-4.5' : 'translate-x-0'}`} />
-                </div>
-
-                <span className={(field.options as any)?.defaultValue ? "font-bold text-[#3b5e82] dark:text-[#d4af37]" : "opacity-50"}>
-                  {(field.options as any)?.activeLabel || "Yes"}
-                </span>
-              </div>
-            ) : (
-              <div className="border-b border-[#0d2137]/15 dark:border-white/15 py-1 text-[11px] font-caveat italic text-[#0d2137]/40 dark:text-white/30 tracking-wide select-none">
-                {field.placeholder || "Draft answer here..."}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Handles */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }}
-      />
-    </div>
-  );
-};
-
-// Node type registry
-const nodeTypes = {
-  formField: FormFieldNode
-};
+import { nodeTypes, getFieldOptionsArray } from "~/components/builder/FormFieldNode";
+import { FieldSidebar } from "~/components/builder/FieldSidebar";
+import { FieldInspector } from "~/components/builder/FieldInspector";
+import { BuilderHeader } from "~/components/builder/BuilderHeader";
+import { UnsavedDialog } from "~/components/builder/UnsavedDialog";
+import { DeleteFormDialog } from "~/components/builder/DeleteFormDialog";
 
 // Main Builder Canvas Component
 function BuilderCanvas() {
@@ -244,8 +47,6 @@ function BuilderCanvas() {
   const { form, isLoading: formLoading } = useGetForm(formId);
   const { fields, isLoading: fieldsLoading } = useListFormFields(formId);
 
-  // Dismiss the "Drafting Blueprint..." overlay from dashboard layout
-  // as soon as data arrives — single seamless transition.
   const { setIsCreatingForm } = useDashboard();
   useEffect(() => {
     if (!formLoading && !fieldsLoading) {
@@ -261,7 +62,6 @@ function BuilderCanvas() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // ─── Local draft state ────────────────────────────────────────────────────
-  // All edits are kept in localFields. API is only called on explicit Save.
   type LocalField = NonNullable<typeof fields>[number] & { _isNew?: boolean };
   const [localFields, setLocalFields] = useState<LocalField[]>([]);
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
@@ -269,17 +69,14 @@ function BuilderCanvas() {
   const [isSaving, setIsSaving] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const pendingNavRef = useRef<string | null>(null);
-  // Ref so beforeunload always reads the current dirty state synchronously
   const isDirtyRef = useRef(false);
 
   const isDirty = dirtyIds.size > 0 || pendingDeletes.size > 0;
 
-  // Keep ref in sync with state
   useEffect(() => {
     isDirtyRef.current = isDirty;
   }, [isDirty]);
 
-  // Seed localFields from server data (only on first load)
   useEffect(() => {
     if (fields && localFields.length === 0) {
       setLocalFields(fields as LocalField[]);
@@ -287,14 +84,13 @@ function BuilderCanvas() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields]);
 
-  // Warn browser on tab close / reload when dirty — registered once, reads ref
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ""; }
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, []); // intentionally empty — handler reads ref, not state
+  }, []);
 
   // ─── Save all pending changes ─────────────────────────────────────────────
   const handleSave = useCallback(async () => {
@@ -303,54 +99,67 @@ function BuilderCanvas() {
     try {
       const ops: Promise<unknown>[] = [];
 
-      // Create new fields
       localFields
-        .filter(f => f._isNew && !pendingDeletes.has(f.id))
-        .forEach(f => {
-          ops.push(new Promise<void>((resolve, reject) => {
-            createFormField(
-              { formId, label: f.label, type: f.type as any, isRequired: f.isRequired,
-                placeholder: f.placeholder ?? undefined,
-                description: f.description ?? undefined,
-                options: f.options ?? undefined,
-                index: f.index ? parseFloat(String(f.index)) : undefined },
-              { onSuccess: () => resolve(), onError: (e) => reject(e) }
-            );
-          }));
+        .filter((f) => f._isNew && !pendingDeletes.has(f.id))
+        .forEach((f) => {
+          ops.push(
+            new Promise<void>((resolve, reject) => {
+              createFormField(
+                {
+                  formId,
+                  label: f.label,
+                  type: f.type as any,
+                  isRequired: f.isRequired,
+                  placeholder: f.placeholder ?? undefined,
+                  description: f.description ?? undefined,
+                  options: f.options ?? undefined,
+                  index: f.index ? parseFloat(String(f.index)) : undefined,
+                },
+                { onSuccess: () => resolve(), onError: (e) => reject(e) }
+              );
+            })
+          );
         });
 
-      // Update dirty existing fields
       localFields
-        .filter(f => !f._isNew && dirtyIds.has(f.id) && !pendingDeletes.has(f.id))
-        .forEach(f => {
-          ops.push(new Promise<void>((resolve, reject) => {
-            updateFormField(
-              { id: f.id, label: f.label, placeholder: f.placeholder ?? undefined,
-                description: f.description ?? undefined, isRequired: f.isRequired,
-                options: f.options ?? undefined,
-                index: f.index ? String(f.index) : undefined },
-              { onSuccess: () => resolve(), onError: (e) => reject(e) }
-            );
-          }));
+        .filter((f) => !f._isNew && dirtyIds.has(f.id) && !pendingDeletes.has(f.id))
+        .forEach((f) => {
+          ops.push(
+            new Promise<void>((resolve, reject) => {
+              updateFormField(
+                {
+                  id: f.id,
+                  label: f.label,
+                  placeholder: f.placeholder ?? undefined,
+                  description: f.description ?? undefined,
+                  isRequired: f.isRequired,
+                  options: f.options ?? undefined,
+                  index: f.index ? String(f.index) : undefined,
+                },
+                { onSuccess: () => resolve(), onError: (e) => reject(e) }
+              );
+            })
+          );
         });
 
-      // Delete removed fields (only those that existed on server)
       localFields
-        .filter(f => !f._isNew && pendingDeletes.has(f.id))
-        .forEach(f => {
-          ops.push(new Promise<void>((resolve, reject) => {
-            deleteFormField({ id: f.id }, { onSuccess: () => resolve(), onError: (e) => reject(e) });
-          }));
+        .filter((f) => !f._isNew && pendingDeletes.has(f.id))
+        .forEach((f) => {
+          ops.push(
+            new Promise<void>((resolve, reject) => {
+              deleteFormField(
+                { id: f.id },
+                { onSuccess: () => resolve(), onError: (e) => reject(e) }
+              );
+            })
+          );
         });
-      // Also delete fields that were new but got deleted before save
-      // (they never reached the server, so nothing to do for them)
 
       await Promise.all(ops);
       setDirtyIds(new Set());
       setPendingDeletes(new Set());
-      // Remove locally-deleted entries and clear _isNew flags
-      setLocalFields(prev =>
-        prev.filter(f => !pendingDeletes.has(f.id)).map(f => ({ ...f, _isNew: false }))
+      setLocalFields((prev) =>
+        prev.filter((f) => !pendingDeletes.has(f.id)).map((f) => ({ ...f, _isNew: false }))
       );
       toast.success("Blueprint saved");
     } catch {
@@ -362,8 +171,8 @@ function BuilderCanvas() {
 
   // ─── Helper: mark a local field as dirty ─────────────────────────────────
   const updateLocal = useCallback((id: string, patch: Partial<LocalField>) => {
-    setLocalFields(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f));
-    setDirtyIds(prev => new Set(prev).add(id));
+    setLocalFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    setDirtyIds((prev) => new Set(prev).add(id));
   }, []);
 
   // ─── React Flow state ─────────────────────────────────────────────────────
@@ -385,31 +194,43 @@ function BuilderCanvas() {
 
   // Sync localFields → React Flow nodes/edges
   useEffect(() => {
-    const visible = localFields.filter(f => !pendingDeletes.has(f.id));
-    setNodes(visible.map((field, idx) => {
-      const p = (typeof field.options === "object" && field.options ? field.options as any : {}).position
-              || { x: 300, y: idx * 170 + 80 };
-      return { id: field.id, type: "formField", position: p, data: { field } };
-    }));
+    const visible = localFields.filter((f) => !pendingDeletes.has(f.id));
+    setNodes(
+      visible.map((field, idx) => {
+        const p =
+          (typeof field.options === "object" && field.options
+            ? (field.options as any)
+            : {}
+          ).position || { x: 300, y: idx * 170 + 80 };
+        return { id: field.id, type: "formField", position: p, data: { field } };
+      })
+    );
     const mappedEdges: Edge[] = [];
     for (let i = 0; i < visible.length - 1; i++) {
-      const s = visible[i]; const t = visible[i + 1];
-      if (s && t) mappedEdges.push({
-        id: `e-${s.id}-${t.id}`, source: s.id, target: t.id, animated: true,
-        style: { stroke: isDark ? "#d4af37" : "#3b5e82", strokeWidth: 1.5, strokeDasharray: "4,4" }
-      });
+      const s = visible[i];
+      const t = visible[i + 1];
+      if (s && t)
+        mappedEdges.push({
+          id: `e-${s.id}-${t.id}`,
+          source: s.id,
+          target: t.id,
+          animated: true,
+          style: {
+            stroke: isDark ? "#d4af37" : "#3b5e82",
+            strokeWidth: 1.5,
+            strokeDasharray: "4,4",
+          },
+        });
     }
     setEdges(mappedEdges);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localFields, pendingDeletes, isDark]);
 
-  // selectedField from localFields so inspector reflects unsaved edits
   const selectedField = useMemo(
-    () => localFields.find(f => f.id === selectedNodeId) ?? null,
+    () => localFields.find((f) => f.id === selectedNodeId) ?? null,
     [localFields, selectedNodeId]
   );
 
-  // Sync selectedField → inspector inputs
   useEffect(() => {
     if (selectedField) {
       setLabel(selectedField.label);
@@ -418,9 +239,10 @@ function BuilderCanvas() {
       setDescription(selectedField.description || "");
       setOptionsList(getFieldOptionsArray(selectedField));
     }
-  }, [selectedField?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedField?.id]);
 
-  // ─── Drag & Drop: add field locally (no API call) ─────────────────────────
+  // ─── Drag & Drop ──────────────────────────────────────────────────────────
   const onDragStart = (event: React.DragEvent, type: string) => {
     event.dataTransfer.setData("application/reactflow", type);
     event.dataTransfer.effectAllowed = "move";
@@ -431,23 +253,37 @@ function BuilderCanvas() {
     event.dataTransfer.dropEffect = "move";
   }, []);
 
-  const onDrop = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    const type = event.dataTransfer.getData("application/reactflow");
-    if (!type || !reactFlowWrapper.current) return;
-    const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-    const tempId = `new-${Date.now()}`;
-    const nextIndex = ((localFields.filter(f => !pendingDeletes.has(f.id)).length) + 1).toFixed(2);
-    const newField = {
-      id: tempId, formId, label: "", labelKey: "field", placeholder: null,
-      isRequired: false, index: nextIndex, type: type as any,
-      options: { position }, description: null,
-      createdAt: new Date(), updatedAt: new Date(), _isNew: true,
-    };
-    setLocalFields(prev => [...prev, newField]);
-    setDirtyIds(prev => new Set(prev).add(tempId));
-    setSelectedNodeId(tempId);
-  }, [screenToFlowPosition, localFields, pendingDeletes, formId]);
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const type = event.dataTransfer.getData("application/reactflow");
+      if (!type || !reactFlowWrapper.current) return;
+      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      const tempId = `new-${Date.now()}`;
+      const nextIndex = (
+        localFields.filter((f) => !pendingDeletes.has(f.id)).length + 1
+      ).toFixed(2);
+      const newField = {
+        id: tempId,
+        formId,
+        label: "",
+        labelKey: "field",
+        placeholder: null,
+        isRequired: false,
+        index: nextIndex,
+        type: type as any,
+        options: { position },
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        _isNew: true,
+      };
+      setLocalFields((prev) => [...prev, newField]);
+      setDirtyIds((prev) => new Set(prev).add(tempId));
+      setSelectedNodeId(tempId);
+    },
+    [screenToFlowPosition, localFields, pendingDeletes, formId]
+  );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: any) => {
     setSelectedNodeId(node.id);
@@ -456,58 +292,67 @@ function BuilderCanvas() {
   const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
 
   // ─── Node drag: update position locally ───────────────────────────────────
-  const onNodeDragStop = useCallback((_event: any, node: Node) => {
-    const currentField = localFields.find(f => f.id === node.id);
-    if (!currentField) return;
-    const currentOpts = typeof currentField.options === "object" && currentField.options
-      ? currentField.options : {};
-    const sortedNodes = [...nodes];
-    const idx = sortedNodes.findIndex(n => n.id === node.id);
-    if (idx !== -1) sortedNodes[idx] = { ...sortedNodes[idx]!, position: node.position };
-    sortedNodes.sort((a, b) => a.position.y - b.position.y);
-    const originalOrder = localFields.filter(f => !pendingDeletes.has(f.id)).map(f => f.id);
-    const newOrder = sortedNodes.map(n => n.id);
-    const orderChanged = JSON.stringify(originalOrder) !== JSON.stringify(newOrder);
+  const onNodeDragStop = useCallback(
+    (_event: any, node: Node) => {
+      const currentField = localFields.find((f) => f.id === node.id);
+      if (!currentField) return;
+      const currentOpts =
+        typeof currentField.options === "object" && currentField.options
+          ? currentField.options
+          : {};
+      const sortedNodes = [...nodes];
+      const idx = sortedNodes.findIndex((n) => n.id === node.id);
+      if (idx !== -1) sortedNodes[idx] = { ...sortedNodes[idx]!, position: node.position };
+      sortedNodes.sort((a, b) => a.position.y - b.position.y);
+      const originalOrder = localFields
+        .filter((f) => !pendingDeletes.has(f.id))
+        .map((f) => f.id);
+      const newOrder = sortedNodes.map((n) => n.id);
+      const orderChanged = JSON.stringify(originalOrder) !== JSON.stringify(newOrder);
 
-    let newIndex: string = String(currentField.index);
-    if (orderChanged) {
-      const newIdx = sortedNodes.findIndex(n => n.id === node.id);
-      if (newIdx === 0) {
-        const below = (sortedNodes[1]?.data as any)?.field;
-        if (below) newIndex = (parseFloat(below.index) / 2).toFixed(2);
-      } else if (newIdx === sortedNodes.length - 1) {
-        const above = (sortedNodes[newIdx - 1]?.data as any)?.field;
-        if (above) newIndex = (parseFloat(above.index) + 1.0).toFixed(2);
-      } else {
-        const above = (sortedNodes[newIdx - 1]?.data as any)?.field;
-        const below = (sortedNodes[newIdx + 1]?.data as any)?.field;
-        if (above && below) newIndex = ((parseFloat(above.index) + parseFloat(below.index)) / 2).toFixed(2);
+      let newIndex: string = String(currentField.index);
+      if (orderChanged) {
+        const newIdx = sortedNodes.findIndex((n) => n.id === node.id);
+        if (newIdx === 0) {
+          const below = (sortedNodes[1]?.data as any)?.field;
+          if (below) newIndex = (parseFloat(below.index) / 2).toFixed(2);
+        } else if (newIdx === sortedNodes.length - 1) {
+          const above = (sortedNodes[newIdx - 1]?.data as any)?.field;
+          if (above) newIndex = (parseFloat(above.index) + 1.0).toFixed(2);
+        } else {
+          const above = (sortedNodes[newIdx - 1]?.data as any)?.field;
+          const below = (sortedNodes[newIdx + 1]?.data as any)?.field;
+          if (above && below)
+            newIndex = (
+              (parseFloat(above.index) + parseFloat(below.index)) / 2
+            ).toFixed(2);
+        }
       }
-    }
-    updateLocal(node.id, { index: newIndex, options: { ...currentOpts as any, position: node.position } });
-  }, [localFields, pendingDeletes, nodes, updateLocal]);
+      updateLocal(node.id, {
+        index: newIndex,
+        options: { ...(currentOpts as any), position: node.position },
+      });
+    },
+    [localFields, pendingDeletes, nodes, updateLocal]
+  );
 
-  // ─── Inspector handlers: update locally, no API call ──────────────────────
-  // (label/placeholder/description update via onChange directly)
+  const handleRequiredChange = useCallback(
+    (checked: boolean) => {
+      if (!selectedField) return;
+      setIsRequired(checked);
+      updateLocal(selectedField.id, { isRequired: checked });
+    },
+    [selectedField, updateLocal]
+  );
 
-  const handleRequiredChange = useCallback((checked: boolean) => {
-    if (!selectedField) return;
-    setIsRequired(checked);
-    updateLocal(selectedField.id, { isRequired: checked });
-  }, [selectedField, updateLocal]);
-
-  // ─── Delete field locally ─────────────────────────────────────────────────
   const handleDeleteField = useCallback(() => {
     if (!selectedNodeId) return;
-    setPendingDeletes(prev => new Set(prev).add(selectedNodeId));
-    setDirtyIds(prev => new Set(prev).add(selectedNodeId));
+    setPendingDeletes((prev) => new Set(prev).add(selectedNodeId));
+    setDirtyIds((prev) => new Set(prev).add(selectedNodeId));
     setSelectedNodeId(null);
     toast("Field removed — save to confirm", { duration: 2000 });
   }, [selectedNodeId]);
 
-  // While loading, render nothing — the dashboard overlay already shows
-  // "Drafting Blueprint..." when coming from form creation. On direct navigation
-  // show a minimal skeleton so the screen isn't blank.
   if (formLoading || fieldsLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
@@ -520,8 +365,13 @@ function BuilderCanvas() {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
         <div className="text-center space-y-4">
-          <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">Blueprint not found</h3>
-          <Link href="/dashboard/sketches" className="text-xs uppercase font-serif tracking-wider font-bold text-[#8e6e53] dark:text-[#d4af37] hover:underline">
+          <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">
+            Blueprint not found
+          </h3>
+          <Link
+            href="/dashboard/sketches"
+            className="text-xs uppercase font-serif tracking-wider font-bold text-[#8e6e53] dark:text-[#d4af37] hover:underline"
+          >
             Back to Catalog
           </Link>
         </div>
@@ -531,147 +381,22 @@ function BuilderCanvas() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-[#faf7f0] dark:bg-[#121212] font-sans transition-colors duration-300">
-
-      {/* Dynamic Top Bar Header */}
-      <header className="h-16 px-6 border-b border-[#0d2137]/15 dark:border-white/10 flex items-center justify-between bg-white dark:bg-[#1c1c1e] z-10">
-
-        {/* Left Actions */}
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/sketches"
-            onClick={(e) => {
-              if (isDirty) {
-                e.preventDefault();
-                pendingNavRef.current = "/dashboard/sketches";
-                setShowUnsavedDialog(true);
-              }
-            }}
-            className="flex items-center gap-1 text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137]/65 dark:text-white/65 hover:text-[#0d2137] dark:hover:text-white transition-colors cursor-pointer pr-3 border-r border-[#0d2137]/15 dark:border-white/10"
-          >
-            <ChevronLeft className="size-4" />
-            <span>Catalog</span>
-          </Link>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-serif font-bold text-[#0d2137] dark:text-white leading-none">
-                {form.title}
-              </h1>
-              <span className="text-[9px] font-serif uppercase tracking-widest font-bold px-2 py-0.5 border border-[#0d2137]/20 dark:border-white/20 text-[#0d2137]/60 dark:text-white/60 rounded">
-                {form.isPublished ? "Commissioned" : "Drafting"}
-              </span>
-            </div>
-            {form.description && (
-              <p className="text-[10px] text-[#0d2137]/50 dark:text-white/40 font-serif italic line-clamp-1 mt-0.5">
-                {form.description}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
-          {isDirty && (
-            <span className="text-[10px] font-serif text-[#8e6e53] dark:text-[#d4af37] font-bold uppercase tracking-widest animate-pulse">
-              Unsaved changes
-            </span>
-          )}
-
-          <button
-            onClick={handleSave}
-            disabled={!isDirty || isSaving}
-            className="flex items-center gap-1.5 bg-[#faf7f0]/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer disabled:opacity-40"
-          >
-            <Save className="size-3.5" />
-            <span>{isSaving ? "Saving..." : "Save"}</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 bg-[#faf7f0]/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer">
-            <Eye className="size-3.5" />
-            <span>Preview</span>
-          </button>
-
-          <button
-            onClick={() => {
-              const url = `${window.location.origin}/forms/${formId}`;
-              navigator.clipboard.writeText(url);
-              toast.success("Share link copied to clipboard!");
-            }}
-            className="flex items-center gap-1.5 bg-[#faf7f0]/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
-          >
-            <Share2 className="size-3.5" />
-            <span>Share</span>
-          </button>
-
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            title="Delete this blueprint"
-            className="flex items-center gap-1.5 border border-red-500/30 hover:border-red-500/60 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
-          >
-            <Trash2 className="size-3.5" />
-            <span>Delete</span>
-          </button>
-
-          <button
-            onClick={async () => {
-              // Save any pending changes before publishing
-              if (isDirty) await handleSave();
-              publishForm(                { id: formId },
-                {
-                  onSuccess: () => toast.success("Form published successfully"),
-                  onError: (err) => toast.error(err.message || "Failed to publish form"),
-                }
-              );
-            }}
-            disabled={publishPending}
-            className="bg-[#0d2137] dark:bg-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] text-white dark:text-[#0d2137] border border-[#0d2137] dark:border-[#b9c9df] py-1.5 px-4 text-[10px] uppercase font-serif font-bold tracking-widest rounded transition-all cursor-pointer disabled:opacity-50"
-          >
-            {publishPending ? "Publishing..." : "Publish"}
-          </button>
-        </div>
-      </header>
+      <BuilderHeader
+        form={form}
+        formId={formId}
+        isDirty={isDirty}
+        isSaving={isSaving}
+        publishPending={publishPending}
+        handleSave={handleSave}
+        setShowDeleteConfirm={setShowDeleteConfirm}
+        publishForm={publishForm}
+        pendingNavRef={pendingNavRef}
+        setShowUnsavedDialog={setShowUnsavedDialog}
+      />
 
       {/* Main Workspace split */}
       <div className="flex-1 flex overflow-hidden">
-
-        {/* Left Side Panel (FIELDS list) */}
-        <aside className="w-64 bg-white dark:bg-[#1c1c1e] border-r border-[#0d2137]/15 dark:border-white/10 flex flex-col">
-          <div className="p-4 border-b border-[#0d2137]/10 dark:border-white/10">
-            <h2 className="text-[11px] font-serif uppercase tracking-widest text-[#0d2137] dark:text-white font-bold">
-              Blueprint Fields
-            </h2>
-            <p className="text-[10px] text-[#0d2137]/50 dark:text-white/40 font-serif italic mt-0.5">
-              Drag elements onto grid canvas
-            </p>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {AVAILABLE_FIELDS.map((f) => {
-              const Icon = f.icon;
-              return (
-                <div
-                  key={f.type}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, f.type)}
-                  className="flex items-center gap-3 p-3 bg-[#faf8f5] dark:bg-[#2c2c2e]/45 border border-[#0d2137]/10 dark:border-white/5 hover:border-[#0d2137]/20 dark:hover:border-white/10 hover:-translate-y-px hover:shadow-[1px_2px_4px_rgba(13,33,55,0.03)] cursor-grab active:cursor-grabbing rounded transition-all select-none group"
-                >
-                  <div className="p-1.5 bg-white dark:bg-[#222224] border border-[#0d2137]/10 dark:border-white/5 rounded text-[#0d2137]/75 dark:text-white/70 group-hover:text-[#8e6e53] dark:group-hover:text-[#d4af37] transition-colors">
-                    <Icon className="size-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-serif font-bold text-[#0d2137] dark:text-white leading-tight">
-                      {f.label}
-                    </h4>
-                    <p className="text-[9px] text-[#0d2137]/45 dark:text-white/40 leading-none mt-0.5">
-                      {f.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-        </aside>
+        <FieldSidebar onDragStart={onDragStart} />
 
         {/* Middle Canvas Area */}
         <main
@@ -698,7 +423,6 @@ function BuilderCanvas() {
             preventScrolling={isLocked}
             proOptions={{ hideAttribution: true }}
           >
-            {/* Custom Grid Background styling */}
             <Background
               variant={BackgroundVariant.Dots}
               color={isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(13, 33, 55, 0.3)"}
@@ -706,8 +430,10 @@ function BuilderCanvas() {
               size={1.5}
             />
 
-            {/* Custom Controls panel styled to match design */}
-            <Panel position="bottom-left" className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137]/15 dark:border-white/10 rounded-md p-1 shadow-[2px_2px_0px_0px_rgba(13,33,55,0.05)] flex flex-col gap-1 z-10">
+            <Panel
+              position="bottom-left"
+              className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137]/15 dark:border-white/10 rounded-md p-1 shadow-[2px_2px_0px_0px_rgba(13,33,55,0.05)] flex flex-col gap-1 z-10"
+            >
               <button
                 onClick={() => zoomIn()}
                 title="Zoom In"
@@ -744,394 +470,60 @@ function BuilderCanvas() {
           </ReactFlow>
         </main>
 
-        {/* Right Side Panel (Inspector / Settings) */}
-        <aside className="w-80 bg-white dark:bg-[#1c1c1e] border-l border-[#0d2137]/15 dark:border-white/10 flex flex-col justify-between">
-          {selectedField ? (
-            <>
-              {/* Active selection settings */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
-                {/* Section Header */}
-                <div className="flex justify-between items-center pb-4 border-b border-[#0d2137]/10 dark:border-white/10">
-                  <div className="flex items-center gap-2">
-                    <Settings className="size-4 text-[#8e6e53] dark:text-[#d4af37]" />
-                    <h2 className="text-[13px] font-serif uppercase tracking-wider text-[#0d2137] dark:text-white font-bold">
-                      Field Inspector
-                    </h2>
-                  </div>
-                  <span className="text-[9px] font-serif font-bold uppercase bg-[#0d2137]/5 dark:bg-white/10 px-2 py-0.5 rounded text-[#0d2137]/60 dark:text-white/60">
-                    {selectedField.type}
-                  </span>
-                </div>
-
-                {/* Form Input: Label */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                    Field Label
-                  </label>
-                  <input
-                    type="text"
-                    value={label}
-                    onChange={(e) => {
-                      setLabel(e.target.value);
-                      if (selectedField) updateLocal(selectedField.id, { label: e.target.value });
-                    }}
-                    className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2.5 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded transition-colors"
-                  />
-                </div>
-
-                {/* Form Input: Placeholder */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                    Placeholder Hint
-                  </label>
-                  <input
-                    type="text"
-                    value={placeholder}
-                    onChange={(e) => {
-                      setPlaceholder(e.target.value);
-                      if (selectedField) updateLocal(selectedField.id, { placeholder: e.target.value });
-                    }}
-                    className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2.5 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded transition-colors"
-                  />
-                </div>
-
-                {/* Form Input: Description */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                    Description / Help Text
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => {
-                      setDescription(e.target.value);
-                      if (selectedField) updateLocal(selectedField.id, { description: e.target.value });
-                    }}
-                    rows={2}
-                    className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2.5 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded transition-colors resize-none"
-                  />
-                </div>
-
-                {/* Form Input: Required Switch Toggle */}
-                <div className="flex items-center justify-between pt-2">
-                  <div>
-                    <h4 className="text-xs font-serif font-bold text-[#0d2137] dark:text-white">Required Input</h4>
-                    <p className="text-[9px] text-[#0d2137]/50 dark:text-white/40 font-serif italic leading-none mt-0.5">Require responders to answer</p>
-                  </div>
-
-                  <button
-                    onClick={() => handleRequiredChange(!isRequired)}
-                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${isRequired ? 'bg-[#3b5e82] dark:bg-[#d4af37]' : 'bg-[#0d2137]/10 dark:bg-white/10'}`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${isRequired ? 'translate-x-5' : 'translate-x-0'}`}
-                    />
-                  </button>
-                </div>
-
-                {/* Choice List Editor for dropdowns/checkboxes */}
-                {(selectedField.type === "SELECT" || selectedField.type === "CHECKBOX") && (
-                  <div className="space-y-3 pt-4 border-t border-[#0d2137]/10 dark:border-white/10">
-                    <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                      Menu Choices
-                    </label>
-                    <div className="space-y-2">
-                      {optionsList.map((opt, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={opt}
-                            onChange={(e) => {
-                              const next = [...optionsList];
-                              next[idx] = e.target.value;
-                              setOptionsList(next);
-                            }}
-                            onBlur={() => {
-                              const original = getFieldOptionsArray(selectedField);
-                              if (JSON.stringify(original) !== JSON.stringify(optionsList)) {
-                                updateLocal(selectedField.id, { options: optionsList });
-                              }
-                            }}
-                            className="flex-1 bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded"
-                          />
-                          <button
-                            onClick={() => {
-                              const next = optionsList.filter((_, i) => i !== idx);
-                              setOptionsList(next);
-                              updateLocal(selectedField.id, { options: next });
-                            }}
-                            disabled={optionsList.length <= 1}
-                            className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/5 rounded disabled:opacity-30 cursor-pointer"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => {
-                        const next = [...optionsList, `Choice ${optionsList.length + 1}`];
-                        setOptionsList(next);
-                        updateLocal(selectedField.id, { options: next });
-                      }}
-                      className="w-full py-1.5 border-2 border-dashed border-[#0d2137]/20 dark:border-white/10 hover:border-[#8e6e53] dark:hover:border-[#d4af37] text-xs font-serif font-bold text-[#0d2137]/70 dark:text-white/70 hover:text-[#8e6e53] dark:hover:text-[#d4af37] text-center rounded transition-colors cursor-pointer"
-                    >
-                      + Add Choice
-                    </button>
-                  </div>
-                )}
-
-                {/* Rating Limit Scale */}
-                {selectedField.type === "RATING" && (
-                  <div className="space-y-3 pt-4 border-t border-[#0d2137]/10 dark:border-white/10">
-                    <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                      Rating Scale Limit
-                    </label>
-                    <select
-                      value={(selectedField.options as any)?.max || 5}
-                      onChange={(e) => {
-                        updateLocal(selectedField.id, {
-                          options: { ...(selectedField.options as any || {}), max: parseInt(e.target.value) }
-                        });
-                      }}
-                      className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded"
-                    >
-                      <option value={3}>3 Stars (Small)</option>
-                      <option value={5}>5 Stars (Standard)</option>
-                      <option value={10}>10 Stars (Detailed)</option>
-                    </select>
-                  </div>
-                )}
-
-                {/* Date Bounds Options */}
-                {selectedField.type === "DATE" && (
-                  <div className="space-y-4 pt-4 border-t border-[#0d2137]/10 dark:border-white/10">
-                    <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                      Date Range Settings
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[8px] font-serif text-[#0d2137]/50 dark:text-white/40 uppercase">Min Date</label>
-                        <input
-                          type="date"
-                          value={(selectedField.options as any)?.minDate || ""}
-                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), minDate: e.target.value } }); }}
-                          className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[8px] font-serif text-[#0d2137]/50 dark:text-white/40 uppercase">Max Date</label>
-                        <input
-                          type="date"
-                          value={(selectedField.options as any)?.maxDate || ""}
-                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), maxDate: e.target.value } }); }}
-                          className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Time Bounds Options */}
-                {selectedField.type === "TIME" && (
-                  <div className="space-y-4 pt-4 border-t border-[#0d2137]/10 dark:border-white/10">
-                    <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                      Time Range Settings
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[8px] font-serif text-[#0d2137]/50 dark:text-white/40 uppercase">Min Time</label>
-                        <input
-                          type="time"
-                          value={(selectedField.options as any)?.minTime || ""}
-                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), minTime: e.target.value } }); }}
-                          className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[8px] font-serif text-[#0d2137]/50 dark:text-white/40 uppercase">Max Time</label>
-                        <input
-                          type="time"
-                          value={(selectedField.options as any)?.maxTime || ""}
-                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), maxTime: e.target.value } }); }}
-                          className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Toggle Configuration */}
-                {selectedField.type === "TOGGLE" && (
-                  <div className="space-y-4 pt-4 border-t border-[#0d2137]/10 dark:border-white/10">
-                    <label className="block text-[10px] font-serif uppercase tracking-wider text-[#0d2137]/60 dark:text-white/60 font-bold">
-                      Toggle Configuration
-                    </label>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-serif text-[#0d2137]/70 dark:text-white/60 font-bold">Default Value</span>
-                      <button
-                        onClick={() => {
-                          const currentVal = !!(selectedField.options as any)?.defaultValue;
-                          updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), defaultValue: !currentVal } });
-                        }}
-                        className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${(selectedField.options as any)?.defaultValue ? 'bg-[#3b5e82] dark:bg-[#d4af37]' : 'bg-[#0d2137]/10 dark:bg-white/10'}`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block size-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${(selectedField.options as any)?.defaultValue ? 'translate-x-4' : 'translate-x-0'}`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-serif text-[#0d2137]/50 dark:text-white/40 uppercase">Active State Label</label>
-                      <input
-                        type="text"
-                        defaultValue={(selectedField.options as any)?.activeLabel || "Yes"}
-                        onBlur={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), activeLabel: e.target.value || "Yes" } }); }}
-                        className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[8px] font-serif text-[#0d2137]/50 dark:text-white/40 uppercase">Inactive State Label</label>
-                      <input
-                        type="text"
-                        defaultValue={(selectedField.options as any)?.inactiveLabel || "No"}
-                        onBlur={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), inactiveLabel: e.target.value || "No" } }); }}
-                        className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
-                      />
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-              {/* Delete button wrapper */}
-              <div className="p-6 border-t border-[#0d2137]/10 dark:border-white/10 bg-[#faf8f5]/30">
-                <button
-                  onClick={handleDeleteField}
-                  className="w-full flex items-center justify-center gap-2 p-2.5 border border-red-500/25 hover:border-red-500/50 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 rounded text-xs font-serif font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  <Trash2 className="size-4" />
-                  <span>Delete Field</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            /* Empty state inspector */
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3 select-none">
-              <div className="p-3 bg-[#faf8f5] dark:bg-[#2c2c2e]/45 border border-[#0d2137]/10 dark:border-white/5 rounded text-[#0d2137]/45 dark:text-white/40">
-                <Settings className="size-6 animate-pulse" />
-              </div>
-              <div>
-                <h4 className="text-xs font-serif font-bold text-[#0d2137] dark:text-white uppercase tracking-wider">
-                  No Selection
-                </h4>
-                <p className="text-[10px] text-[#0d2137]/50 dark:text-white/40 leading-relaxed font-serif italic max-w-45 mx-auto mt-1">
-                  Click on any node to view and configure its blueprint parameters.
-                </p>
-              </div>
-            </div>
-          )}
-        </aside>
-
+        <FieldInspector
+          selectedField={selectedField}
+          label={label}
+          setLabel={setLabel}
+          placeholder={placeholder}
+          setPlaceholder={setPlaceholder}
+          description={description}
+          setDescription={setDescription}
+          isRequired={isRequired}
+          handleRequiredChange={handleRequiredChange}
+          optionsList={optionsList}
+          setOptionsList={setOptionsList}
+          updateLocal={updateLocal}
+          handleDeleteField={handleDeleteField}
+        />
       </div>
 
-      {/* Delete confirmation dialog */}
-      {showDeleteConfirm && form && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#0d2137]/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] dark:shadow-[6px_6px_0px_0px_#2a2a2a] max-w-sm w-full mx-4 space-y-4">
-            <div className="space-y-1">
-              <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-red-500 block">
-                — Permanent Action
-              </span>
-              <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">
-                Delete Blueprint?
-              </h3>
-              <p className="text-sm text-[#0d2137]/70 dark:text-white/60 font-serif leading-relaxed">
-                <span className="font-bold text-[#0d2137] dark:text-white">&ldquo;{form.title}&rdquo;</span> and all its fields and submissions will be permanently removed. This cannot be undone.
-              </p>
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deletePending}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/20 dark:border-white/20 rounded text-[#0d2137]/70 dark:text-white/70 hover:bg-[#0d2137]/5 cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    isDirtyRef.current = false;
-                    await deleteFormAsync({ id: formId });
-                    toast.success("Blueprint deleted");
-                    router.push("/dashboard/sketches");
-                  } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Failed to delete");
-                    setShowDeleteConfirm(false);
-                  }
-                }}
-                disabled={deletePending}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white rounded cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-              >
-                <Trash2 className="size-3.5" />
-                {deletePending ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteFormDialog
+        show={showDeleteConfirm}
+        formTitle={form.title}
+        deletePending={deletePending}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={async () => {
+          try {
+            isDirtyRef.current = false;
+            await deleteFormAsync({ id: formId });
+            toast.success("Blueprint deleted");
+            router.push("/dashboard/sketches");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete");
+            setShowDeleteConfirm(false);
+          }
+        }}
+      />
 
-      {/* Unsaved changes dialog — shown when navigating away with dirty state */}
-      {showUnsavedDialog && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#0d2137]/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] dark:shadow-[6px_6px_0px_0px_#2a2a2a] max-w-sm w-full mx-4 space-y-4">
-            <div>
-              <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">Unsaved Changes</h3>
-              <p className="text-sm text-[#0d2137]/70 dark:text-white/60 font-serif mt-1">
-                You have unsaved changes. Save before leaving or discard them?
-              </p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowUnsavedDialog(false)}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/25 dark:border-white/25 rounded text-[#0d2137]/70 dark:text-white/70 hover:bg-[#0d2137]/5 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  isDirtyRef.current = false;
-                  setDirtyIds(new Set());
-                  setPendingDeletes(new Set());
-                  setShowUnsavedDialog(false);
-                  if (pendingNavRef.current) window.location.href = pendingNavRef.current;
-                }}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/5 rounded cursor-pointer"
-              >
-                Discard
-              </button>
-              <button
-                onClick={async () => {
-                  await handleSave();
-                  // Mutate ref synchronously so beforeunload sees isDirty=false immediately
-                  isDirtyRef.current = false;
-                  setDirtyIds(new Set());
-                  setPendingDeletes(new Set());
-                  setShowUnsavedDialog(false);
-                  if (pendingNavRef.current) window.location.href = pendingNavRef.current;
-                }}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider bg-[#0d2137] dark:bg-[#b9c9df] text-white dark:text-[#0d2137] rounded cursor-pointer"
-              >
-                Save & Leave
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <UnsavedDialog
+        show={showUnsavedDialog}
+        onCancel={() => setShowUnsavedDialog(false)}
+        onDiscard={() => {
+          isDirtyRef.current = false;
+          setDirtyIds(new Set());
+          setPendingDeletes(new Set());
+          setShowUnsavedDialog(false);
+          if (pendingNavRef.current) window.location.href = pendingNavRef.current;
+        }}
+        onSaveAndLeave={async () => {
+          await handleSave();
+          isDirtyRef.current = false;
+          setDirtyIds(new Set());
+          setPendingDeletes(new Set());
+          setShowUnsavedDialog(false);
+          if (pendingNavRef.current) window.location.href = pendingNavRef.current;
+        }}
+      />
     </div>
   );
 }
