@@ -41,6 +41,9 @@ app.use(
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposedHeaders: ["Set-Cookie"],
+    // Cache preflight for 2 hours — eliminates the ~700ms OPTIONS round-trip
+    // on every cross-origin request after the first.
+    maxAge: 7200,
   }),
 );
 

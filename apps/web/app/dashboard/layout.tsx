@@ -45,8 +45,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [slug, setSlug] = useState("");
+  // isCreatingForm lives here (outside route boundary) so the overlay
+  // persists through navigation until the builder signals it's ready.
+  const [isCreatingForm, setIsCreatingForm] = useState(false);
 
-  const { createForm, isPending } = useCreateForm();
+  const { createFormAsync } = useCreateForm();
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -66,35 +69,69 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
-    createForm(
-      { title, description: description || undefined, slug },
-      {
-        onSuccess: (data) => {
-          toast.success("Blueprint created successfully!");
-          setCreateModalOpen(false);
-          setTitle("");
-          setDescription("");
-          setSlug("");
-          router.push(`/dashboard/sketches/${data.id}`);
-        },
-        onError: (err) => {
-          toast.error(err.message || "Failed to create blueprint sketch.");
-        }
-      }
-    );
+    const savedTitle = title;
+    const savedSlug = slug;
+    const savedDesc = description;
+
+    // Close modal and show fullscreen loading immediately
+    setCreateModalOpen(false);
+    setTitle("");
+    setDescription("");
+    setSlug("");
+    setIsCreatingForm(true);
+
+    createFormAsync({ title: savedTitle, description: savedDesc || undefined, slug: savedSlug })
+      .then((data) => {
+        router.push(`/dashboard/sketches/${data.id}`);
+        // Overlay is hidden by the builder page via setIsCreatingForm(false)
+        // once its data has loaded (see BuilderCanvas useEffect).
+      })
+      .catch((err) => {
+        toast.error(err.message || "Failed to create blueprint sketch.");
+        setTitle(savedTitle);
+        setDescription(savedDesc);
+        setSlug(savedSlug);
+        setCreateModalOpen(true);
+        setIsCreatingForm(false);
+      });
   };
 
   if (isBuilderPage) {
     return (
-      <div className={`${ebGaramond.variable} ${caveat.variable} font-sans min-h-screen bg-[#faf7f0] dark:bg-[#121212] text-[#0d2137] dark:text-[#faf7f0] transition-colors duration-300`}>
-        {children}
-      </div>
+      <DashboardProvider value={{ openCreateFormModal: () => setCreateModalOpen(true), isCreatingForm, setIsCreatingForm }}>
+        {/* Overlay persists on builder page until data is ready */}
+        {isCreatingForm && (
+          <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-10 h-10 border-2 border-[#0d2137] dark:border-white border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-serif font-bold uppercase tracking-widest text-[#0d2137]/70 dark:text-white/70">
+                Drafting Blueprint...
+              </p>
+            </div>
+          </div>
+        )}
+        <div className={`${ebGaramond.variable} ${caveat.variable} font-sans min-h-screen bg-[#faf7f0] dark:bg-[#121212] text-[#0d2137] dark:text-[#faf7f0] transition-colors duration-300`}>
+          {children}
+        </div>
+      </DashboardProvider>
     );
   }
 
   return (
-    <DashboardProvider value={{ openCreateFormModal: () => setCreateModalOpen(true) }}>
+    <DashboardProvider value={{ openCreateFormModal: () => setCreateModalOpen(true), isCreatingForm, setIsCreatingForm }}>
       <div className={`${ebGaramond.variable} ${caveat.variable} font-sans min-h-screen bg-[#faf7f0] dark:bg-[#121212] text-[#0d2137] dark:text-[#faf7f0] flex flex-col md:flex-row transition-colors duration-300`}>
+
+        {/* Fullscreen loading overlay while a new sketch is being created */}
+        {isCreatingForm && (
+          <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-10 h-10 border-2 border-[#0d2137] dark:border-white border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm font-serif font-bold uppercase tracking-widest text-[#0d2137]/70 dark:text-white/70">
+                Drafting Blueprint...
+              </p>
+            </div>
+          </div>
+        )}
         
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between p-4 border-b border-[#0d2137]/15 dark:border-[#faf7f0]/15 bg-[#faf7f0] dark:bg-[#121212] z-40">
@@ -231,11 +268,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </button>
                   <button
                     type="submit"
-                    disabled={isPending}
+                    disabled={isCreatingForm}
                     className="bg-[#0d2137] dark:bg-[#b9c9df] text-[#faf7f0] dark:text-[#0d2137] px-5 py-2.5 font-serif hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] active:bg-[#071321] border-2 border-[#0d2137] dark:border-[#b9c9df] shadow-[3px_3px_0px_0px_#8e6e53] dark:shadow-[3px_3px_0px_0px_#d4af37] hover:shadow-[1px_1px_0px_0px_#8e6e53] dark:hover:shadow-[1px_1px_0px_0px_#d4af37] flex items-center gap-1.5 font-bold uppercase tracking-wider text-xs rounded cursor-pointer disabled:opacity-50"
                   >
-                    {isPending ? "Drafting..." : "Create Sketch"}
-                    <Compass className={`size-3.5 ${isPending ? "animate-spin" : ""}`} />
+                    {isCreatingForm ? "Drafting..." : "Create Sketch"}
+                    <Compass className={`size-3.5 ${isCreatingForm ? "animate-spin" : ""}`} />
                   </button>
                 </div>
               </form>

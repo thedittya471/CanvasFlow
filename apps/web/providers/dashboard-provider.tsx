@@ -4,6 +4,8 @@ import React, { createContext, useContext } from "react";
 
 interface DashboardContextType {
   openCreateFormModal: () => void;
+  isCreatingForm: boolean;
+  setIsCreatingForm: (v: boolean) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);

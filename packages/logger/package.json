@@ -1,6 +1,7 @@
 {
   "name": "@repo/logger",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {},
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

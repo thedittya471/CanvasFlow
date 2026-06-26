@@ -37,7 +37,7 @@ import {
   Lock,
   Unlock,
   Maximize2,
-  CloudLightning,
+  Save,
   Eye,
   Share2,
   Plus,
@@ -53,6 +53,7 @@ import {
 } from "~/hooks/api/form";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import { useDashboard } from "~/providers/dashboard-provider";
 
 // Define field metadata for the left sidebar
 const AVAILABLE_FIELDS = [
@@ -241,18 +242,133 @@ function BuilderCanvas() {
   const { form, isLoading: formLoading } = useGetForm(formId);
   const { fields, isLoading: fieldsLoading } = useListFormFields(formId);
 
+  // Dismiss the "Drafting Blueprint..." overlay from dashboard layout
+  // as soon as data arrives — single seamless transition.
+  const { setIsCreatingForm } = useDashboard();
+  useEffect(() => {
+    if (!formLoading && !fieldsLoading) {
+      setIsCreatingForm(false);
+    }
+  }, [formLoading, fieldsLoading, setIsCreatingForm]);
+
   const { createFormField } = useCreateFormField();
   const { updateFormField } = useUpdateFormField();
   const { deleteFormField } = useDeleteFormField();
   const { publishForm, isPending: publishPending } = usePublishForm();
 
-  // Local React Flow Nodes / Edges State
+  // ─── Local draft state ────────────────────────────────────────────────────
+  // All edits are kept in localFields. API is only called on explicit Save.
+  type LocalField = NonNullable<typeof fields>[number] & { _isNew?: boolean };
+  const [localFields, setLocalFields] = useState<LocalField[]>([]);
+  const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
+  const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const pendingNavRef = useRef<string | null>(null);
+  // Ref so beforeunload always reads the current dirty state synchronously
+  const isDirtyRef = useRef(false);
+
+  const isDirty = dirtyIds.size > 0 || pendingDeletes.size > 0;
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
+
+  // Seed localFields from server data (only on first load)
+  useEffect(() => {
+    if (fields && localFields.length === 0) {
+      setLocalFields(fields as LocalField[]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fields]);
+
+  // Warn browser on tab close / reload when dirty — registered once, reads ref
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []); // intentionally empty — handler reads ref, not state
+
+  // ─── Save all pending changes ─────────────────────────────────────────────
+  const handleSave = useCallback(async () => {
+    if (!isDirty || isSaving) return;
+    setIsSaving(true);
+    try {
+      const ops: Promise<unknown>[] = [];
+
+      // Create new fields
+      localFields
+        .filter(f => f._isNew && !pendingDeletes.has(f.id))
+        .forEach(f => {
+          ops.push(new Promise<void>((resolve, reject) => {
+            createFormField(
+              { formId, label: f.label, type: f.type as any, isRequired: f.isRequired,
+                placeholder: f.placeholder ?? undefined,
+                description: f.description ?? undefined,
+                options: f.options ?? undefined,
+                index: f.index ? parseFloat(String(f.index)) : undefined },
+              { onSuccess: () => resolve(), onError: (e) => reject(e) }
+            );
+          }));
+        });
+
+      // Update dirty existing fields
+      localFields
+        .filter(f => !f._isNew && dirtyIds.has(f.id) && !pendingDeletes.has(f.id))
+        .forEach(f => {
+          ops.push(new Promise<void>((resolve, reject) => {
+            updateFormField(
+              { id: f.id, label: f.label, placeholder: f.placeholder ?? undefined,
+                description: f.description ?? undefined, isRequired: f.isRequired,
+                options: f.options ?? undefined,
+                index: f.index ? String(f.index) : undefined },
+              { onSuccess: () => resolve(), onError: (e) => reject(e) }
+            );
+          }));
+        });
+
+      // Delete removed fields (only those that existed on server)
+      localFields
+        .filter(f => !f._isNew && pendingDeletes.has(f.id))
+        .forEach(f => {
+          ops.push(new Promise<void>((resolve, reject) => {
+            deleteFormField({ id: f.id }, { onSuccess: () => resolve(), onError: (e) => reject(e) });
+          }));
+        });
+      // Also delete fields that were new but got deleted before save
+      // (they never reached the server, so nothing to do for them)
+
+      await Promise.all(ops);
+      setDirtyIds(new Set());
+      setPendingDeletes(new Set());
+      // Remove locally-deleted entries and clear _isNew flags
+      setLocalFields(prev =>
+        prev.filter(f => !pendingDeletes.has(f.id)).map(f => ({ ...f, _isNew: false }))
+      );
+      toast.success("Blueprint saved");
+    } catch {
+      toast.error("Some changes failed to save — please retry");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isDirty, isSaving, localFields, dirtyIds, pendingDeletes, formId, createFormField, updateFormField, deleteFormField]);
+
+  // ─── Helper: mark a local field as dirty ─────────────────────────────────
+  const updateLocal = useCallback((id: string, patch: Partial<LocalField>) => {
+    setLocalFields(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f));
+    setDirtyIds(prev => new Set(prev).add(id));
+  }, []);
+
+  // ─── React Flow state ─────────────────────────────────────────────────────
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
 
-  // Inspector local form states
+  // Inspector controlled inputs
   const [label, setLabel] = useState("");
   const [placeholder, setPlaceholder] = useState("");
   const [isRequired, setIsRequired] = useState(false);
@@ -263,47 +379,33 @@ function BuilderCanvas() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // Sync database fields to React Flow workspace
+  // Sync localFields → React Flow nodes/edges
   useEffect(() => {
-    if (fields) {
-      const mappedNodes = fields.map((field, idx) => {
-        const fieldOptions = typeof field.options === "object" && field.options ? field.options : {};
-        const pos = (fieldOptions as any).position || { x: 300, y: idx * 170 + 80 };
-
-        return {
-          id: field.id,
-          type: "formField",
-          position: pos,
-          data: { field }
-        };
+    const visible = localFields.filter(f => !pendingDeletes.has(f.id));
+    setNodes(visible.map((field, idx) => {
+      const p = (typeof field.options === "object" && field.options ? field.options as any : {}).position
+              || { x: 300, y: idx * 170 + 80 };
+      return { id: field.id, type: "formField", position: p, data: { field } };
+    }));
+    const mappedEdges: Edge[] = [];
+    for (let i = 0; i < visible.length - 1; i++) {
+      const s = visible[i]; const t = visible[i + 1];
+      if (s && t) mappedEdges.push({
+        id: `e-${s.id}-${t.id}`, source: s.id, target: t.id, animated: true,
+        style: { stroke: isDark ? "#d4af37" : "#3b5e82", strokeWidth: 1.5, strokeDasharray: "4,4" }
       });
-
-      setNodes(mappedNodes);
-
-      // Create sequence edges
-      const mappedEdges: Edge[] = [];
-      for (let i = 0; i < fields.length - 1; i++) {
-        const sourceField = fields[i];
-        const targetField = fields[i + 1];
-        if (sourceField && targetField) {
-          mappedEdges.push({
-            id: `e-${sourceField.id}-${targetField.id}`,
-            source: sourceField.id,
-            target: targetField.id,
-            animated: true,
-            style: { stroke: isDark ? "#d4af37" : "#3b5e82", strokeWidth: 1.5, strokeDasharray: "4,4" }
-          });
-        }
-      }
-      setEdges(mappedEdges);
     }
-  }, [fields, isDark, setNodes, setEdges]);
+    setEdges(mappedEdges);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localFields, pendingDeletes, isDark]);
 
-  // Sync selected node data to inspector local states
-  const selectedField = useMemo(() => {
-    return fields?.find(f => f.id === selectedNodeId) || null;
-  }, [fields, selectedNodeId]);
+  // selectedField from localFields so inspector reflects unsaved edits
+  const selectedField = useMemo(
+    () => localFields.find(f => f.id === selectedNodeId) ?? null,
+    [localFields, selectedNodeId]
+  );
 
+  // Sync selectedField → inspector inputs
   useEffect(() => {
     if (selectedField) {
       setLabel(selectedField.label);
@@ -312,9 +414,9 @@ function BuilderCanvas() {
       setDescription(selectedField.description || "");
       setOptionsList(getFieldOptionsArray(selectedField));
     }
-  }, [selectedField]);
+  }, [selectedField?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle Drag & Drop creation
+  // ─── Drag & Drop: add field locally (no API call) ─────────────────────────
   const onDragStart = (event: React.DragEvent, type: string) => {
     event.dataTransfer.setData("application/reactflow", type);
     event.dataTransfer.effectAllowed = "move";
@@ -325,181 +427,79 @@ function BuilderCanvas() {
     event.dataTransfer.dropEffect = "move";
   }, []);
 
-  const onDrop = useCallback(async (event: React.DragEvent) => {
+  const onDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-
     const type = event.dataTransfer.getData("application/reactflow");
-    if (!type) return;
+    if (!type || !reactFlowWrapper.current) return;
+    const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    const tempId = `new-${Date.now()}`;
+    const nextIndex = ((localFields.filter(f => !pendingDeletes.has(f.id)).length) + 1).toFixed(2);
+    const newField = {
+      id: tempId, formId, label: "", labelKey: "field", placeholder: null,
+      isRequired: false, index: nextIndex, type: type as any,
+      options: { position }, description: null,
+      createdAt: new Date(), updatedAt: new Date(), _isNew: true,
+    };
+    setLocalFields(prev => [...prev, newField]);
+    setDirtyIds(prev => new Set(prev).add(tempId));
+    setSelectedNodeId(tempId);
+  }, [screenToFlowPosition, localFields, pendingDeletes, formId]);
 
-    if (!reactFlowWrapper.current) return;
-
-    const position = screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
-
-    createFormField(
-      {
-        formId,
-        label: "",
-        type: type as any,
-        isRequired: false,
-        options: { position }
-      },
-      {
-        onSuccess: (newField) => {
-          setSelectedNodeId(newField.id);
-          toast.success("Field added to canvas");
-        },
-        onError: (err) => {
-          toast.error(err.message || "Failed to add field");
-        }
-      }
-    );
-  }, [screenToFlowPosition, createFormField, formId]);
-
-  // Handle Node selection
   const onNodeClick = useCallback((_: React.MouseEvent, node: any) => {
     setSelectedNodeId(node.id);
   }, []);
 
-  const onPaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-  }, []);
+  const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
 
-  // Save node position after drag ends and calculate fractional index if order changed
-  const onNodeDragStop = useCallback(async (event: any, node: Node) => {
-    if (!fields) return;
-    const currentField = fields.find(f => f.id === node.id);
+  // ─── Node drag: update position locally ───────────────────────────────────
+  const onNodeDragStop = useCallback((_event: any, node: Node) => {
+    const currentField = localFields.find(f => f.id === node.id);
     if (!currentField) return;
-
-    const currentOpts = typeof currentField.options === "object" && currentField.options ? currentField.options : {};
-
-    // Get the updated list of nodes including the dragged node's new position
+    const currentOpts = typeof currentField.options === "object" && currentField.options
+      ? currentField.options : {};
     const sortedNodes = [...nodes];
-    const draggedNodeIdx = sortedNodes.findIndex(n => n.id === node.id);
-    const draggedNode = sortedNodes[draggedNodeIdx];
-    if (draggedNodeIdx !== -1 && draggedNode) {
-      sortedNodes[draggedNodeIdx] = {
-        ...draggedNode,
-        position: node.position
-      };
-    }
-    // Sort all nodes vertically by y coordinate
+    const idx = sortedNodes.findIndex(n => n.id === node.id);
+    if (idx !== -1) sortedNodes[idx] = { ...sortedNodes[idx]!, position: node.position };
     sortedNodes.sort((a, b) => a.position.y - b.position.y);
-
-    const originalOrder = fields.map(f => f.id);
+    const originalOrder = localFields.filter(f => !pendingDeletes.has(f.id)).map(f => f.id);
     const newOrder = sortedNodes.map(n => n.id);
     const orderChanged = JSON.stringify(originalOrder) !== JSON.stringify(newOrder);
 
+    let newIndex: string = String(currentField.index);
     if (orderChanged) {
       const newIdx = sortedNodes.findIndex(n => n.id === node.id);
-      let newIndex = currentField.index;
-
       if (newIdx === 0) {
-        // Dragged to top
-        const belowField = (sortedNodes[1]?.data as any)?.field;
-        if (belowField) {
-          newIndex = (parseFloat(belowField.index) / 2).toFixed(2);
-        }
+        const below = (sortedNodes[1]?.data as any)?.field;
+        if (below) newIndex = (parseFloat(below.index) / 2).toFixed(2);
       } else if (newIdx === sortedNodes.length - 1) {
-        // Dragged to bottom
-        const aboveField = (sortedNodes[newIdx - 1]?.data as any)?.field;
-        if (aboveField) {
-          newIndex = (parseFloat(aboveField.index) + 1.00).toFixed(2);
-        }
+        const above = (sortedNodes[newIdx - 1]?.data as any)?.field;
+        if (above) newIndex = (parseFloat(above.index) + 1.0).toFixed(2);
       } else {
-        // Dragged between two fields
-        const aboveField = (sortedNodes[newIdx - 1]?.data as any)?.field;
-        const belowField = (sortedNodes[newIdx + 1]?.data as any)?.field;
-        if (aboveField && belowField) {
-          newIndex = ((parseFloat(aboveField.index) + parseFloat(belowField.index)) / 2).toFixed(2);
-        }
+        const above = (sortedNodes[newIdx - 1]?.data as any)?.field;
+        const below = (sortedNodes[newIdx + 1]?.data as any)?.field;
+        if (above && below) newIndex = ((parseFloat(above.index) + parseFloat(below.index)) / 2).toFixed(2);
       }
-
-      updateFormField({
-        id: node.id,
-        index: newIndex,
-        options: {
-          ...currentOpts,
-          position: node.position
-        }
-      });
-    } else {
-      // Order didn't change, just update position
-      updateFormField({
-        id: node.id,
-        options: {
-          ...currentOpts,
-          position: node.position
-        }
-      });
     }
-  }, [fields, nodes, updateFormField]);
+    updateLocal(node.id, { index: newIndex, options: { ...currentOpts as any, position: node.position } });
+  }, [localFields, pendingDeletes, nodes, updateLocal]);
 
-  // Save changes on input Blur
-  const handleInputBlur = useCallback((fieldKey: "label" | "placeholder" | "description", val: string) => {
-    if (!selectedField) return;
-    if (selectedField[fieldKey] === val) return;
-
-    updateFormField(
-      {
-        id: selectedField.id,
-        [fieldKey]: val
-      },
-      {
-        onError: (err) => {
-          toast.error(err.message || "Failed to update field");
-        }
-      }
-    );
-  }, [selectedField, updateFormField]);
+  // ─── Inspector handlers: update locally, no API call ──────────────────────
+  // (label/placeholder/description update via onChange directly)
 
   const handleRequiredChange = useCallback((checked: boolean) => {
     if (!selectedField) return;
     setIsRequired(checked);
+    updateLocal(selectedField.id, { isRequired: checked });
+  }, [selectedField, updateLocal]);
 
-    updateFormField(
-      {
-        id: selectedField.id,
-        isRequired: checked
-      },
-      {
-        onError: (err) => {
-          toast.error(err.message || "Failed to update field");
-        }
-      }
-    );
-  }, [selectedField, updateFormField]);
-
-  // Delete field
+  // ─── Delete field locally ─────────────────────────────────────────────────
   const handleDeleteField = useCallback(() => {
     if (!selectedNodeId) return;
-
-    deleteFormField(
-      { id: selectedNodeId },
-      {
-        onSuccess: () => {
-          setSelectedNodeId(null);
-          toast.success("Field removed from canvas");
-        },
-        onError: (err) => {
-          toast.error(err.message || "Failed to delete field");
-        }
-      }
-    );
-  }, [selectedNodeId, deleteFormField]);
-
-  if (formLoading || fieldsLoading) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded border border-t-2 border-[#0d2137] dark:border-white border-t-transparent animate-spin" />
-          <span className="text-xs uppercase tracking-widest font-serif font-bold text-[#0d2137]/60 dark:text-white/60">Loading Studio Draftsman...</span>
-        </div>
-      </div>
-    );
-  }
+    setPendingDeletes(prev => new Set(prev).add(selectedNodeId));
+    setDirtyIds(prev => new Set(prev).add(selectedNodeId));
+    setSelectedNodeId(null);
+    toast("Field removed — save to confirm", { duration: 2000 });
+  }, [selectedNodeId]);
 
   if (!form) {
     return (
@@ -524,6 +524,13 @@ function BuilderCanvas() {
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard/sketches"
+            onClick={(e) => {
+              if (isDirty) {
+                e.preventDefault();
+                pendingNavRef.current = "/dashboard/sketches";
+                setShowUnsavedDialog(true);
+              }
+            }}
             className="flex items-center gap-1 text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137]/65 dark:text-white/65 hover:text-[#0d2137] dark:hover:text-white transition-colors cursor-pointer pr-3 border-r border-[#0d2137]/15 dark:border-white/10"
           >
             <ChevronLeft className="size-4" />
@@ -549,10 +556,20 @@ function BuilderCanvas() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-serif uppercase tracking-widest text-[#0d2137]/40 dark:text-white/40 font-bold flex items-center gap-1.5">
-            <CloudLightning className="size-3.5" />
-            <span>Auto Synced</span>
-          </span>
+          {isDirty && (
+            <span className="text-[10px] font-serif text-[#8e6e53] dark:text-[#d4af37] font-bold uppercase tracking-widest animate-pulse">
+              Unsaved changes
+            </span>
+          )}
+
+          <button
+            onClick={handleSave}
+            disabled={!isDirty || isSaving}
+            className="flex items-center gap-1.5 bg-[#faf7f0]/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer disabled:opacity-40"
+          >
+            <Save className="size-3.5" />
+            <span>{isSaving ? "Saving..." : "Save"}</span>
+          </button>
 
           <button className="flex items-center gap-1.5 bg-[#faf7f0]/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer">
             <Eye className="size-3.5" />
@@ -572,16 +589,14 @@ function BuilderCanvas() {
           </button>
 
           <button
-            onClick={() => {
+            onClick={async () => {
+              // Save any pending changes before publishing
+              if (isDirty) await handleSave();
               publishForm(
                 { id: formId },
                 {
-                  onSuccess: () => {
-                    toast.success("Form published successfully");
-                  },
-                  onError: (err) => {
-                    toast.error(err.message || "Failed to publish form");
-                  }
+                  onSuccess: () => toast.success("Form published successfully"),
+                  onError: (err) => toast.error(err.message || "Failed to publish form"),
                 }
               );
             }}
@@ -734,8 +749,10 @@ function BuilderCanvas() {
                   <input
                     type="text"
                     value={label}
-                    onChange={(e) => setLabel(e.target.value)}
-                    onBlur={() => handleInputBlur("label", label)}
+                    onChange={(e) => {
+                      setLabel(e.target.value);
+                      if (selectedField) updateLocal(selectedField.id, { label: e.target.value });
+                    }}
                     className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2.5 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded transition-colors"
                   />
                 </div>
@@ -748,8 +765,10 @@ function BuilderCanvas() {
                   <input
                     type="text"
                     value={placeholder}
-                    onChange={(e) => setPlaceholder(e.target.value)}
-                    onBlur={() => handleInputBlur("placeholder", placeholder)}
+                    onChange={(e) => {
+                      setPlaceholder(e.target.value);
+                      if (selectedField) updateLocal(selectedField.id, { placeholder: e.target.value });
+                    }}
                     className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2.5 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded transition-colors"
                   />
                 </div>
@@ -761,8 +780,10 @@ function BuilderCanvas() {
                   </label>
                   <textarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    onBlur={() => handleInputBlur("description", description)}
+                    onChange={(e) => {
+                      setDescription(e.target.value);
+                      if (selectedField) updateLocal(selectedField.id, { description: e.target.value });
+                    }}
                     rows={2}
                     className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2.5 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded transition-colors resize-none"
                   />
@@ -805,7 +826,7 @@ function BuilderCanvas() {
                             onBlur={() => {
                               const original = getFieldOptionsArray(selectedField);
                               if (JSON.stringify(original) !== JSON.stringify(optionsList)) {
-                                updateFormField({ id: selectedField.id, options: optionsList });
+                                updateLocal(selectedField.id, { options: optionsList });
                               }
                             }}
                             className="flex-1 bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded"
@@ -814,7 +835,7 @@ function BuilderCanvas() {
                             onClick={() => {
                               const next = optionsList.filter((_, i) => i !== idx);
                               setOptionsList(next);
-                              updateFormField({ id: selectedField.id, options: next });
+                              updateLocal(selectedField.id, { options: next });
                             }}
                             disabled={optionsList.length <= 1}
                             className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/5 rounded disabled:opacity-30 cursor-pointer"
@@ -828,7 +849,7 @@ function BuilderCanvas() {
                       onClick={() => {
                         const next = [...optionsList, `Choice ${optionsList.length + 1}`];
                         setOptionsList(next);
-                        updateFormField({ id: selectedField.id, options: next });
+                        updateLocal(selectedField.id, { options: next });
                       }}
                       className="w-full py-1.5 border-2 border-dashed border-[#0d2137]/20 dark:border-white/10 hover:border-[#8e6e53] dark:hover:border-[#d4af37] text-xs font-serif font-bold text-[#0d2137]/70 dark:text-white/70 hover:text-[#8e6e53] dark:hover:text-[#d4af37] text-center rounded transition-colors cursor-pointer"
                     >
@@ -846,12 +867,8 @@ function BuilderCanvas() {
                     <select
                       value={(selectedField.options as any)?.max || 5}
                       onChange={(e) => {
-                        updateFormField({
-                          id: selectedField.id,
-                          options: {
-                            ...(selectedField.options as any || {}),
-                            max: parseInt(e.target.value)
-                          }
+                        updateLocal(selectedField.id, {
+                          options: { ...(selectedField.options as any || {}), max: parseInt(e.target.value) }
                         });
                       }}
                       className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] font-serif rounded"
@@ -875,15 +892,7 @@ function BuilderCanvas() {
                         <input
                           type="date"
                           value={(selectedField.options as any)?.minDate || ""}
-                          onChange={(e) => {
-                            updateFormField({
-                              id: selectedField.id,
-                              options: {
-                                ...(selectedField.options as any || {}),
-                                minDate: e.target.value
-                              }
-                            });
-                          }}
+                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), minDate: e.target.value } }); }}
                           className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
                         />
                       </div>
@@ -892,15 +901,7 @@ function BuilderCanvas() {
                         <input
                           type="date"
                           value={(selectedField.options as any)?.maxDate || ""}
-                          onChange={(e) => {
-                            updateFormField({
-                              id: selectedField.id,
-                              options: {
-                                ...(selectedField.options as any || {}),
-                                maxDate: e.target.value
-                              }
-                            });
-                          }}
+                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), maxDate: e.target.value } }); }}
                           className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
                         />
                       </div>
@@ -920,15 +921,7 @@ function BuilderCanvas() {
                         <input
                           type="time"
                           value={(selectedField.options as any)?.minTime || ""}
-                          onChange={(e) => {
-                            updateFormField({
-                              id: selectedField.id,
-                              options: {
-                                ...(selectedField.options as any || {}),
-                                minTime: e.target.value
-                              }
-                            });
-                          }}
+                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), minTime: e.target.value } }); }}
                           className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
                         />
                       </div>
@@ -937,15 +930,7 @@ function BuilderCanvas() {
                         <input
                           type="time"
                           value={(selectedField.options as any)?.maxTime || ""}
-                          onChange={(e) => {
-                            updateFormField({
-                              id: selectedField.id,
-                              options: {
-                                ...(selectedField.options as any || {}),
-                                maxTime: e.target.value
-                              }
-                            });
-                          }}
+                          onChange={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), maxTime: e.target.value } }); }}
                           className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-1.5 text-[10px] text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
                         />
                       </div>
@@ -965,13 +950,7 @@ function BuilderCanvas() {
                       <button
                         onClick={() => {
                           const currentVal = !!(selectedField.options as any)?.defaultValue;
-                          updateFormField({
-                            id: selectedField.id,
-                            options: {
-                              ...(selectedField.options as any || {}),
-                              defaultValue: !currentVal
-                            }
-                          });
+                          updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), defaultValue: !currentVal } });
                         }}
                         className={`relative inline-flex h-4 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${(selectedField.options as any)?.defaultValue ? 'bg-[#3b5e82] dark:bg-[#d4af37]' : 'bg-[#0d2137]/10 dark:bg-white/10'}`}
                       >
@@ -986,15 +965,7 @@ function BuilderCanvas() {
                       <input
                         type="text"
                         defaultValue={(selectedField.options as any)?.activeLabel || "Yes"}
-                        onBlur={(e) => {
-                          updateFormField({
-                            id: selectedField.id,
-                            options: {
-                              ...(selectedField.options as any || {}),
-                              activeLabel: e.target.value || "Yes"
-                            }
-                          });
-                        }}
+                        onBlur={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), activeLabel: e.target.value || "Yes" } }); }}
                         className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
                       />
                     </div>
@@ -1004,15 +975,7 @@ function BuilderCanvas() {
                       <input
                         type="text"
                         defaultValue={(selectedField.options as any)?.inactiveLabel || "No"}
-                        onBlur={(e) => {
-                          updateFormField({
-                            id: selectedField.id,
-                            options: {
-                              ...(selectedField.options as any || {}),
-                              inactiveLabel: e.target.value || "No"
-                            }
-                          });
-                        }}
+                        onBlur={(e) => { updateLocal(selectedField.id, { options: { ...(selectedField.options as any || {}), inactiveLabel: e.target.value || "No" } }); }}
                         className="w-full bg-[#faf8f5] dark:bg-[#2c2c2e]/60 border border-[#0d2137]/15 dark:border-white/10 p-2 text-xs text-[#0d2137] dark:text-white focus:outline-none rounded font-serif"
                       />
                     </div>
@@ -1051,6 +1014,54 @@ function BuilderCanvas() {
         </aside>
 
       </div>
+
+      {/* Unsaved changes dialog — shown when navigating away with dirty state */}
+      {showUnsavedDialog && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#0d2137]/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] dark:shadow-[6px_6px_0px_0px_#2a2a2a] max-w-sm w-full mx-4 space-y-4">
+            <div>
+              <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">Unsaved Changes</h3>
+              <p className="text-sm text-[#0d2137]/70 dark:text-white/60 font-serif mt-1">
+                You have unsaved changes. Save before leaving or discard them?
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowUnsavedDialog(false)}
+                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/25 dark:border-white/25 rounded text-[#0d2137]/70 dark:text-white/70 hover:bg-[#0d2137]/5 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  isDirtyRef.current = false;
+                  setDirtyIds(new Set());
+                  setPendingDeletes(new Set());
+                  setShowUnsavedDialog(false);
+                  if (pendingNavRef.current) window.location.href = pendingNavRef.current;
+                }}
+                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/5 rounded cursor-pointer"
+              >
+                Discard
+              </button>
+              <button
+                onClick={async () => {
+                  await handleSave();
+                  // Mutate ref synchronously so beforeunload sees isDirty=false immediately
+                  isDirtyRef.current = false;
+                  setDirtyIds(new Set());
+                  setPendingDeletes(new Set());
+                  setShowUnsavedDialog(false);
+                  if (pendingNavRef.current) window.location.href = pendingNavRef.current;
+                }}
+                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider bg-[#0d2137] dark:bg-[#b9c9df] text-white dark:text-[#0d2137] rounded cursor-pointer"
+              >
+                Save & Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
