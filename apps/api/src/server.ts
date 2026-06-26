@@ -39,7 +39,6 @@ app.use(
       }
     },
     credentials: true,
-    // Explicitly allow the headers better-auth sends
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposedHeaders: ["Set-Cookie"],
   }),
