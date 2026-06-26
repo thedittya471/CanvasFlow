@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   BackgroundVariant,
-  Controls,
   useNodesState,
   useEdgesState,
   useReactFlow,
@@ -38,9 +37,7 @@ import {
   Lock,
   Unlock,
   Maximize2,
-  Sparkles,
   CloudLightning,
-  Check,
   Eye,
   Share2,
   Plus,
@@ -237,7 +234,6 @@ const nodeTypes = {
 // Main Builder Canvas Component
 function BuilderCanvas() {
   const params = useParams();
-  const router = useRouter();
   const formId = params.formId as string;
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
@@ -337,13 +333,10 @@ function BuilderCanvas() {
 
     if (!reactFlowWrapper.current) return;
 
-    const rect = reactFlowWrapper.current.getBoundingClientRect();
     const position = screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     });
-
-    const defaultLabel = `Untitled ${type.replace("_", " ").toLowerCase()}`;
 
     createFormField(
       {

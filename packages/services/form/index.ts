@@ -1,4 +1,4 @@
-import { db, eq, and, desc, inArray, gte, usersTable } from "@repo/database"
+import { db, eq, and, inArray, gte, count, usersTable } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
@@ -150,7 +150,13 @@ class FormService {
   public async getDashboardStats(payload: GetDashboardStatsInputType) {
     const { userId } = await getDashboardStatsInput.parseAsync(payload)
 
-    const forms = await db.select().from(formsTable).where(eq(formsTable.ownerId, userId))
+    const forms = await db.select({
+      id: formsTable.id,
+      title: formsTable.title,
+      isPublished: formsTable.isPublished,
+      createdAt: formsTable.createdAt,
+    }).from(formsTable).where(eq(formsTable.ownerId, userId))
+
     const totalSketches = forms.length
     const publishedSketches = forms.filter(f => f.isPublished).length
     const formIds = forms.map(f => f.id)
@@ -166,32 +172,57 @@ class FormService {
       }
     }
 
-    const submissions = await db.select()
-      .from(formSubmissionsTable)
-      .where(inArray(formSubmissionsTable.formId, formIds))
-      .orderBy(desc(formSubmissionsTable.createdAt))
-
-    const totalResponses = submissions.length
-
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
-    const responsesThisMonth = submissions.filter(s => new Date(s.createdAt) >= startOfMonth).length
+
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+    sevenDaysAgo.setHours(0, 0, 0, 0)
 
     const recentFormsRaw = [...forms]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 4)
+    const recentIds = recentFormsRaw.map(f => f.id)
 
-    const recentForms = recentFormsRaw.map(f => {
-      const subsCount = submissions.filter(s => s.formId === f.id).length
-      return {
-        id: f.id,
-        title: f.title,
-        createdAt: f.createdAt,
-        isPublished: f.isPublished,
-        submissionsCount: subsCount
-      }
-    })
+    // Run all aggregations in parallel as SQL counts/group-bys instead of
+    // loading every submission row (incl. the `values` jsonb) into memory.
+    const [totalRow, monthRow, recentCounts, trendRows] = await Promise.all([
+      db.select({ value: count() })
+        .from(formSubmissionsTable)
+        .where(inArray(formSubmissionsTable.formId, formIds)),
+      db.select({ value: count() })
+        .from(formSubmissionsTable)
+        .where(and(
+          inArray(formSubmissionsTable.formId, formIds),
+          gte(formSubmissionsTable.createdAt, startOfMonth)
+        )),
+      recentIds.length > 0
+        ? db.select({ formId: formSubmissionsTable.formId, value: count() })
+            .from(formSubmissionsTable)
+            .where(inArray(formSubmissionsTable.formId, recentIds))
+            .groupBy(formSubmissionsTable.formId)
+        : Promise.resolve([] as { formId: string; value: number }[]),
+      // Only the last 7 days of timestamps (small) — for the trend chart.
+      db.select({ createdAt: formSubmissionsTable.createdAt })
+        .from(formSubmissionsTable)
+        .where(and(
+          inArray(formSubmissionsTable.formId, formIds),
+          gte(formSubmissionsTable.createdAt, sevenDaysAgo)
+        )),
+    ])
+
+    const totalResponses = Number(totalRow[0]?.value ?? 0)
+    const responsesThisMonth = Number(monthRow[0]?.value ?? 0)
+
+    const countByForm = new Map(recentCounts.map(r => [r.formId, Number(r.value)]))
+    const recentForms = recentFormsRaw.map(f => ({
+      id: f.id,
+      title: f.title,
+      createdAt: f.createdAt,
+      isPublished: f.isPublished,
+      submissionsCount: countByForm.get(f.id) ?? 0
+    }))
 
     const trendsMap: Record<string, number> = {}
     const today = new Date()
@@ -202,7 +233,7 @@ class FormService {
       trendsMap[dateStr] = 0
     }
 
-    submissions.forEach(s => {
+    trendRows.forEach(s => {
       const dateStr = new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       if (trendsMap[dateStr] !== undefined) {
         trendsMap[dateStr]++

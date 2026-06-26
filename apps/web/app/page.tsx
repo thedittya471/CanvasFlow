@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { authClient } from "~/lib/auth-client";
@@ -8,7 +8,6 @@ import { authClient } from "~/lib/auth-client";
 import {
   ReactFlow,
   Background,
-  Controls,
   useNodesState,
   useEdgesState,
   type Node,
@@ -19,19 +18,13 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
-  Sparkles,
   ArrowRight,
   ShieldCheck,
   Zap,
   BarChart3,
-  MousePointerClick,
   Compass,
-  Wallet,
-  Check,
   ChevronDown,
-  Layout,
   Cpu,
-  MonitorCheck,
   Database,
   ArrowRightLeft,
   Smartphone,
@@ -124,7 +117,7 @@ const initialEdges: Edge[] = [
 
 export default function LandingPage() {
   const { data: session } = authClient.useSession();
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 

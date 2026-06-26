@@ -211,7 +211,7 @@ export default function SketchesPage() {
         <div className="bg-white/40 dark:bg-[#1a1a1c]/40 border border-dashed border-[#0d2137]/20 dark:border-[#faf7f0]/20 p-12 text-center rounded-lg max-w-lg mx-auto space-y-4 backdrop-blur-xs">
           <h3 className="text-sm uppercase tracking-widest font-serif font-bold text-[#0d2137] dark:text-white">No Drawings Cataloged</h3>
           <p className="text-xs text-[#0d2137]/60 dark:text-[#faf7f0]/60 font-serif leading-relaxed max-w-sm mx-auto">
-            We couldn't find any blueprint drafts matching your query. Initiate a new draft to begin.
+            We couldn&apos;t find any blueprint drafts matching your query. Initiate a new draft to begin.
           </p>
           <button
             onClick={openCreateFormModal}

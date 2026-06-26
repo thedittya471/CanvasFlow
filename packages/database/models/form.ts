@@ -4,7 +4,8 @@ import {
     varchar,
     timestamp,
     boolean,
-    text
+    text,
+    index
 } from 'drizzle-orm/pg-core'
 import { usersTable } from './auth'
 
@@ -27,5 +28,7 @@ export const formsTable = pgTable("forms", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").$onUpdate(() => new Date()).notNull(),
     publishedAt: timestamp("published_at"),
-
-})
+}, (table) => ({
+    // Hot path: list/stats/limit queries filter by owner, often ordered by createdAt.
+    ownerCreatedIdx: index("forms_owner_created_idx").on(table.ownerId, table.createdAt),
+}))

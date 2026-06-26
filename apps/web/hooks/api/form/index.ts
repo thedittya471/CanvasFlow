@@ -322,7 +322,7 @@ export const useGetSubmissions = (formId: string) => {
         status,
         isLoading,
         refetch
-    } = trpc.form.getSubmissions.useQuery({ formId }, { enabled: !!formId && formId.length === 36, refetchInterval: 3000 })
+    } = trpc.form.getSubmissions.useQuery({ formId }, { enabled: !!formId && formId.length === 36, refetchInterval: 20000 })
 
     return {
         submissions,
@@ -368,7 +368,7 @@ export const useGetDashboardStats = () => {
         status,
         isLoading,
         refetch
-    } = trpc.form.getDashboardStats.useQuery(undefined, { refetchInterval: 3000 })
+    } = trpc.form.getDashboardStats.useQuery(undefined)
 
     return {
         stats,

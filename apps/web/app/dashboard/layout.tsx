@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { EB_Garamond, Caveat } from "next/font/google";
 import Image from "next/image";
 import Sidebar from "~/components/Sidebar";
-import { Menu, X, Compass, Lock, Sparkles } from "lucide-react";
+import { Menu, X, Compass, Sparkles } from "lucide-react";
 import { DashboardProvider } from "~/providers/dashboard-provider";
 import { useCreateForm } from "~/hooks/api/form";
 import { toast } from "sonner";

@@ -50,7 +50,7 @@ export default function DashboardPage() {
             Good morning, Architect.
           </h2>
           <p className="text-lg md:text-xl font-caveat text-[#8e6e53] dark:text-[#d4af37] mt-2 italic">
-            Here's what's happening in your studio today.
+            Here&apos;s what&apos;s happening in your studio today.
           </p>
         </div>
         <div className="hidden lg:block text-right text-[10px] tracking-[0.2em] font-serif font-semibold text-[#0d2137]/40 dark:text-[#faf7f0]/40 uppercase select-none leading-relaxed">

@@ -1,18 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { 
-  BarChart3, 
   Eye, 
   Download, 
   Search, 
   ExternalLink,
-  ChevronRight,
   TrendingUp,
   Clock,
   Layers,
-  Sparkles,
-  ArrowLeft,
   X
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -69,10 +65,8 @@ export default function AnalyticsPage() {
 
   const isDark = mounted && theme === "dark";
 
-  if (!mounted) return null;
-
   // Derive respondent name & email from submission values
-  const getRespondentDetails = (sub: Submission) => {
+  const getRespondentDetails = useCallback((sub: Submission) => {
     let name = "Anonymous Guest";
     let email = "no-email@anonymous.com";
 
@@ -100,7 +94,7 @@ export default function AnalyticsPage() {
       }
     }
     return { name, email };
-  };
+  }, [form]);
 
   // CSV Export
   const handleExportCSV = () => {
@@ -141,13 +135,13 @@ export default function AnalyticsPage() {
     toast.success("CSV file downloaded");
   };
 
-  const activeSubmissions = submissions?.submissions || [];
+  const activeSubmissions = useMemo(() => submissions?.submissions || [], [submissions]);
   const totalResponses = activeSubmissions.length;
   const totalViews = submissions?.viewsCount || 0;
   const completionRate = totalViews > 0 ? ((totalResponses / totalViews) * 100).toFixed(1) + "%" : "0.0%";
 
   // Group by day of week for Timeline Chart
-  const getTimelineData = () => {
+  const timelineData = useMemo(() => {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const timelineMap: Record<string, { Completed: number; Partial: number }> = {};
     const today = new Date();
@@ -172,12 +166,10 @@ export default function AnalyticsPage() {
       Completed: data.Completed,
       Partial: Math.round(data.Completed * 0.3)
     }));
-  };
-
-  const timelineData = getTimelineData();
+  }, [activeSubmissions]);
 
   // Device breakdown data
-  const getDeviceData = () => {
+  const deviceData = useMemo(() => {
     const desktop = submissions?.deviceViews?.find(d => d.device === "desktop")?.count || 0;
     const mobile = submissions?.deviceViews?.find(d => d.device === "mobile")?.count || 0;
     const tablet = submissions?.deviceViews?.find(d => d.device === "tablet")?.count || 0;
@@ -187,20 +179,22 @@ export default function AnalyticsPage() {
       { name: "Mobile", value: mobile, color: "#8e6e53" },
       { name: "Tablet", value: tablet, color: "#a1a1aa" }
     ];
-  };
-
-  const deviceData = getDeviceData();
+  }, [submissions]);
 
   // Filtered submissions based on search query
-  const filteredSubmissions = activeSubmissions.filter((sub) => {
-    const details = getRespondentDetails(sub);
+  const filteredSubmissions = useMemo(() => {
     const matchQuery = searchQuery.toLowerCase();
-    return (
-      details.name.toLowerCase().includes(matchQuery) ||
-      details.email.toLowerCase().includes(matchQuery) ||
-      sub.id.toLowerCase().includes(matchQuery)
-    );
-  });
+    return activeSubmissions.filter((sub) => {
+      const details = getRespondentDetails(sub);
+      return (
+        details.name.toLowerCase().includes(matchQuery) ||
+        details.email.toLowerCase().includes(matchQuery) ||
+        sub.id.toLowerCase().includes(matchQuery)
+      );
+    });
+  }, [activeSubmissions, searchQuery, getRespondentDetails]);
+
+  if (!mounted) return null;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-140px)] w-full">

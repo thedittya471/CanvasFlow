@@ -1,5 +1,5 @@
 import { authClient } from "~/lib/auth-client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export const useSignUp = () => {
   const [error, setError] = useState<Error | null>(null);

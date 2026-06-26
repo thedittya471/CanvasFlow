@@ -1,4 +1,4 @@
-import { db, eq, and, desc, inArray, gte, usersTable } from "@repo/database"
+import { db, eq, and, desc, gte, count, usersTable } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
 import { formViewsTable } from "@repo/database/models/form-view"
@@ -35,26 +35,26 @@ class FormSubmissionService {
     else if (userPlan === "Pro+") submissionLimit = 5000
     else if (userPlan === "Business") submissionLimit = 25000
 
-    const ownerForms = await db.select({ id: formsTable.id }).from(formsTable).where(eq(formsTable.ownerId, form.ownerId))
-    const formIds = ownerForms.map(f => f.id)
-
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
 
-    if (formIds.length > 0) {
-      const monthSubmissions = await db
-        .select()
-        .from(formSubmissionsTable)
-        .where(
-          and(
-            inArray(formSubmissionsTable.formId, formIds),
-            gte(formSubmissionsTable.createdAt, startOfMonth)
-          )
+    // Count this month's submissions across all of the owner's forms in a
+    // single COUNT query (no row materialization).
+    const monthCountRows = await db
+      .select({ value: count() })
+      .from(formSubmissionsTable)
+      .innerJoin(formsTable, eq(formSubmissionsTable.formId, formsTable.id))
+      .where(
+        and(
+          eq(formsTable.ownerId, form.ownerId),
+          gte(formSubmissionsTable.createdAt, startOfMonth)
         )
-      if (monthSubmissions.length >= submissionLimit) {
-        throw new Error(`This workspace has reached the limit of ${submissionLimit} submissions per month for the ${userPlan} tier.`)
-      }
+      )
+
+    const monthlyCount = Number(monthCountRows[0]?.value ?? 0)
+    if (monthlyCount >= submissionLimit) {
+      throw new Error(`This workspace has reached the limit of ${submissionLimit} submissions per month for the ${userPlan} tier.`)
     }
 
     const insertResult = await db.insert(formSubmissionsTable).values({
@@ -82,23 +82,29 @@ class FormSubmissionService {
       throw new Error("Form not found or unauthorized")
     }
 
-    const submissions = await db.select()
-      .from(formSubmissionsTable)
-      .where(eq(formSubmissionsTable.formId, formId))
-      .orderBy(desc(formSubmissionsTable.createdAt))
-
-    const viewsResult = await db.select()
-      .from(formViewsTable)
-      .where(eq(formViewsTable.formId, formId))
-
-    const viewsCount = viewsResult.length
+    // Submissions (full rows are needed for the analytics table) and the view
+    // aggregation are independent — run them in parallel. Device breakdown is
+    // a grouped COUNT instead of loading every view row.
+    const [submissions, deviceRows] = await Promise.all([
+      db.select()
+        .from(formSubmissionsTable)
+        .where(eq(formSubmissionsTable.formId, formId))
+        .orderBy(desc(formSubmissionsTable.createdAt)),
+      db.select({ deviceType: formViewsTable.deviceType, value: count() })
+        .from(formViewsTable)
+        .where(eq(formViewsTable.formId, formId))
+        .groupBy(formViewsTable.deviceType),
+    ])
 
     const deviceMap = { desktop: 0, mobile: 0, tablet: 0 }
-    viewsResult.forEach(v => {
-      const dev = v.deviceType.toLowerCase()
-      if (dev.includes('mobile')) deviceMap.mobile++
-      else if (dev.includes('tablet')) deviceMap.tablet++
-      else deviceMap.desktop++
+    let viewsCount = 0
+    deviceRows.forEach(r => {
+      const n = Number(r.value)
+      viewsCount += n
+      const dev = r.deviceType.toLowerCase()
+      if (dev.includes('mobile')) deviceMap.mobile += n
+      else if (dev.includes('tablet')) deviceMap.tablet += n
+      else deviceMap.desktop += n
     })
 
     const deviceViews = Object.entries(deviceMap).map(([device, count]) => ({

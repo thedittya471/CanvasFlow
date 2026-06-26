@@ -1,19 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Plus,
   Compass,
   PencilRuler,
-  FileText,
   BarChart3,
-  ChevronDown,
   X,
   Wallet,
-  Settings,
-  Box,
   LayoutTemplate,
   LogOut
 } from "lucide-react";
@@ -29,7 +25,6 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { openCreateFormModal } = useDashboard();
   const { userInfo } = useGetLoggedInUserInfo();
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
