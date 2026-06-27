@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
-import { useTheme } from "next-themes";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useListFormsByUserId, useGetFormById } from "~/hooks/api/form";
 import { useGetFormAnalytics, useGetSubmissions } from "~/hooks/api/analytics";
@@ -29,7 +28,6 @@ interface Submission {
 }
 
 export function AnalyticsPage() {
-  const { theme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
@@ -63,8 +61,6 @@ export function AnalyticsPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forms, selectedFormId]);
-
-  const isDark = mounted && theme === "dark";
 
   // Derive respondent name & email from submission values
   const getRespondentDetails = useCallback(
@@ -172,7 +168,6 @@ export function AnalyticsPage() {
   const dailyTrends = analytics?.dailyTrends ?? [];
 
 
-
   // Filtered submissions based on search query
   const filteredSubmissions = useMemo(() => {
     const matchQuery = searchQuery.toLowerCase();
@@ -193,7 +188,6 @@ export function AnalyticsPage() {
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-140px)] w-full">
       <AnalyticsSidebar
-        isDark={isDark}
         isLoadingForms={isLoadingForms}
         forms={forms}
         selectedFormId={selectedFormId}
@@ -203,21 +197,21 @@ export function AnalyticsPage() {
       {/* Main Content Area */}
       <div className="flex-1 space-y-6">
         {isLoading ? (
-          <div className="h-64 flex items-center justify-center bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a]">
+          <div className="h-64 flex items-center justify-center bg-white border-2 border-[#0d2137] rounded shadow-[3px_3px_0px_0px_#0d2137]">
             <div className="flex flex-col items-center gap-2">
-              <div className="w-6 h-6 border border-t-2 border-[#0d2137] dark:border-white border-t-transparent animate-spin rounded" />
-              <span className="text-[10px] uppercase font-serif tracking-widest text-[#0d2137]/60 dark:text-white/60">
+              <div className="w-6 h-6 border border-t-2 border-[#0d2137] border-t-transparent animate-spin rounded" />
+              <span className="text-[10px] uppercase font-serif tracking-widest text-[#0d2137]/60">
                 Fetching sketch insights...
               </span>
             </div>
           </div>
         ) : !form ? (
-          <div className="h-64 flex items-center justify-center bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a] text-center p-8">
+          <div className="h-64 flex items-center justify-center bg-white border-2 border-[#0d2137] rounded shadow-[3px_3px_0px_0px_#0d2137] text-center p-8">
             <div className="space-y-2">
-              <h4 className="font-serif font-bold text-lg text-[#0d2137] dark:text-white">
+              <h4 className="font-serif font-bold text-lg text-[#0d2137]">
                 Select a Sketch
               </h4>
-              <p className="text-xs text-[#0d2137]/50 dark:text-white/40 max-w-xs font-serif italic">
+              <p className="text-xs text-[#0d2137]/50 max-w-xs font-serif italic">
                 Choose a form sketch from the left sidebar to load analytics and response
                 submissions catalog.
               </p>
@@ -226,25 +220,25 @@ export function AnalyticsPage() {
         ) : (
           <div className="space-y-6">
             {/* Header Title Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a] relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] relative overflow-hidden">
               <div
-                className="absolute inset-0 bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"
+                className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
                 style={{
-                  backgroundImage: isDark ? "url('/asset4.png')" : "url('/assest1.png')",
+                  backgroundImage: "url('/assest1.png')",
                 }}
               />
               <div className="relative z-10 space-y-1">
-                <h2 className="text-2xl font-serif font-bold text-[#0d2137] dark:text-white">
+                <h2 className="text-2xl font-serif font-bold text-[#0d2137]">
                   # {form.title}
                 </h2>
-                <div className="flex items-center gap-3 text-[10px] tracking-wider font-serif uppercase font-bold text-[#0d2137]/65 dark:text-white/50">
+                <div className="flex items-center gap-3 text-[10px] tracking-wider font-serif uppercase font-bold text-[#0d2137]/65">
                   <span>{totalResponses} Responses</span>
                   <span>•</span>
                   <span
                     className={
                       form.isPublished
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-amber-600 dark:text-amber-400"
+                        ? "text-green-600"
+                        : "text-amber-600"
                     }
                   >
                     {form.isPublished ? "Published" : "Draft"}
@@ -257,7 +251,7 @@ export function AnalyticsPage() {
                 {!isFreeTier ? (
                   <button
                     onClick={() => setShowUpgrade(true)}
-                    className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#8e6e53] dark:text-[#d4af37] border border-[#d4af37]/40 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#8e6e53] border border-[#d4af37]/40 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
                   >
                     <BarChart3 className="size-3.5" />
                     <span>Detailed Analytics</span>
@@ -266,7 +260,7 @@ export function AnalyticsPage() {
                 ) : (
                   <Link
                     href={`/dashboard/analytics/${form.id}`}
-                    className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#8e6e53] dark:text-[#d4af37] border border-[#d4af37]/40 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#8e6e53] border border-[#d4af37]/40 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
                   >
                     <BarChart3 className="size-3.5" />
                     <span>Detailed Analytics</span>
@@ -274,14 +268,14 @@ export function AnalyticsPage() {
                 )}
                 <Link
                   href={`/dashboard/sketches/${form.id}`}
-                  className="flex items-center gap-1.5 bg-[#faf7f0]/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer shadow-[1px_1px_0px_0px_#0d2137] dark:shadow-none"
+                  className="flex items-center gap-1.5 bg-[#faf7f0]/60 hover:bg-white text-[#0d2137] border border-[#0d2137]/20 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer shadow-[1px_1px_0px_0px_#0d2137]"
                 >
                   <ExternalLink className="size-3.5" />
                   <span>Open Builder</span>
                 </Link>
                 <button
                   onClick={handleExportCSV}
-                  className="flex items-center gap-1.5 bg-[#0d2137] hover:bg-[#1a3854] dark:bg-[#b9c9df] dark:hover:bg-[#ccdcf2] text-white dark:text-[#0d2137] py-1.5 px-3.5 text-[10px] uppercase font-serif font-bold tracking-wider rounded border border-transparent transition-all cursor-pointer shadow-[2px_2px_0px_0px_#8e6e53] dark:shadow-none"
+                  className="flex items-center gap-1.5 bg-[#0d2137] hover:bg-[#1a3854] text-white py-1.5 px-3.5 text-[10px] uppercase font-serif font-bold tracking-wider rounded border border-transparent transition-all cursor-pointer shadow-[2px_2px_0px_0px_#8e6e53]"
                 >
                   <Download className="size-3.5" />
                   <span>Export CSV</span>
@@ -293,7 +287,6 @@ export function AnalyticsPage() {
             {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
 
             <MetricsGrid
-              isDark={isDark}
               totalResponses={totalResponses}
               completionRate={completionRate}
               totalViews={totalViews}
@@ -301,7 +294,6 @@ export function AnalyticsPage() {
             />
 
             <StatsRow
-              isDark={isDark}
               peakDay={peakDay}
               avgPerWeek={avgPerWeek}
               completionRate={analytics?.completionRate ?? 0}
@@ -310,12 +302,10 @@ export function AnalyticsPage() {
             {/* Chart Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <ResponseTimeline
-                isDark={isDark}
                 totalResponses={totalResponses}
                 trends={dailyTrends}
               />
               <DeviceBreakdown
-                isDark={isDark}
                 totalViews={totalViews}
                 deviceData={deviceData}
               />

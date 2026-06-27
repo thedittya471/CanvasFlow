@@ -22,14 +22,14 @@ export function DeleteFormDialog({
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#0d2137]/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] dark:shadow-[6px_6px_0px_0px_#2a2a2a] max-w-sm w-full mx-4 space-y-4">
+      <div className="bg-white border-2 border-[#0d2137] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] max-w-sm w-full mx-4 space-y-4">
         <div className="space-y-1">
           <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-red-500 block">
             — Permanent Action
           </span>
-          <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">Delete Blueprint?</h3>
-          <p className="text-sm text-[#0d2137]/70 dark:text-white/60 font-serif leading-relaxed">
-            <span className="font-bold text-[#0d2137] dark:text-white">&ldquo;{formTitle}&rdquo;</span> and all
+          <h3 className="text-xl font-serif font-bold text-[#0d2137]">Delete Blueprint?</h3>
+          <p className="text-sm text-[#0d2137]/70 font-serif leading-relaxed">
+            <span className="font-bold text-[#0d2137]">&ldquo;{formTitle}&rdquo;</span> and all
             its fields and submissions will be permanently removed. This cannot be undone.
           </p>
         </div>
@@ -37,7 +37,7 @@ export function DeleteFormDialog({
           <button
             onClick={onCancel}
             disabled={deletePending}
-            className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/20 dark:border-white/20 rounded text-[#0d2137]/70 dark:text-white/70 hover:bg-[#0d2137]/5 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/20 rounded text-[#0d2137]/70 hover:bg-[#0d2137]/5 cursor-pointer disabled:opacity-50"
           >
             Cancel
           </button>

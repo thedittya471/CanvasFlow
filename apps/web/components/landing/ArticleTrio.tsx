@@ -17,19 +17,19 @@ const ARTICLES = [
     eyebrow: "Why CanvasFlow",
     body:
       "Most form tools force a tradeoff between a tidy linear builder and the messy reality of branching logic. CanvasFlow keeps both in one warm, visual canvas.",
-    img: "/card-1.png",
+    img: "/new-image-4.png",
   },
   {
     eyebrow: "The brittle stack",
     body:
       "Renaming a field shouldn't break your webhooks. CanvasFlow locks every field to an immutable key the moment it's created, so your data layer stays stable forever.",
-    img: "/card2.png",
+    img: "/new-image-5.png",
   },
   {
     eyebrow: "One form at a time",
     body:
       "Every published form makes the studio more useful: shared field templates, reusable answer routes, and analytics that compound across your projects.",
-    img: "/card3.png",
+    img: "/new-image-6.png",
   },
 ];
 
@@ -45,8 +45,10 @@ export function ArticleTrio() {
           {ARTICLES.map((a, i) => (
             <motion.article
               key={a.eyebrow}
-              className={`relative px-8 sm:px-10 py-16 lg:py-20 ${
-                i < ARTICLES.length - 1 ? "md:border-r border-[color:var(--cf-line)]" : ""
+              className={`relative px-6 sm:px-10 py-12 sm:py-16 lg:py-20 ${
+                i < ARTICLES.length - 1
+                  ? "border-b md:border-b-0 md:border-r border-[color:var(--cf-line)]"
+                  : ""
               }`}
               initial="hidden"
               whileInView="visible"

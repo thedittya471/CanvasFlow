@@ -14,26 +14,26 @@ export function StepIntoCanvasFlow({ isLoggedIn }: { isLoggedIn: boolean }) {
       id="brand"
       className="relative bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] border-t border-[color:var(--cf-line)]"
     >
-      <div className="relative mx-auto w-full max-w-[1320px] px-4 sm:px-6 md:px-8 py-28 lg:py-40">
-        <h2 className="cf-display text-[64px] sm:text-[96px] md:text-[128px] leading-[0.92] text-center">
+      <div className="relative mx-auto w-full max-w-[1320px] px-4 sm:px-6 md:px-8 py-20 sm:py-28 lg:py-40">
+        <h2 className="cf-display text-[48px] sm:text-[80px] md:text-[112px] lg:text-[128px] leading-[0.92] text-center">
           Step into
           <span className="block">CanvasFlow</span>
         </h2>
 
-        <div className="mt-16 flex flex-col items-center gap-8">
-          <div className="relative w-16 h-16">
+        <div className="mt-10 sm:mt-16 flex flex-col items-center gap-6 sm:gap-8">
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16">
             <Image
-              src="/logo-removebg-preview.png"
+              src="/logo.svg"
               alt="CanvasFlow"
               fill
               sizes="64px"
               className="object-contain"
             />
           </div>
-          <h3 className="cf-display text-[28px] sm:text-[34px] leading-tight text-center max-w-md">
+          <h3 className="cf-display text-[24px] sm:text-[34px] leading-tight text-center max-w-md px-4">
             The canvas is bright
           </h3>
-          <p className="text-[15px] leading-relaxed text-[color:var(--cf-ink-soft)] text-center max-w-md">
+          <p className="text-[14px] sm:text-[15px] leading-relaxed text-[color:var(--cf-ink-soft)] text-center max-w-md px-4">
             Ready to take control of your forms? It&apos;s time to step out of
             spreadsheet templates and into a more resilient, real-time data
             future.

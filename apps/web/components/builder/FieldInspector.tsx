@@ -22,7 +22,7 @@ interface FieldInspectorProps {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-[10px] font-serif font-bold uppercase tracking-widest text-[#0d2137]/45 dark:text-white/40 mb-1.5">
+    <label className="block text-[10px] font-serif font-bold uppercase tracking-widest text-[#0d2137]/45 mb-1.5">
       {children}
     </label>
   );
@@ -37,7 +37,7 @@ function Input({ value, onChange, placeholder: ph, type = "text" }: {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={ph}
-      className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-3 py-2 text-xs font-serif text-[#0d2137] dark:text-white placeholder:text-[#0d2137]/30 dark:placeholder:text-white/25 focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] rounded transition-colors"
+      className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-3 py-2 text-xs font-serif text-[#0d2137] placeholder:text-[#0d2137]/30 focus:outline-none focus:border-[#8e6e53] rounded transition-colors"
     />
   );
 }
@@ -46,7 +46,7 @@ function Section({ children, title }: { children: React.ReactNode; title?: strin
   return (
     <div className="space-y-3.5">
       {title && (
-        <p className="text-[9px] font-serif font-bold uppercase tracking-widest text-[#0d2137]/30 dark:text-white/25 border-b border-[#0d2137]/8 dark:border-white/6 pb-1.5">
+        <p className="text-[9px] font-serif font-bold uppercase tracking-widest text-[#0d2137]/30 border-b border-[#0d2137]/8 pb-1.5">
           {title}
         </p>
       )}
@@ -72,15 +72,15 @@ export function FieldInspector({
 }: FieldInspectorProps) {
   if (!selectedField) {
     return (
-      <aside className="w-72 bg-[#faf8f5] dark:bg-[#141416] border-l border-[#0d2137]/10 dark:border-white/8 flex flex-col items-center justify-center gap-3 select-none shrink-0">
-        <div className="p-3.5 rounded-full bg-white dark:bg-[#1c1c1e] border border-[#0d2137]/10 dark:border-white/8 text-[#0d2137]/25 dark:text-white/20">
+      <aside className="w-72 bg-[#faf8f5] border-l border-[#0d2137]/10 flex flex-col items-center justify-center gap-3 select-none shrink-0">
+        <div className="p-3.5 rounded-full bg-white border border-[#0d2137]/10 text-[#0d2137]/25">
           <MousePointerClick className="size-5" />
         </div>
         <div className="text-center space-y-1 px-6">
-          <p className="text-xs font-serif font-bold text-[#0d2137]/50 dark:text-white/40 uppercase tracking-wider">
+          <p className="text-xs font-serif font-bold text-[#0d2137]/50 uppercase tracking-wider">
             No field selected
           </p>
-          <p className="text-[10px] font-serif italic text-[#0d2137]/35 dark:text-white/25 leading-relaxed">
+          <p className="text-[10px] font-serif italic text-[#0d2137]/35 leading-relaxed">
             Click a field on the canvas to inspect and configure it
           </p>
         </div>
@@ -91,18 +91,18 @@ export function FieldInspector({
   const FieldIcon = getFieldIcon(selectedField.type);
 
   return (
-    <aside className="w-72 bg-[#faf8f5] dark:bg-[#141416] border-l border-[#0d2137]/10 dark:border-white/8 flex flex-col shrink-0">
+    <aside className="w-72 bg-[#faf8f5] border-l border-[#0d2137]/10 flex flex-col shrink-0">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#0d2137]/8 dark:border-white/6 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-[#0d2137]/8 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="size-3.5 text-[#8e6e53] dark:text-[#d4af37]" />
-          <span className="text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137] dark:text-white">
+          <SlidersHorizontal className="size-3.5 text-[#8e6e53]" />
+          <span className="text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137]">
             Inspector
           </span>
         </div>
-        <div className="flex items-center gap-1.5 bg-white dark:bg-[#1c1c1e] border border-[#0d2137]/10 dark:border-white/8 px-2 py-0.5 rounded-full">
-          <FieldIcon className="size-3 text-[#0d2137]/50 dark:text-white/40" />
-          <span className="text-[9px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/50 dark:text-white/40">
+        <div className="flex items-center gap-1.5 bg-white border border-[#0d2137]/10 px-2 py-0.5 rounded-full">
+          <FieldIcon className="size-3 text-[#0d2137]/50" />
+          <span className="text-[9px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/50">
             {selectedField.type.replace("_", " ")}
           </span>
         </div>
@@ -147,7 +147,7 @@ export function FieldInspector({
               }}
               placeholder="Optional description…"
               rows={2}
-              className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-3 py-2 text-xs font-serif text-[#0d2137] dark:text-white placeholder:text-[#0d2137]/30 dark:placeholder:text-white/25 focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] rounded transition-colors resize-none"
+              className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-3 py-2 text-xs font-serif text-[#0d2137] placeholder:text-[#0d2137]/30 focus:outline-none focus:border-[#8e6e53] rounded transition-colors resize-none"
             />
           </div>
         </Section>
@@ -156,15 +156,15 @@ export function FieldInspector({
         <Section title="Validation">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-serif font-bold text-[#0d2137] dark:text-white">Required</p>
-              <p className="text-[10px] font-serif text-[#0d2137]/40 dark:text-white/35">
+              <p className="text-xs font-serif font-bold text-[#0d2137]">Required</p>
+              <p className="text-[10px] font-serif text-[#0d2137]/40">
                 Force an answer
               </p>
             </div>
             <button
               onClick={() => handleRequiredChange(!isRequired)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none ${
-                isRequired ? "bg-[#3b5e82] dark:bg-[#d4af37]" : "bg-[#0d2137]/12 dark:bg-white/12"
+                isRequired ? "bg-[#3b5e82]" : "bg-[#0d2137]/12"
               }`}
             >
               <span
@@ -182,7 +182,7 @@ export function FieldInspector({
             <div className="space-y-1.5">
               {optionsList.map((opt, idx) => (
                 <div key={idx} className="flex items-center gap-1.5">
-                  <div className="size-3 shrink-0 rounded-sm border border-[#0d2137]/15 dark:border-white/12 text-[#0d2137]/25" />
+                  <div className="size-3 shrink-0 rounded-sm border border-[#0d2137]/15 text-[#0d2137]/25" />
                   <input
                     type="text"
                     value={opt}
@@ -197,7 +197,7 @@ export function FieldInspector({
                         updateLocal(selectedField.id, { options: optionsList });
                       }
                     }}
-                    className="flex-1 min-w-0 bg-white dark:bg-[#1c1c1e] border border-[#0d2137]/10 dark:border-white/8 px-2.5 py-2 text-xs font-serif text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] rounded transition-colors"
+                    className="flex-1 min-w-0 bg-white border border-[#0d2137]/10 px-2.5 py-2 text-xs font-serif text-[#0d2137] focus:outline-none focus:border-[#8e6e53] rounded transition-colors"
                   />
                   <button
                     onClick={() => {
@@ -206,7 +206,7 @@ export function FieldInspector({
                       updateLocal(selectedField.id, { options: next });
                     }}
                     disabled={optionsList.length <= 1}
-                    className="shrink-0 p-1 text-[#0d2137]/30 dark:text-white/25 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded disabled:opacity-20 cursor-pointer transition-colors"
+                    className="shrink-0 p-1 text-[#0d2137]/30 hover:text-red-500 hover:bg-red-50 rounded disabled:opacity-20 cursor-pointer transition-colors"
                   >
                     <Trash2 className="size-3" />
                   </button>
@@ -219,7 +219,7 @@ export function FieldInspector({
                 setOptionsList(next);
                 updateLocal(selectedField.id, { options: next });
               }}
-              className="w-full py-2 border border-dashed border-[#0d2137]/15 dark:border-white/10 hover:border-[#8e6e53] dark:hover:border-[#d4af37] text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/40 dark:text-white/35 hover:text-[#8e6e53] dark:hover:text-[#d4af37] rounded transition-colors cursor-pointer"
+              className="w-full py-2 border border-dashed border-[#0d2137]/15 hover:border-[#8e6e53] text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/40 hover:text-[#8e6e53] rounded transition-colors cursor-pointer"
             >
               + Add option
             </button>
@@ -237,7 +237,7 @@ export function FieldInspector({
                     options: { ...((selectedField.options as any) || {}), max: parseInt(e.target.value) },
                   })
                 }
-                className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-2.5 py-2 text-xs font-serif text-[#0d2137] dark:text-white focus:outline-none focus:border-[#8e6e53] dark:focus:border-[#d4af37] rounded transition-colors"
+                className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-2.5 py-2 text-xs font-serif text-[#0d2137] focus:outline-none focus:border-[#8e6e53] rounded transition-colors"
               >
                 <option value={3}>3 — Small</option>
                 <option value={5}>5 — Standard</option>
@@ -260,7 +260,7 @@ export function FieldInspector({
                       options: { ...((selectedField.options as any) || {}), minDate: e.target.value },
                     })
                   }
-                  className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] dark:text-white focus:outline-none rounded"
+                  className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] focus:outline-none rounded"
                 />
               </div>
               <div>
@@ -273,7 +273,7 @@ export function FieldInspector({
                       options: { ...((selectedField.options as any) || {}), maxDate: e.target.value },
                     })
                   }
-                  className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] dark:text-white focus:outline-none rounded"
+                  className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] focus:outline-none rounded"
                 />
               </div>
             </div>
@@ -293,7 +293,7 @@ export function FieldInspector({
                       options: { ...((selectedField.options as any) || {}), minTime: e.target.value },
                     })
                   }
-                  className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] dark:text-white focus:outline-none rounded"
+                  className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] focus:outline-none rounded"
                 />
               </div>
               <div>
@@ -306,7 +306,7 @@ export function FieldInspector({
                       options: { ...((selectedField.options as any) || {}), maxTime: e.target.value },
                     })
                   }
-                  className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] dark:text-white focus:outline-none rounded"
+                  className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] focus:outline-none rounded"
                 />
               </div>
             </div>
@@ -316,7 +316,7 @@ export function FieldInspector({
         {selectedField.type === "TOGGLE" && (
           <Section title="Toggle">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-serif font-bold text-[#0d2137] dark:text-white">Default on</p>
+              <p className="text-[10px] font-serif font-bold text-[#0d2137]">Default on</p>
               <button
                 onClick={() => {
                   const cur = !!(selectedField.options as any)?.defaultValue;
@@ -326,8 +326,8 @@ export function FieldInspector({
                 }}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none ${
                   (selectedField.options as any)?.defaultValue
-                    ? "bg-[#3b5e82] dark:bg-[#d4af37]"
-                    : "bg-[#0d2137]/12 dark:bg-white/12"
+                    ? "bg-[#3b5e82]"
+                    : "bg-[#0d2137]/12"
                 }`}
               >
                 <span
@@ -348,7 +348,7 @@ export function FieldInspector({
                       options: { ...((selectedField.options as any) || {}), activeLabel: e.target.value || "Yes" },
                     })
                   }
-                  className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] dark:text-white focus:outline-none rounded"
+                  className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] focus:outline-none rounded"
                 />
               </div>
               <div>
@@ -361,7 +361,7 @@ export function FieldInspector({
                       options: { ...((selectedField.options as any) || {}), inactiveLabel: e.target.value || "No" },
                     })
                   }
-                  className="w-full bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/12 dark:border-white/8 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] dark:text-white focus:outline-none rounded"
+                  className="w-full bg-[#faf8f5] border border-[#0d2137]/12 px-2 py-1.5 text-[10px] font-serif text-[#0d2137] focus:outline-none rounded"
                 />
               </div>
             </div>
@@ -370,10 +370,10 @@ export function FieldInspector({
       </div>
 
       {/* Delete footer */}
-      <div className="px-4 py-3 border-t border-[#0d2137]/8 dark:border-white/6">
+      <div className="px-4 py-3 border-t border-[#0d2137]/8">
         <button
           onClick={handleDeleteField}
-          className="w-full flex items-center justify-center gap-2 py-2.5 text-[10px] font-serif font-bold uppercase tracking-widest border border-red-400/20 dark:border-red-500/15 hover:border-red-400/50 bg-transparent hover:bg-red-50 dark:hover:bg-red-500/8 text-red-500/60 dark:text-red-400/60 hover:text-red-600 dark:hover:text-red-400 rounded transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2.5 text-[10px] font-serif font-bold uppercase tracking-widest border border-red-400/20 hover:border-red-400/50 bg-transparent hover:bg-red-50 text-red-500/60 hover:text-red-600 rounded transition-all cursor-pointer"
         >
           <Trash2 className="size-3.5" />
           <span>Remove Field</span>

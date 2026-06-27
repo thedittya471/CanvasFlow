@@ -27,7 +27,6 @@ import {
   useDeleteForm,
 } from "~/hooks/api/form";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
 import { useDashboard } from "~/providers/dashboard-provider";
 import { nodeTypes, getFieldOptionsArray } from "~/components/builder/FormFieldNode";
 import { FieldSidebar } from "~/components/builder/FieldSidebar";
@@ -189,8 +188,6 @@ function BuilderCanvas() {
   const [optionsList, setOptionsList] = useState<string[]>([]);
 
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = useReactFlow();
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
 
   // Sync localFields → React Flow nodes/edges
   useEffect(() => {
@@ -216,7 +213,7 @@ function BuilderCanvas() {
           target: t.id,
           animated: true,
           style: {
-            stroke: isDark ? "#d4af37" : "#3b5e82",
+            stroke: "#3b5e82",
             strokeWidth: 1.5,
             strokeDasharray: "4,4",
           },
@@ -224,7 +221,7 @@ function BuilderCanvas() {
     }
     setEdges(mappedEdges);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localFields, pendingDeletes, isDark]);
+  }, [localFields, pendingDeletes]);
 
   const selectedField = useMemo(
     () => localFields.find((f) => f.id === selectedNodeId) ?? null,
@@ -355,22 +352,22 @@ function BuilderCanvas() {
 
   if (formLoading || fieldsLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
-        <div className="w-8 h-8 border-2 border-[#0d2137] dark:border-white border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0]">
+        <div className="w-8 h-8 border-2 border-[#0d2137] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!form) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
+      <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0]">
         <div className="text-center space-y-4">
-          <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">
+          <h3 className="text-xl font-serif font-bold text-[#0d2137]">
             Blueprint not found
           </h3>
           <Link
             href="/dashboard/sketches"
-            className="text-xs uppercase font-serif tracking-wider font-bold text-[#8e6e53] dark:text-[#d4af37] hover:underline"
+            className="text-xs uppercase font-serif tracking-wider font-bold text-[#8e6e53] hover:underline"
           >
             Back to Catalog
           </Link>
@@ -380,7 +377,7 @@ function BuilderCanvas() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#faf7f0] dark:bg-[#121212] font-sans transition-colors duration-300">
+    <div className="fixed inset-0 flex flex-col bg-[#faf7f0] font-sans transition-colors duration-300">
       <BuilderHeader
         form={form}
         formId={formId}
@@ -428,43 +425,43 @@ function BuilderCanvas() {
           >
             <Background
               variant={BackgroundVariant.Dots}
-              color={isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(13, 33, 55, 0.3)"}
+              color={"rgba(13, 33, 55, 0.3)"}
               gap={16}
               size={1.5}
             />
 
             <Panel
               position="bottom-left"
-              className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137]/15 dark:border-white/10 rounded-md p-1 shadow-[2px_2px_0px_0px_rgba(13,33,55,0.05)] flex flex-col gap-1 z-10"
+              className="bg-white border-2 border-[#0d2137]/15 rounded-md p-1 shadow-[2px_2px_0px_0px_rgba(13,33,55,0.05)] flex flex-col gap-1 z-10"
             >
               <button
                 onClick={() => zoomIn()}
                 title="Zoom In"
-                className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center"
+                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center"
               >
                 <Plus className="size-3.5" />
               </button>
               <button
                 onClick={() => zoomOut()}
                 title="Zoom Out"
-                className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center"
+                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center"
               >
                 <Minus className="size-3.5" />
               </button>
               <button
                 onClick={() => fitView({ duration: 400 })}
                 title="Fit View"
-                className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center"
+                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center"
               >
                 <Maximize2 className="size-3.5" />
               </button>
               <button
                 onClick={() => setIsLocked(!isLocked)}
                 title={isLocked ? "Unlock Canvas" : "Lock Canvas"}
-                className="p-1.5 hover:bg-[#faf8f5] dark:hover:bg-white/5 text-[#0d2137] dark:text-white rounded cursor-pointer transition-colors flex items-center justify-center border-t border-[#0d2137]/10 dark:border-white/10 pt-1.5 mt-0.5"
+                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center border-t border-[#0d2137]/10 pt-1.5 mt-0.5"
               >
                 {isLocked ? (
-                  <Lock className="size-3.5 text-[#8e6e53] dark:text-[#d4af37]" />
+                  <Lock className="size-3.5 text-[#8e6e53]" />
                 ) : (
                   <Unlock className="size-3.5 opacity-60" />
                 )}

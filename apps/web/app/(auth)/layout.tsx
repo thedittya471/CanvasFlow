@@ -20,19 +20,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const isSignIn = pathname ? pathname.includes("signIn") : true;
 
   return (
-    <div className={`${ebGaramond.variable} ${caveat.variable} min-h-screen w-full bg-[#faf7f0] dark:bg-[#141414] text-[#0d2137] dark:text-[#faf7f0] flex font-sans transition-colors duration-300 selection:bg-[#0d2137] dark:selection:bg-[#faf7f0] selection:text-white dark:selection:text-[#0d2137]`}>
+    <div className={`${ebGaramond.variable} ${caveat.variable} min-h-screen w-full bg-[#faf7f0] text-[#0d2137] flex font-sans transition-colors duration-300 selection:bg-[#0d2137] selection:text-white`}>
       
       {/* Outer framing container */}
       <div className="relative w-full min-h-screen h-screen overflow-hidden flex flex-row">
         
         {/* Background panel (watercolor drawing) */}
         <div 
-          className="absolute top-0 bottom-0 left-0 w-1/2 h-full z-20 transition-transform duration-700 ease-in-out hidden md:block overflow-hidden border-r-2 border-[#0d2137] dark:border-[#2a2a2a]"
+          className="absolute top-0 bottom-0 left-0 w-1/2 h-full z-20 transition-transform duration-700 ease-in-out hidden md:block overflow-hidden border-r-2 border-[#0d2137]"
           style={{
             transform: isSignIn ? "translateX(0%)" : "translateX(100%)",
           }}
         >
-          <div className="relative w-full h-full bg-[#faf7f0] dark:bg-[#141414]">
+          <div className="relative w-full h-full bg-[#faf7f0]">
             <Image 
               src="/background-image.png" 
               alt="Blueprint Forms Studio" 
@@ -60,7 +60,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           style={{
             "--form-translate-x": isSignIn ? "100%" : "0%",
           } as React.CSSProperties}
-          className="absolute top-0 bottom-0 left-0 w-full md:w-1/2 h-full z-10 transition-transform duration-700 ease-in-out flex flex-col justify-between p-8 md:p-12 bg-[#faf7f0] dark:bg-[#141414] md:translate-x-(--form-translate-x)"
+          className="absolute top-0 bottom-0 left-0 w-full md:w-1/2 h-full z-10 transition-transform duration-700 ease-in-out flex flex-col justify-between p-8 md:p-12 bg-[#faf7f0] md:translate-x-(--form-translate-x)"
         >
           {children}
         </div>

@@ -17,7 +17,6 @@ interface HourlyDistributionPoint {
 }
 
 interface HourlyHeatmapProps {
-  isDark: boolean;
   hourlyDistribution: HourlyDistributionPoint[];
   peakHour: number | null;
 }
@@ -30,7 +29,7 @@ function formatHourLabel(hour: number): string {
   return "";
 }
 
-export function HourlyHeatmap({ isDark, hourlyDistribution, peakHour }: HourlyHeatmapProps) {
+export function HourlyHeatmap({ hourlyDistribution, peakHour }: HourlyHeatmapProps) {
   // Build full 24-hour array, filling missing hours with 0
   const distributionMap = new Map(hourlyDistribution.map((d) => [d.hour, d.count]));
   const chartData = Array.from({ length: 24 }, (_, i) => ({
@@ -41,23 +40,23 @@ export function HourlyHeatmap({ isDark, hourlyDistribution, peakHour }: HourlyHe
   const totalCount = chartData.reduce((sum, d) => sum + d.count, 0);
 
   return (
-    <div className="relative overflow-hidden bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a] min-h-72">
+    <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] min-h-72">
       <div
-        className="absolute inset-0 bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"
-        style={{ backgroundImage: isDark ? "url('/asset4.png')" : "url('/assest1.png')" }}
+        className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
+        style={{ backgroundImage: "url('/assest1.png')"}}
       />
       <div className="relative z-10 space-y-4 h-full flex flex-col">
         <div className="space-y-0.5">
-          <h4 className="text-sm font-serif font-bold text-[#0d2137] dark:text-white uppercase tracking-wider">
+          <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">
             Submission Hours
           </h4>
-          <p className="text-[9px] font-serif text-[#0d2137]/45 dark:text-white/35 italic">
+          <p className="text-[9px] font-serif text-[#0d2137]/45 italic">
             When your audience responds
           </p>
         </div>
 
         {totalCount === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-xs font-serif italic text-[#0d2137]/40 dark:text-white/30">
+          <div className="flex-1 flex items-center justify-center text-xs font-serif italic text-[#0d2137]/40">
             No submissions recorded.
           </div>
         ) : (
@@ -66,13 +65,13 @@ export function HourlyHeatmap({ isDark, hourlyDistribution, peakHour }: HourlyHe
               <BarChart data={chartData} barCategoryGap="10%">
                 <XAxis
                   dataKey="hour"
-                  stroke={isDark ? "#b9c9df" : "#0d2137"}
+                  stroke={"#0d2137"}
                   opacity={0.5}
                   tick={{ fontSize: 9 }}
                   tickFormatter={formatHourLabel}
                 />
                 <YAxis
-                  stroke={isDark ? "#b9c9df" : "#0d2137"}
+                  stroke={"#0d2137"}
                   opacity={0.5}
                   tick={{ fontSize: 9 }}
                   width={24}
@@ -91,9 +90,9 @@ export function HourlyHeatmap({ isDark, hourlyDistribution, peakHour }: HourlyHe
                     return [value, label];
                   }}
                   contentStyle={{
-                    background: isDark ? "#1c1c1e" : "#ffffff",
-                    borderColor: isDark ? "#2a2a2a" : "#0d2137",
-                    color: isDark ? "#ffffff" : "#0d2137",
+                    background: "#ffffff",
+                    borderColor: "#0d2137",
+                    color: "#0d2137",
                     fontFamily: "var(--font-garamond)",
                     fontSize: 11,
                   }}
@@ -106,9 +105,8 @@ export function HourlyHeatmap({ isDark, hourlyDistribution, peakHour }: HourlyHe
                         key={`cell-${entry.hour}`}
                         fill={
                           isPeak
-                            ? isDark ? "#d4af37" : "#8e6e53"
-                            : isDark ? "#b9c9df" : "#3b5e82"
-                        }
+                            ? "#8e6e53"
+                            : "#3b5e82"}
                         fillOpacity={isPeak ? 1 : 0.75}
                       />
                     );

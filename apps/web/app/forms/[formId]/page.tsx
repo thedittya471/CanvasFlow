@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useGetFormById, useSubmitForm } from "~/hooks/api/form";
 import { useRecordView, useRecordFieldAnswer } from "~/hooks/api/analytics";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
 import { EB_Garamond, Caveat } from "next/font/google";
 import { FormLoadingState } from "~/components/forms/FormLoadingState";
 import { FormErrorState } from "~/components/forms/FormErrorState";
@@ -28,7 +27,6 @@ const caveat = Caveat({
 export default function PublicFormPage() {
   const params = useParams();
   const formId = params.formId as string;
-  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   const { form, isLoading, error } = useGetFormById(formId);
@@ -70,8 +68,6 @@ export default function PublicFormPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formId]);
-
-  const isDark = mounted && theme === "dark";
 
   // Set default values for toggles from field options
   useEffect(() => {
@@ -171,7 +167,7 @@ export default function PublicFormPage() {
 
   return (
     <div
-      className={`${ebGaramond.variable} ${caveat.variable} min-h-screen w-full bg-[#faf7f0] dark:bg-[#121212] flex flex-col justify-between items-center p-8 md:p-12 relative select-none overflow-hidden transition-colors duration-300 font-sans`}
+      className={`${ebGaramond.variable} ${caveat.variable} min-h-screen w-full bg-[#faf7f0] flex flex-col justify-between items-center p-8 md:p-12 relative select-none overflow-hidden transition-colors duration-300 font-sans`}
     >
       <style>{`
         @keyframes drawCheck {
@@ -208,7 +204,7 @@ export default function PublicFormPage() {
       {mounted && (
         <div className="absolute inset-0 z-0 select-none pointer-events-none">
           <Image
-            src={isDark ? "/dark-card-background.png" : "/card-background.png"}
+            src={"/card-background.png"}
             alt="Main Page Background"
             fill
             priority
@@ -223,15 +219,15 @@ export default function PublicFormPage() {
         {submitted ? (
           <FormThankYou siteRating={siteRating} setSiteRating={setSiteRating} />
         ) : totalQuestions === 0 ? (
-          <div className="max-w-xl w-full border border-white/30 dark:border-white/10 p-16 rounded-lg bg-white/45 dark:bg-black/35 backdrop-blur-xl shadow-[0px_10px_35px_rgba(13,33,55,0.06)] text-center space-y-3 -translate-y-14">
+          <div className="max-w-xl w-full border border-white/30 p-16 rounded-lg bg-white/45 backdrop-blur-xl shadow-[0px_10px_35px_rgba(13,33,55,0.06)] text-center space-y-3 -translate-y-14">
             <h3
-              className="text-xl font-bold text-[#0d2137] dark:text-white"
+              className="text-xl font-bold text-[#0d2137]"
               style={{ fontFamily: "var(--font-garamond)" }}
             >
               Empty Canvas
             </h3>
             <p
-              className="text-sm text-[#0d2137]/50 dark:text-white/40 italic"
+              className="text-sm text-[#0d2137]/50 italic"
               style={{ fontFamily: "var(--font-caveat)" }}
             >
               This form does not contain any draft fields.

@@ -10,30 +10,29 @@ interface DeviceData {
 }
 
 interface DeviceBreakdownProps {
-  isDark: boolean;
   totalViews: number;
   deviceData: DeviceData[];
 }
 
-export function DeviceBreakdown({ isDark, totalViews, deviceData }: DeviceBreakdownProps) {
+export function DeviceBreakdown({ totalViews, deviceData }: DeviceBreakdownProps) {
   return (
-    <div className="relative overflow-hidden bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a] min-h-75">
+    <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] min-h-75">
       <div
-        className="absolute inset-0 bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"
-        style={{ backgroundImage: isDark ? "url('/asset4.png')" : "url('/assest1.png')" }}
+        className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
+        style={{ backgroundImage: "url('/assest1.png')"}}
       />
       <div className="relative z-10 space-y-4 h-full flex flex-col justify-between">
         <div className="space-y-0.5">
-          <h4 className="text-sm font-serif font-bold text-[#0d2137] dark:text-white uppercase tracking-wider">
+          <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">
             Device Breakdown
           </h4>
-          <p className="text-[9px] font-serif text-[#0d2137]/45 dark:text-white/35 italic">
+          <p className="text-[9px] font-serif text-[#0d2137]/45 italic">
             From page views
           </p>
         </div>
 
         {totalViews === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-xs font-serif italic text-[#0d2137]/40 dark:text-white/30">
+          <div className="flex-1 flex items-center justify-center text-xs font-serif italic text-[#0d2137]/40">
             No responses recorded.
           </div>
         ) : (
@@ -57,8 +56,8 @@ export function DeviceBreakdown({ isDark, totalViews, deviceData }: DeviceBreakd
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col justify-center items-center">
-                <span className="text-lg font-serif font-bold text-[#0d2137] dark:text-white">100%</span>
-                <span className="text-[7px] text-[#0d2137]/50 dark:text-white/40 uppercase tracking-widest font-serif font-bold">
+                <span className="text-lg font-serif font-bold text-[#0d2137]">100%</span>
+                <span className="text-[7px] text-[#0d2137]/50 uppercase tracking-widest font-serif font-bold">
                   Total
                 </span>
               </div>
@@ -71,7 +70,7 @@ export function DeviceBreakdown({ isDark, totalViews, deviceData }: DeviceBreakd
                 return (
                   <div
                     key={idx}
-                    className="flex justify-between items-center text-[10px] font-serif uppercase tracking-wider text-[#0d2137] dark:text-[#b9c9df]"
+                    className="flex justify-between items-center text-[10px] font-serif uppercase tracking-wider text-[#0d2137]"
                   >
                     <div className="flex items-center gap-1.5">
                       <span

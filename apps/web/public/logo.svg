@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" role="img" aria-label="CanvasFlow">
+  <g stroke="#0d2137" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Stacked paper edges (hint at multiple pages behind) -->
+    <path d="M32 14 H62 a6 6 0 0 1 6 6 V24" />
+    <path d="M28 19 H64 a6 6 0 0 1 6 6 V30" />
+
+    <!-- Main paper body -->
+    <path d="M22 24 H64 a6 6 0 0 1 6 6 V76 a6 6 0 0 1 -6 6 H28 a6 6 0 0 1 -6 -6 Z" />
+
+    <!-- Bottom flourish (curling trails from under the paper) -->
+    <path d="M22 78 Q 14 88 8 84" />
+    <path d="M70 80 Q 82 92 92 86" />
+
+    <!-- Form content lines -->
+    <line x1="30" y1="56" x2="60" y2="56" />
+    <line x1="30" y1="64" x2="60" y2="64" />
+    <line x1="30" y1="72" x2="54" y2="72" />
+
+    <!-- Checkmark inside circle -->
+    <circle cx="36" cy="38" r="7" />
+    <path d="M32.8 38.2 L35.6 41 L40 36" />
+
+    <!-- Fountain pen body + nib (upper-right, angled toward paper) -->
+    <path d="M78 8 L84 14 L70 28 L54 38 L64 22 Z" />
+    <!-- Nib slit -->
+    <path d="M67 25 L54 38" />
+    <!-- Breather hole -->
+    <circle cx="64" cy="28" r="1.4" />
+  </g>
+</svg>

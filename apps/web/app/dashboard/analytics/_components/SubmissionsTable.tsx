@@ -43,14 +43,14 @@ export function SubmissionsTable({
   return (
     <>
       {/* Latest Responses Section */}
-      <div className="relative overflow-hidden bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a]">
+      <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137]">
         <div
-          className="absolute inset-0 bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"
+          className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
           style={{ backgroundImage: "url('/assest1.png')" }}
         />
         <div className="relative z-10 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h4 className="text-sm font-serif font-bold text-[#0d2137] dark:text-white uppercase tracking-wider">
+            <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">
               Latest Responses
             </h4>
             <div className="w-full sm:w-64 relative">
@@ -59,21 +59,21 @@ export function SubmissionsTable({
                 placeholder="Search responses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#faf7f0]/60 dark:bg-white/5 border border-[#0d2137]/20 dark:border-white/10 p-2 pl-8 text-xs font-serif text-[#0d2137] dark:text-white placeholder-[#0d2137]/35 dark:placeholder-white/35 rounded focus:outline-none focus:border-[#0d2137]/45 dark:focus:border-white/35"
+                className="w-full bg-[#faf7f0]/60 border border-[#0d2137]/20 p-2 pl-8 text-xs font-serif text-[#0d2137] placeholder-[#0d2137]/35 rounded focus:outline-none focus:border-[#0d2137]/45"
               />
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[#0d2137]/35 dark:text-white/35" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[#0d2137]/35" />
             </div>
           </div>
 
           {filteredSubmissions.length === 0 ? (
-            <div className="py-12 text-center text-xs font-serif italic text-[#0d2137]/50 dark:text-white/40 border border-dashed border-[#0d2137]/15 dark:border-white/10 rounded">
+            <div className="py-12 text-center text-xs font-serif italic text-[#0d2137]/50 border border-dashed border-[#0d2137]/15 rounded">
               No submissions found matching the query.
             </div>
           ) : (
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left font-serif text-xs">
                 <thead>
-                  <tr className="border-b border-[#0d2137]/10 dark:border-white/10 text-[#0d2137]/65 dark:text-white/50 text-[10px] uppercase tracking-widest font-bold">
+                  <tr className="border-b border-[#0d2137]/10 text-[#0d2137]/65 text-[10px] uppercase tracking-widest font-bold">
                     <th className="pb-3 font-semibold">Respondent</th>
                     <th className="pb-3 font-semibold text-center">Status</th>
                     <th className="pb-3 font-semibold">Date</th>
@@ -88,35 +88,35 @@ export function SubmissionsTable({
                     return (
                       <tr
                         key={sub.id}
-                        className="border-b border-[#0d2137]/5 dark:border-white/5 hover:bg-[#faf7f0]/30 dark:hover:bg-white/5 transition-colors"
+                        className="border-b border-[#0d2137]/5 hover:bg-[#faf7f0]/30 transition-colors"
                       >
                         <td className="py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full border border-[#0d2137]/25 dark:border-white/20 bg-[#faf7f0] dark:bg-[#1a1a1c] flex items-center justify-center font-bold text-[#8e6e53] dark:text-[#d4af37] text-[10px] shrink-0">
+                            <div className="w-8 h-8 rounded-full border border-[#0d2137]/25 bg-[#faf7f0] flex items-center justify-center font-bold text-[#8e6e53] text-[10px] shrink-0">
                               {initials}
                             </div>
                             <div className="overflow-hidden">
-                              <div className="font-bold text-[#0d2137] dark:text-white truncate">
+                              <div className="font-bold text-[#0d2137] truncate">
                                 {details.name}
                               </div>
-                              <div className="text-[10px] text-[#0d2137]/55 dark:text-white/45 truncate">
+                              <div className="text-[10px] text-[#0d2137]/55 truncate">
                                 {details.email}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="py-3 text-center">
-                          <span className="inline-block bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">
+                          <span className="inline-block bg-green-500/10 text-green-700 border border-green-500/20 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider">
                             Completed
                           </span>
                         </td>
-                        <td className="py-3 text-[#0d2137]/65 dark:text-white/60">
+                        <td className="py-3 text-[#0d2137]/65">
                           {new Date(sub.createdAt).toLocaleString()}
                         </td>
                         <td className="py-3 text-right">
                           <button
                             onClick={() => setViewingSubmission(sub)}
-                            className="p-1.5 hover:bg-[#faf7f0] dark:hover:bg-white/10 rounded border border-[#0d2137]/15 dark:border-white/10 text-[#0d2137] dark:text-white cursor-pointer transition-colors"
+                            className="p-1.5 hover:bg-[#faf7f0] rounded border border-[#0d2137]/15 text-[#0d2137] cursor-pointer transition-colors"
                             title="View details"
                           >
                             <Eye className="size-4" />
@@ -134,29 +134,29 @@ export function SubmissionsTable({
 
       {/* Submission Detail Modal overlay */}
       {viewingSubmission && form && (
-        <div className="fixed inset-0 bg-[#0d2137]/45 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1a1a1c] p-6 rounded border-2 border-[#0d2137] dark:border-[#2a2a2a] shadow-[6px_6px_0px_0px_#0d2137] dark:shadow-[6px_6px_0px_0px_#2a2a2a] max-w-lg w-full relative transition-colors duration-300">
+        <div className="fixed inset-0 bg-[#0d2137]/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded border-2 border-[#0d2137] shadow-[6px_6px_0px_0px_#0d2137] max-w-lg w-full relative transition-colors duration-300">
             <button
               onClick={() => setViewingSubmission(null)}
-              className="absolute right-4 top-4 p-1 rounded hover:bg-[#faf7f0] dark:hover:bg-white/10 text-[#0d2137]/50 dark:text-white/50 cursor-pointer"
+              className="absolute right-4 top-4 p-1 rounded hover:bg-[#faf7f0] text-[#0d2137]/50 cursor-pointer"
             >
               <X className="size-4.5" />
             </button>
 
             <div className="space-y-4">
               <div className="space-y-1 pr-6">
-                <span className="text-[8px] uppercase tracking-widest font-serif font-bold text-[#8e6e53] dark:text-[#d4af37]">
+                <span className="text-[8px] uppercase tracking-widest font-serif font-bold text-[#8e6e53]">
                   Submission Blueprint
                 </span>
-                <h4 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white truncate">
+                <h4 className="text-xl font-serif font-bold text-[#0d2137] truncate">
                   {getRespondentDetails(viewingSubmission).name}
                 </h4>
-                <p className="text-[10px] text-[#0d2137]/55 dark:text-white/40 italic font-serif">
+                <p className="text-[10px] text-[#0d2137]/55 italic font-serif">
                   Submitted: {new Date(viewingSubmission.createdAt).toLocaleString()}
                 </p>
               </div>
 
-              <div className="border-t border-[#0d2137]/10 dark:border-white/10 pt-4 max-h-75 overflow-y-auto space-y-4 pr-1">
+              <div className="border-t border-[#0d2137]/10 pt-4 max-h-75 overflow-y-auto space-y-4 pr-1">
                 {form.fields.map((field) => {
                   const answer = viewingSubmission.values.find(
                     (v) => v.formFieldId === field.id
@@ -178,10 +178,10 @@ export function SubmissionsTable({
 
                   return (
                     <div key={field.id} className="space-y-1 font-serif">
-                      <span className="text-[9px] uppercase tracking-widest font-bold text-[#0d2137]/55 dark:text-white/45 block">
+                      <span className="text-[9px] uppercase tracking-widest font-bold text-[#0d2137]/55 block">
                         Q: {field.label}
                       </span>
-                      <div className="p-3 bg-[#faf7f0]/60 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 rounded font-serif italic text-[#0d2137] dark:text-[#b9c9df] text-xs">
+                      <div className="p-3 bg-[#faf7f0]/60 border border-[#0d2137]/15 rounded font-serif italic text-[#0d2137] text-xs">
                         {displayVal}
                       </div>
                     </div>
@@ -189,10 +189,10 @@ export function SubmissionsTable({
                 })}
               </div>
 
-              <div className="border-t border-[#0d2137]/10 dark:border-white/10 pt-4 flex justify-end">
+              <div className="border-t border-[#0d2137]/10 pt-4 flex justify-end">
                 <button
                   onClick={() => setViewingSubmission(null)}
-                  className="bg-[#0d2137] hover:bg-[#1a3854] dark:bg-[#b9c9df] dark:hover:bg-[#ccdcf2] text-white dark:text-[#0d2137] py-2 px-6 text-[10px] uppercase font-bold tracking-widest transition-all cursor-pointer rounded-none border border-transparent shadow-[2px_2px_0px_0px_#8e6e53] dark:shadow-none"
+                  className="bg-[#0d2137] hover:bg-[#1a3854] text-white py-2 px-6 text-[10px] uppercase font-bold tracking-widest transition-all cursor-pointer rounded-none border border-transparent shadow-[2px_2px_0px_0px_#8e6e53]"
                   style={{ fontFamily: "var(--font-garamond)" }}
                 >
                   Close Blueprint

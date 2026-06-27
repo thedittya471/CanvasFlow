@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   title: "CanvasFlow",
   description: "Form Builder",
   icons: {
-    icon: "/logo-removebg-preview.png",
+    icon: "/logo.svg",
   },
 };
 
@@ -48,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${inter.variable} ${jbMono.variable}`}
       >

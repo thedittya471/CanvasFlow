@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { useListFormsByUserId, useDeleteForm } from "~/hooks/api/form";
 import { useDashboard } from "~/providers/dashboard-provider";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 const formatDate = (dateStr: string) => {
@@ -41,8 +40,6 @@ export default function SketchesPage() {
   const { forms, isLoading } = useListFormsByUserId();
   const { openCreateFormModal } = useDashboard();
   const { deleteFormAsync, isPending: isDeleting } = useDeleteForm();
-  const { theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("createdAt");
@@ -52,12 +49,6 @@ export default function SketchesPage() {
 
   // Confirm-delete state
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isDark = mounted && theme === "dark";
 
   const processedForms = useMemo(() => {
     if (!forms) return [];
@@ -131,23 +122,23 @@ export default function SketchesPage() {
       {/* Confirm delete dialog */}
       {confirmDeleteId && confirmDeleteForm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0d2137]/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#1c1c1e] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] dark:shadow-[6px_6px_0px_0px_#2a2a2a] max-w-sm w-full mx-4 space-y-4">
+          <div className="bg-white border-2 border-[#0d2137] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] max-w-sm w-full mx-4 space-y-4">
             <div className="space-y-1">
               <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-red-500 block">
                 — Permanent Action
               </span>
-              <h3 className="text-xl font-serif font-bold text-[#0d2137] dark:text-white">
+              <h3 className="text-xl font-serif font-bold text-[#0d2137]">
                 Delete Blueprint?
               </h3>
-              <p className="text-sm text-[#0d2137]/70 dark:text-white/60 font-serif leading-relaxed">
-                <span className="font-bold text-[#0d2137] dark:text-white">&ldquo;{confirmDeleteForm.title}&rdquo;</span> and all its fields and submissions will be permanently removed. This cannot be undone.
+              <p className="text-sm text-[#0d2137]/70 font-serif leading-relaxed">
+                <span className="font-bold text-[#0d2137]">&ldquo;{confirmDeleteForm.title}&rdquo;</span> and all its fields and submissions will be permanently removed. This cannot be undone.
               </p>
             </div>
             <div className="flex gap-3 justify-end pt-2">
               <button
                 onClick={() => setConfirmDeleteId(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/20 dark:border-white/20 rounded text-[#0d2137]/70 dark:text-white/70 hover:bg-[#0d2137]/5 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/20 rounded text-[#0d2137]/70 hover:bg-[#0d2137]/5 cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -166,22 +157,22 @@ export default function SketchesPage() {
 
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-serif font-bold text-[#0d2137]/60 dark:text-[#faf7f0]/60">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-serif font-bold text-[#0d2137]/60">
             <span>Studio</span>
-            <span className="text-[#0d2137]/30 dark:text-[#faf7f0]/30 font-sans">›</span>
-            <span className="text-[#0d2137] dark:text-[#faf7f0] border-b border-[#0d2137]/30 dark:border-[#faf7f0]/30 pb-0.5">My Sketches</span>
+            <span className="text-[#0d2137]/30 font-sans">›</span>
+            <span className="text-[#0d2137] border-b border-[#0d2137]/30 pb-0.5">My Sketches</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-serif text-[#0d2137] dark:text-white font-bold tracking-tight mt-2.5">
+          <h2 className="text-4xl md:text-5xl font-serif text-[#0d2137] font-bold tracking-tight mt-2.5">
             Drafting Table
           </h2>
-          <p className="text-lg font-caveat text-[#8e6e53] dark:text-[#d4af37] mt-1 italic">
+          <p className="text-lg font-caveat text-[#8e6e53] mt-1 italic">
             Reviewing {forms?.length || 0} active architectural forms...
           </p>
         </div>
 
         <button
           onClick={openCreateFormModal}
-          className="bg-[#0d2137] dark:bg-[#b9c9df] text-[#faf7f0] dark:text-[#0d2137] py-3 px-5 rounded border-2 border-[#0d2137] dark:border-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] active:bg-[#071321] transition-all flex items-center justify-center gap-2 font-serif text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_#8e6e53] dark:shadow-[3px_3px_0px_0px_#d4af37] hover:shadow-[1px_1px_0px_0px_#8e6e53] dark:hover:shadow-[1px_1px_0px_0px_#d4af37] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer self-start sm:self-auto"
+          className="bg-[#0d2137] text-[#faf7f0] py-3 px-5 rounded border-2 border-[#0d2137] hover:bg-[#1a3854] active:bg-[#071321] transition-all flex items-center justify-center gap-2 font-serif text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_#8e6e53] hover:shadow-[1px_1px_0px_0px_#8e6e53] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer self-start sm:self-auto"
         >
           <span className="flex items-center justify-center border border-current rounded-full p-0.5 size-4">
             <Plus className="size-2.5 stroke-[3px]" />
@@ -190,42 +181,42 @@ export default function SketchesPage() {
         </button>
       </div>
 
-      <div className="bg-[#f5ebd7] dark:bg-[#1c1c1e]/60 border border-[#0d2137]/10 dark:border-white/10 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm backdrop-blur-xs">
+      <div className="bg-[#f5ebd7] border border-[#0d2137]/10 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm backdrop-blur-xs">
         <div className="relative w-full md:max-w-xs">
-          <Search className="absolute left-3 top-3.5 size-4 text-[#0d2137]/40 dark:text-[#faf7f0]/40" />
+          <Search className="absolute left-3 top-3.5 size-4 text-[#0d2137]/40" />
           <input
             type="text"
             placeholder="Search archives..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full bg-white/60 dark:bg-[#2c2c2e]/60 border border-[#0d2137]/10 dark:border-[#3a3a3c]/60 p-2.5 pl-10 text-sm focus:outline-none focus:ring-1 focus:ring-[#8e6e53] dark:focus:ring-[#d4af37] text-[#0d2137] dark:text-white font-serif rounded-md transition-colors"
+            className="w-full bg-white/60 border border-[#0d2137]/10 p-2.5 pl-10 text-sm focus:outline-none focus:ring-1 focus:ring-[#8e6e53] text-[#0d2137] font-serif rounded-md transition-colors"
           />
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-6 w-full md:w-auto">
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/50 dark:text-[#faf7f0]/50 shrink-0">Sort:</span>
+            <span className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/50 shrink-0">Sort:</span>
             <div className="relative w-full sm:w-auto">
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="w-full sm:w-auto bg-transparent border-0 py-2.5 pl-0 pr-6 text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137] dark:text-white rounded appearance-none focus:outline-none cursor-pointer"
+                className="w-full sm:w-auto bg-transparent border-0 py-2.5 pl-0 pr-6 text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137] rounded appearance-none focus:outline-none cursor-pointer"
               >
-                <option value="createdAt" className="bg-[#f5ebd7] dark:bg-[#1c1c1e]">Date Created</option>
-                <option value="title" className="bg-[#f5ebd7] dark:bg-[#1c1c1e]">Title</option>
+                <option value="createdAt" className="bg-[#f5ebd7]">Date Created</option>
+                <option value="title" className="bg-[#f5ebd7]">Title</option>
               </select>
-              <ChevronDown className="absolute right-0 top-3.5 size-3 text-[#0d2137]/60 dark:text-[#faf7f0]/60 pointer-events-none" />
+              <ChevronDown className="absolute right-0 top-3.5 size-3 text-[#0d2137]/60 pointer-events-none" />
             </div>
           </div>
 
-          <div className="h-5 w-px bg-[#0d2137]/10 dark:bg-white/10 hidden sm:block" />
+          <div className="h-5 w-px bg-[#0d2137]/10 hidden sm:block" />
 
-          <div className="flex bg-[#faf7f0]/60 dark:bg-[#2c2c2e]/60 p-1 border border-[#0d2137]/10 dark:border-white/10 rounded-full text-[10px] font-serif font-bold uppercase tracking-wider select-none w-full sm:w-auto justify-between sm:justify-start gap-1">
+          <div className="flex bg-[#faf7f0]/60 p-1 border border-[#0d2137]/10 rounded-full text-[10px] font-serif font-bold uppercase tracking-wider select-none w-full sm:w-auto justify-between sm:justify-start gap-1">
             {["ALL", "DRAFTS", "PUBLISHED", "ARCHIVED"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => { setFilter(tab); setPage(1); }}
-                className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${filter === tab ? "bg-[#d3c8b4] dark:bg-[#b9c9df]/20 text-[#0d2137] dark:text-[#b9c9df] font-bold" : "text-[#0d2137]/50 dark:text-[#faf7f0]/50 hover:text-[#0d2137] dark:hover:text-[#faf7f0]"}`}
+                className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${filter === tab ? "bg-[#d3c8b4] text-[#0d2137] font-bold" : "text-[#0d2137]/50 hover:text-[#0d2137]"}`}
               >
                 {tab}
               </button>
@@ -236,18 +227,18 @@ export default function SketchesPage() {
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 space-y-4">
-          <div className="w-10 h-10 border-2 border-[#0d2137] dark:border-[#b9c9df] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-serif italic text-[#8e6e53] dark:text-[#d4af37]">Reading Atelier Records...</p>
+          <div className="w-10 h-10 border-2 border-[#0d2137] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-serif italic text-[#8e6e53]">Reading Atelier Records...</p>
         </div>
       ) : paginatedForms.length === 0 ? (
-        <div className="bg-white/40 dark:bg-[#1a1a1c]/40 border border-dashed border-[#0d2137]/20 dark:border-[#faf7f0]/20 p-12 text-center rounded-lg max-w-lg mx-auto space-y-4 backdrop-blur-xs">
-          <h3 className="text-sm uppercase tracking-widest font-serif font-bold text-[#0d2137] dark:text-white">No Drawings Cataloged</h3>
-          <p className="text-xs text-[#0d2137]/60 dark:text-[#faf7f0]/60 font-serif leading-relaxed max-w-sm mx-auto">
+        <div className="bg-white/40 border border-dashed border-[#0d2137]/20 p-12 text-center rounded-lg max-w-lg mx-auto space-y-4 backdrop-blur-xs">
+          <h3 className="text-sm uppercase tracking-widest font-serif font-bold text-[#0d2137]">No Drawings Cataloged</h3>
+          <p className="text-xs text-[#0d2137]/60 font-serif leading-relaxed max-w-sm mx-auto">
             We couldn&apos;t find any blueprint drafts matching your query. Initiate a new draft to begin.
           </p>
           <button
             onClick={openCreateFormModal}
-            className="text-xs font-serif font-bold uppercase tracking-wider text-[#8e6e53] dark:text-[#d4af37] hover:underline cursor-pointer inline-flex items-center gap-1.5"
+            className="text-xs font-serif font-bold uppercase tracking-wider text-[#8e6e53] hover:underline cursor-pointer inline-flex items-center gap-1.5"
           >
             <span>Start a Blueprint</span>
             <span>→</span>
@@ -265,24 +256,24 @@ export default function SketchesPage() {
             return (
               <div
                 key={form.id}
-                className="relative overflow-visible bg-[#faf8f5] dark:bg-[#1a1a1c] border border-[#0d2137]/10 dark:border-white/5 p-4 rounded shadow-[0_1px_2px_rgba(13,33,55,0.05)] group hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(13,33,55,0.06)] transition-all duration-250 flex flex-col justify-between min-h-90 max-w-[320px] w-full mx-auto"
+                className="relative overflow-visible bg-[#faf8f5] border border-[#0d2137]/10 p-4 rounded shadow-[0_1px_2px_rgba(13,33,55,0.05)] group hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(13,33,55,0.06)] transition-all duration-250 flex flex-col justify-between min-h-90 max-w-[320px] w-full mx-auto"
               >
                 <div
-                  className="absolute inset-0 rounded bg-cover bg-center mix-blend-multiply dark:mix-blend-overlay opacity-80 pointer-events-none select-none"
-                  style={{ backgroundImage: isDark ? "url('/dark-card-background.png')" : "url('/card-background.png')" }}
+                  className="absolute inset-0 rounded bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
+                  style={{ backgroundImage: "url('/card-background.png')"}}
                 />
 
                 {isPublished && isThirdCard && (
-                  <div className="absolute top-3 right-3 z-20 text-[#8e6e53] dark:text-[#d4af37] pointer-events-none">
+                  <div className="absolute top-3 right-3 z-20 text-[#8e6e53] pointer-events-none">
                     <Pin className="size-4.5 rotate-45 fill-current" />
                   </div>
                 )}
 
                 <div className="relative z-10 space-y-4">
-                  <div className="h-32 w-full border border-[#0d2137]/10 dark:border-white/10 rounded overflow-hidden relative bg-[#faf7f0] dark:bg-[#2c2c2e]">
-                    <div className="absolute inset-0 bg-cover bg-center opacity-70 dark:opacity-30 mix-blend-luminosity group-hover:scale-103 transition-transform duration-500" style={{ backgroundImage: `url('${illustration}')` }} />
+                  <div className="h-32 w-full border border-[#0d2137]/10 rounded overflow-hidden relative bg-[#faf7f0]">
+                    <div className="absolute inset-0 bg-cover bg-center opacity-70 mix-blend-luminosity group-hover:scale-103 transition-transform duration-500" style={{ backgroundImage: `url('${illustration}')` }} />
                     {isPublished && isSecondCard && (
-                      <div className="absolute top-2 left-2 z-20 text-[#244f75] dark:text-[#b9c9df] font-caveat font-bold text-lg -rotate-12 select-none pointer-events-none tracking-wide">
+                      <div className="absolute top-2 left-2 z-20 text-[#244f75] font-caveat font-bold text-lg -rotate-12 select-none pointer-events-none tracking-wide">
                         Top Secret
                       </div>
                     )}
@@ -290,7 +281,7 @@ export default function SketchesPage() {
 
                   <div className="space-y-1">
                     <div className="flex justify-between items-start gap-2">
-                      <h3 className="font-serif font-bold text-xl text-[#0d2137] dark:text-white group-hover:text-[#8e6e53] dark:group-hover:text-[#d4af37] transition-colors line-clamp-1">
+                      <h3 className="font-serif font-bold text-xl text-[#0d2137] group-hover:text-[#8e6e53] transition-colors line-clamp-1">
                         {form.title}
                       </h3>
 
@@ -301,26 +292,26 @@ export default function SketchesPage() {
                           setConfirmDeleteId(form.id);
                         }}
                         title="Delete blueprint"
-                        className="text-[#0d2137]/30 dark:text-white/30 hover:text-red-500 dark:hover:text-red-400 p-0.5 rounded cursor-pointer shrink-0 transition-colors"
+                        className="text-[#0d2137]/30 hover:text-red-500 p-0.5 rounded cursor-pointer shrink-0 transition-colors"
                       >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
-                    <p className="text-[9px] text-[#0d2137]/50 dark:text-[#faf7f0]/50 tracking-wider font-serif uppercase font-bold">
+                    <p className="text-[9px] text-[#0d2137]/50 tracking-wider font-serif uppercase font-bold">
                       {isPublished ? getRefNo(form.id, form.title) : "STATUS: DRAFTING"}
                     </p>
                   </div>
 
-                  <div className="border-t border-b border-[#0d2137]/10 dark:border-white/10 py-3 space-y-2 text-xs font-serif">
-                    <div className="flex justify-between text-[#0d2137]/65 dark:text-[#faf7f0]/65">
+                  <div className="border-t border-b border-[#0d2137]/10 py-3 space-y-2 text-xs font-serif">
+                    <div className="flex justify-between text-[#0d2137]/65">
                       <span className="italic">{isPublished ? "Commissioned" : "Last Modified"}</span>
-                      <span className="font-bold text-[#0d2137] dark:text-[#faf7f0]">
+                      <span className="font-bold text-[#0d2137]">
                         {isPublished ? formatDate(form.publishedAt || form.createdAt) : getRelativeTime(form.updatedAt)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-[#0d2137]/65 dark:text-[#faf7f0]/65">
+                    <div className="flex justify-between text-[#0d2137]/65">
                       <span className="italic">Correspondence</span>
-                      <span className="font-bold text-[#0d2137] dark:text-[#faf7f0]">
+                      <span className="font-bold text-[#0d2137]">
                         {responses} Response{responses === 1 ? "" : "s"}
                       </span>
                     </div>
@@ -330,10 +321,10 @@ export default function SketchesPage() {
                 <div className="relative z-10 flex gap-2 mt-5">
                   {isPublished ? (
                     <>
-                      <Link href={`/dashboard/sketches/${form.id}`} className="flex-1 bg-[#0d2137] dark:bg-[#b9c9df] hover:bg-[#1a3854] dark:hover:bg-[#ccdcf2] text-[#faf7f0] dark:text-[#0d2137] border border-[#0d2137] dark:border-[#b9c9df] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
+                      <Link href={`/dashboard/sketches/${form.id}`} className="flex-1 bg-[#0d2137] hover:bg-[#1a3854] text-[#faf7f0] border border-[#0d2137] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
                         Open Sketch
                       </Link>
-                      <button className="border border-[#0d2137]/20 dark:border-white/20 hover:border-[#0d2137] dark:hover:border-white text-[#0d2137] dark:text-[#faf7f0] p-2 rounded-md transition-colors cursor-pointer">
+                      <button className="border border-[#0d2137]/20 hover:border-[#0d2137] text-[#0d2137] p-2 rounded-md transition-colors cursor-pointer">
                         <Share2 className="size-3.5" />
                       </button>
                     </>
@@ -350,22 +341,22 @@ export default function SketchesPage() {
       )}
 
       {!isLoading && processedForms.length > 0 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center border-t border-[#0d2137]/10 dark:border-white/10 pt-6 gap-4">
-          <div className="text-sm font-serif italic text-[#0d2137]/70 dark:text-[#faf7f0]/70 select-none">
+        <div className="flex flex-col sm:flex-row justify-between items-center border-t border-[#0d2137]/10 pt-6 gap-4">
+          <div className="text-sm font-serif italic text-[#0d2137]/70 select-none">
             Page {page} of {totalPages} <span className="font-sans not-italic text-[10px] mx-1">•</span> Cataloged in Atelier Records
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="bg-[#faf7f0]/50 dark:bg-[#1a1a1c]/50 hover:bg-white dark:hover:bg-[#2c2c2e] text-[#0d2137] dark:text-[#faf7f0] border border-[#0d2137]/15 dark:border-white/15 p-2 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="bg-[#faf7f0]/50 hover:bg-white text-[#0d2137] border border-[#0d2137]/15 p-2 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ArrowLeft className="size-4" />
             </button>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="bg-[#faf7f0]/50 dark:bg-[#1a1a1c]/50 hover:bg-white dark:hover:bg-[#2c2c2e] text-[#0d2137] dark:text-[#faf7f0] border border-[#0d2137]/15 dark:border-white/15 p-2 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="bg-[#faf7f0]/50 hover:bg-white text-[#0d2137] border border-[#0d2137]/15 p-2 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ArrowRight className="size-4" />
             </button>

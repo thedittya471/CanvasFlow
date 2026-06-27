@@ -38,18 +38,18 @@ export function FormQuestion({
     <div className="w-full flex flex-col items-center gap-6">
       <div
         key={currentQuestionIndex}
-        className="max-w-xl w-full border border-white/35 dark:border-white/10 p-16 rounded-lg bg-white/45 dark:bg-black/40 backdrop-blur-2xl shadow-[0px_15px_35px_rgba(13,33,55,0.06)] dark:shadow-[0px_15px_35px_rgba(0,0,0,0.3)] flex flex-col justify-between min-h-115 animate-card text-center relative -translate-y-14"
+        className="max-w-xl w-full border border-white/35 p-16 rounded-lg bg-white/45 backdrop-blur-2xl shadow-[0px_15px_35px_rgba(13,33,55,0.06)] flex flex-col justify-between min-h-115 animate-card text-center relative -translate-y-14"
       >
         {/* Question Number */}
         <div className="space-y-4 select-none">
           <span
-            className="text-lg text-[#0d2137]/60 dark:text-white/40 block mt-2 italic"
+            className="text-lg text-[#0d2137]/60 block mt-2 italic"
             style={{ fontFamily: "var(--font-caveat)" }}
           >
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </span>
           <h2
-            className="text-2xl md:text-3xl font-bold text-[#0d2137] dark:text-white leading-snug tracking-wide"
+            className="text-2xl md:text-3xl font-bold text-[#0d2137] leading-snug tracking-wide"
             style={{ fontFamily: "var(--font-garamond)" }}
           >
             {currentField?.label}
@@ -64,7 +64,7 @@ export function FormQuestion({
               placeholder={currentField.placeholder || "Type response here..."}
               value={answers[currentField.id] || ""}
               onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-              className="w-full max-w-sm mx-auto text-center bg-white/30 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 p-3.5 text-2xl text-[#0d2137] dark:text-white placeholder-[#0d2137]/35 dark:placeholder-white/20 focus:outline-none focus:border-[#0d2137]/45 dark:focus:border-white/40 rounded-md transition-all shadow-sm"
+              className="w-full max-w-sm mx-auto text-center bg-white/30 border border-[#0d2137]/15 p-3.5 text-2xl text-[#0d2137] placeholder-[#0d2137]/35 focus:outline-none focus:border-[#0d2137]/45 rounded-md transition-all shadow-sm"
               style={{ fontFamily: "var(--font-caveat)" }}
             />
           )}
@@ -75,7 +75,7 @@ export function FormQuestion({
               value={answers[currentField.id] || ""}
               onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
               rows={2}
-              className="w-full max-w-sm mx-auto text-center bg-white/30 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 p-3.5 text-2xl text-[#0d2137] dark:text-white placeholder-[#0d2137]/25 dark:placeholder-white/20 focus:outline-none focus:border-[#0d2137]/45 dark:focus:border-white/40 rounded-md transition-all shadow-sm resize-none"
+              className="w-full max-w-sm mx-auto text-center bg-white/30 border border-[#0d2137]/15 p-3.5 text-2xl text-[#0d2137] placeholder-[#0d2137]/25 focus:outline-none focus:border-[#0d2137]/45 rounded-md transition-all shadow-sm resize-none"
               style={{ fontFamily: "var(--font-caveat)" }}
             />
           )}
@@ -86,7 +86,7 @@ export function FormQuestion({
               placeholder={currentField.placeholder || "name@domain.com"}
               value={answers[currentField.id] || ""}
               onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-              className="w-full max-w-sm mx-auto text-center bg-white/30 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 p-3.5 text-2xl text-[#0d2137] dark:text-white placeholder-[#0d2137]/25 dark:placeholder-white/20 focus:outline-none focus:border-[#0d2137]/45 dark:focus:border-white/40 rounded-md transition-all shadow-sm"
+              className="w-full max-w-sm mx-auto text-center bg-white/30 border border-[#0d2137]/15 p-3.5 text-2xl text-[#0d2137] placeholder-[#0d2137]/25 focus:outline-none focus:border-[#0d2137]/45 rounded-md transition-all shadow-sm"
               style={{ fontFamily: "var(--font-caveat)" }}
             />
           )}
@@ -97,7 +97,7 @@ export function FormQuestion({
               placeholder={currentField.placeholder || "0.00"}
               value={answers[currentField.id] || ""}
               onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-              className="w-full max-w-xs mx-auto text-center bg-white/30 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 p-3.5 text-2xl text-[#0d2137] dark:text-white placeholder-[#0d2137]/25 dark:placeholder-white/20 focus:outline-none focus:border-[#0d2137]/45 dark:focus:border-white/40 rounded-md transition-all shadow-sm"
+              className="w-full max-w-xs mx-auto text-center bg-white/30 border border-[#0d2137]/15 p-3.5 text-2xl text-[#0d2137] placeholder-[#0d2137]/25 focus:outline-none focus:border-[#0d2137]/45 rounded-md transition-all shadow-sm"
               style={{ fontFamily: "var(--font-caveat)" }}
             />
           )}
@@ -108,7 +108,7 @@ export function FormQuestion({
               placeholder={currentField.placeholder || "+1 (555) 000-0000"}
               value={answers[currentField.id] || ""}
               onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-              className="w-full max-w-sm mx-auto text-center bg-white/30 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 p-3.5 text-2xl text-[#0d2137] dark:text-white placeholder-[#0d2137]/25 dark:placeholder-white/20 focus:outline-none focus:border-[#0d2137]/45 dark:focus:border-white/40 rounded-md transition-all shadow-sm"
+              className="w-full max-w-sm mx-auto text-center bg-white/30 border border-[#0d2137]/15 p-3.5 text-2xl text-[#0d2137] placeholder-[#0d2137]/25 focus:outline-none focus:border-[#0d2137]/45 rounded-md transition-all shadow-sm"
               style={{ fontFamily: "var(--font-caveat)" }}
             />
           )}
@@ -119,7 +119,7 @@ export function FormQuestion({
               placeholder={currentField.placeholder || "https://domain.com"}
               value={answers[currentField.id] || ""}
               onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-              className="w-full max-w-sm mx-auto text-center bg-white/30 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 p-3.5 text-2xl text-[#0d2137] dark:text-white placeholder-[#0d2137]/25 dark:placeholder-white/20 focus:outline-none focus:border-[#0d2137]/45 dark:focus:border-white/40 rounded-md transition-all shadow-sm"
+              className="w-full max-w-sm mx-auto text-center bg-white/30 border border-[#0d2137]/15 p-3.5 text-2xl text-[#0d2137] placeholder-[#0d2137]/25 focus:outline-none focus:border-[#0d2137]/45 rounded-md transition-all shadow-sm"
               style={{ fontFamily: "var(--font-caveat)" }}
             />
           )}
@@ -128,7 +128,7 @@ export function FormQuestion({
             <select
               value={answers[currentField.id] || ""}
               onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-              className="mx-auto w-64 bg-white/30 dark:bg-black/15 border border-[#0d2137]/15 dark:border-white/10 p-3 text-sm text-center text-[#0d2137] dark:text-white focus:outline-none font-serif rounded-md transition-all shadow-sm"
+              className="mx-auto w-64 bg-white/30 border border-[#0d2137]/15 p-3 text-sm text-center text-[#0d2137] focus:outline-none font-serif rounded-md transition-all shadow-sm"
             >
               <option value="">Select choice...</option>
               {(
@@ -156,7 +156,7 @@ export function FormQuestion({
                 return (
                   <label
                     key={i}
-                    className="flex items-center gap-2.5 text-xs font-serif text-[#0d2137]/80 dark:text-white/70 cursor-pointer select-none"
+                    className="flex items-center gap-2.5 text-xs font-serif text-[#0d2137]/80 cursor-pointer select-none"
                   >
                     <input
                       type="checkbox"
@@ -167,7 +167,7 @@ export function FormQuestion({
                           : [...selectedChoices, opt];
                         handleFieldChange(currentField.id, nextChoices);
                       }}
-                      className="size-3.5 border-2 border-[#0d2137]/20 dark:border-white/20 rounded bg-transparent text-[#0d2137] dark:text-[#b9c9df]"
+                      className="size-3.5 border-2 border-[#0d2137]/20 rounded bg-transparent text-[#0d2137]"
                     />
                     <span>{opt}</span>
                   </label>
@@ -187,12 +187,12 @@ export function FormQuestion({
                     key={i}
                     type="button"
                     onClick={() => handleFieldChange(currentField.id, score)}
-                    className="text-[#0d2137] dark:text-white hover:scale-110 transition-transform"
+                    className="text-[#0d2137] hover:scale-110 transition-transform"
                   >
                     <Star
                       className={`size-7 ${
                         isStarred
-                          ? "text-[#8e6e53] dark:text-[#d4af37] fill-[#8e6e53] dark:fill-[#d4af37]"
+                          ? "text-[#8e6e53] fill-[#8e6e53]"
                           : "opacity-20"
                       }`}
                     />
@@ -210,9 +210,9 @@ export function FormQuestion({
                 max={(currentField.options as any)?.maxDate || undefined}
                 value={answers[currentField.id] || ""}
                 onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-                className="w-full text-center bg-white/35 dark:bg-black/20 border border-[#0d2137]/15 dark:border-white/10 p-3 pr-10 text-xs text-[#0d2137] dark:text-white rounded-md focus:outline-none font-serif transition-all shadow-sm"
+                className="w-full text-center bg-white/35 border border-[#0d2137]/15 p-3 pr-10 text-xs text-[#0d2137] rounded-md focus:outline-none font-serif transition-all shadow-sm"
               />
-              <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-[#0d2137]/40 dark:text-white/30 pointer-events-none" />
+              <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-[#0d2137]/40 pointer-events-none" />
             </div>
           )}
 
@@ -224,18 +224,18 @@ export function FormQuestion({
                 max={(currentField.options as any)?.maxTime || undefined}
                 value={answers[currentField.id] || ""}
                 onChange={(e) => handleFieldChange(currentField.id, e.target.value)}
-                className="w-full text-center bg-white/35 dark:bg-black/20 border border-[#0d2137]/15 dark:border-white/10 p-3 pr-10 text-xs text-[#0d2137] dark:text-white rounded-md focus:outline-none font-serif transition-all shadow-sm"
+                className="w-full text-center bg-white/35 border border-[#0d2137]/15 p-3 pr-10 text-xs text-[#0d2137] rounded-md focus:outline-none font-serif transition-all shadow-sm"
               />
-              <Clock className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-[#0d2137]/40 dark:text-white/30 pointer-events-none" />
+              <Clock className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-[#0d2137]/40 pointer-events-none" />
             </div>
           )}
 
           {currentField?.type === "TOGGLE" && (
-            <div className="flex items-center justify-center gap-4 py-1.5 text-xs font-serif text-[#0d2137]/80 dark:text-white/70 select-none">
+            <div className="flex items-center justify-center gap-4 py-1.5 text-xs font-serif text-[#0d2137]/80 select-none">
               <span
                 className={
                   !answers[currentField.id]
-                    ? "font-bold text-[#8e6e53] dark:text-[#d4af37]"
+                    ? "font-bold text-[#8e6e53]"
                     : "opacity-50"
                 }
               >
@@ -246,8 +246,8 @@ export function FormQuestion({
                 onClick={() => handleFieldChange(currentField.id, !answers[currentField.id])}
                 className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${
                   answers[currentField.id]
-                    ? "bg-[#3b5e82] dark:bg-[#d4af37]"
-                    : "bg-[#0d2137]/10 dark:bg-white/10"
+                    ? "bg-[#3b5e82]"
+                    : "bg-[#0d2137]/10"
                 }`}
               >
                 <span
@@ -259,7 +259,7 @@ export function FormQuestion({
               <span
                 className={
                   answers[currentField.id]
-                    ? "font-bold text-[#3b5e82] dark:text-[#d4af37]"
+                    ? "font-bold text-[#3b5e82]"
                     : "opacity-50"
                 }
               >
@@ -271,7 +271,7 @@ export function FormQuestion({
           {/* Sub-label description below input */}
           {currentField?.description && (
             <p
-              className="text-sm text-[#0d2137]/50 dark:text-white/40 text-center leading-relaxed mt-4 max-w-[320px] mx-auto"
+              className="text-sm text-[#0d2137]/50 text-center leading-relaxed mt-4 max-w-[320px] mx-auto"
               style={{ fontFamily: "var(--font-caveat)" }}
             >
               {currentField.description}
@@ -284,7 +284,7 @@ export function FormQuestion({
           <button
             onClick={handleNext}
             disabled={isPending}
-            className="mx-auto bg-[#0d2137] hover:bg-[#1a3854] dark:bg-[#b9c9df] dark:hover:bg-[#ccdcf2] text-white dark:text-[#0d2137] py-3.5 px-10 text-[10px] uppercase font-bold tracking-widest rounded-none transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[0_4px_12px_rgba(13,33,55,0.15)] disabled:opacity-50"
+            className="mx-auto bg-[#0d2137] hover:bg-[#1a3854] text-white py-3.5 px-10 text-[10px] uppercase font-bold tracking-widest rounded-none transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[0_4px_12px_rgba(13,33,55,0.15)] disabled:opacity-50"
             style={{ fontFamily: "var(--font-garamond)" }}
           >
             <span>
@@ -300,7 +300,7 @@ export function FormQuestion({
             <button
               type="button"
               onClick={handleBack}
-              className="text-[10px] uppercase tracking-wider font-bold text-[#0d2137]/50 dark:text-white/40 hover:text-[#0d2137] dark:hover:text-white transition-colors cursor-pointer block mx-auto mt-2"
+              className="text-[10px] uppercase tracking-wider font-bold text-[#0d2137]/50 hover:text-[#0d2137] transition-colors cursor-pointer block mx-auto mt-2"
               style={{ fontFamily: "var(--font-garamond)" }}
             >
               Back
@@ -313,8 +313,8 @@ export function FormQuestion({
 
       {/* Middle Atelier separator and text */}
       <div className="flex flex-col items-center gap-2 select-none z-10 pt-4">
-        <div className="w-16 border-t border-[#0d2137]/10 dark:border-white/10" />
-        <div className="text-[8px] tracking-[0.25em] font-serif uppercase font-bold text-[#0d2137]/45 dark:text-white/40">
+        <div className="w-16 border-t border-[#0d2137]/10" />
+        <div className="text-[8px] tracking-[0.25em] font-serif uppercase font-bold text-[#0d2137]/45">
           ESTABLISHED 1924 | ATELIER STUDIO
         </div>
       </div>

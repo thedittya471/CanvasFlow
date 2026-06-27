@@ -48,7 +48,7 @@ export function HowItWorks({ isLoggedIn }: { isLoggedIn: boolean }) {
       className="relative bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)]"
     >
       <PageGuides />
-      <div className="relative mx-auto w-full max-w-[1320px] px-4 sm:px-6 md:px-8 py-28 lg:py-36">
+      <div className="relative mx-auto w-full max-w-[1320px] px-4 sm:px-6 md:px-8 py-20 sm:py-24 lg:py-36">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
           {/* LEFT: title + lead (fades + slides up as it enters view) */}
           <motion.div
@@ -61,7 +61,7 @@ export function HowItWorks({ isLoggedIn }: { isLoggedIn: boolean }) {
             <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
               How CanvasFlow Works
             </p>
-            <h2 className="mt-5 cf-display text-[44px] sm:text-[60px] md:text-[72px] leading-[0.95]">
+            <h2 className="mt-4 sm:mt-5 cf-display text-[36px] sm:text-[52px] md:text-[64px] lg:text-[72px] leading-[0.95]">
               A new way to build
               <span className="block">your forms</span>
             </h2>
@@ -84,37 +84,37 @@ export function HowItWorks({ isLoggedIn }: { isLoggedIn: boolean }) {
             {STEPS.map((step, i) => (
               <motion.li
                 key={i}
-                className="relative bg-white rounded-[18px] p-7 sm:p-9 ring-1 ring-[color:var(--cf-line)] shadow-[0_30px_60px_-40px_rgba(22,19,17,0.25)]"
+                className="relative bg-white rounded-[18px] p-5 sm:p-7 md:p-9 ring-1 ring-[color:var(--cf-line)] shadow-[0_30px_60px_-40px_rgba(22,19,17,0.25)]"
                 initial={{ opacity: 0, y: 48 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.7, ease: EASE, delay: i * 0.08 }}
               >
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between gap-4 sm:gap-6">
+                  <div className="flex-1 min-w-0">
                     <p className="cf-eyebrow text-[color:var(--cf-orange)]">
                       {step.n}
                     </p>
-                    <h3 className="mt-4 cf-display text-[26px] sm:text-[30px] leading-tight">
+                    <h3 className="mt-3 sm:mt-4 cf-display text-[22px] sm:text-[26px] md:text-[30px] leading-tight">
                       {step.h}
                     </h3>
-                    <h4 className="mt-1.5 text-[18px] font-medium text-[color:var(--cf-ink-soft)]">
+                    <h4 className="mt-1.5 text-[16px] sm:text-[18px] font-medium text-[color:var(--cf-ink-soft)]">
                       {step.s}
                     </h4>
-                    <p className="mt-4 text-[14.5px] leading-relaxed text-[color:var(--cf-ink-soft)] max-w-md">
+                    <p className="mt-3 sm:mt-4 text-[14px] sm:text-[14.5px] leading-relaxed text-[color:var(--cf-ink-soft)] max-w-md">
                       {step.body}
                     </p>
                     {step.cta && (
                       <Link
                         href={step.cta.href}
-                        className="mt-6 inline-flex items-center gap-1.5 h-[40px] px-5 bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white rounded-full text-[13px] font-medium transition-colors"
+                        className="mt-5 sm:mt-6 inline-flex items-center gap-1.5 h-[40px] px-5 bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white rounded-full text-[13px] font-medium transition-colors"
                       >
                         {step.cta.label}
                         <ArrowUpRight className="size-3.5" />
                       </Link>
                     )}
                   </div>
-                  <span className="cf-display text-[60px] sm:text-[80px] leading-none text-[color:var(--cf-line-strong)] select-none">
+                  <span className="cf-display text-[44px] sm:text-[60px] md:text-[80px] leading-none text-[color:var(--cf-line-strong)] select-none shrink-0">
                     0{i + 1}
                   </span>
                 </div>
