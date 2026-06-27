@@ -24,10 +24,6 @@ import {
     submitFormOutputModel,
     listFormFieldsInputModel,
     listFormFieldsOutputModel,
-    getSubmissionsInputModel,
-    getSubmissionsOutputModel,
-    recordViewInputModel,
-    recordViewOutputModel,
     getDashboardStatsOutputModel
 } from "./model";
 import { formService, formFieldService, formSubmissionService } from "../../services";
@@ -191,36 +187,6 @@ export const formRouter = router({
         .output(publishFormOutputModel)
         .mutation(async ({ input, ctx }) => {
             const result = await formService.publishForm({ ...input, ownerId: ctx.user.id })
-            return result
-        }),
-
-    getSubmissions: authenticatedProcedure.meta({
-        openapi: {
-            method: "GET",
-            path: getPath("/getSubmissions/{formId}"),
-            tags: TAGS,
-            protect: true
-        }
-    })
-        .input(getSubmissionsInputModel)
-        .output(getSubmissionsOutputModel)
-        .query(async ({ input, ctx }) => {
-            const result = await formSubmissionService.getSubmissions({ formId: input.formId, ownerId: ctx.user.id })
-            return result
-        }),
-
-    recordView: publicProcedure.meta({
-        openapi: {
-            method: "POST",
-            path: getPath("/recordView"),
-            tags: TAGS,
-            protect: false
-        }
-    })
-        .input(recordViewInputModel)
-        .output(recordViewOutputModel)
-        .mutation(async ({ input }) => {
-            const result = await formSubmissionService.recordView(input)
             return result
         }),
 

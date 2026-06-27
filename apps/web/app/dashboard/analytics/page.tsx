@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useTheme } from "next-themes";
-import { useListFormsByUserId, useGetFormById, useGetSubmissions } from "~/hooks/api/form";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useListFormsByUserId, useGetFormById } from "~/hooks/api/form";
+import { useGetFormAnalytics, useGetSubmissions, useGetProAnalytics } from "~/hooks/api/analytics";
 import { toast } from "sonner";
 import Link from "next/link";
-import { ExternalLink, Download } from "lucide-react";
+import { ExternalLink, Download, BarChart3 } from "lucide-react";
+import { UpgradeModal } from "~/components/analytics/UpgradeModal";
 import { AnalyticsSidebar } from "~/components/analytics/AnalyticsSidebar";
 import { MetricsGrid } from "~/components/analytics/MetricsGrid";
 import { ResponseTimeline } from "~/components/analytics/ResponseTimeline";
 import { DeviceBreakdown } from "~/components/analytics/DeviceBreakdown";
 import { SubmissionsTable } from "~/components/analytics/SubmissionsTable";
-
+import { StatsRow } from "~/components/analytics/StatsRow";
 interface SubmissionValue {
   formFieldId: string;
   value: any;
@@ -24,28 +27,40 @@ interface Submission {
   createdAt: string;
 }
 
-export default function AnalyticsPage() {
+export function AnalyticsPage() {
   const { theme } = useTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
-  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewingSubmission, setViewingSubmission] = useState<Submission | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  // Persist selected form in the URL so reloads restore the same view
+  const selectedFormId = searchParams.get("form");
+
+  const setSelectedFormId = (id: string) => {
+    router.replace(`/dashboard/analytics?form=${id}`, { scroll: false });
+  };
 
   const { forms, isLoading: isLoadingForms } = useListFormsByUserId();
   const { form, isLoading: isLoadingForm } = useGetFormById(selectedFormId || "");
+  const { analytics, isLoading: isLoadingAnalytics } = useGetFormAnalytics(selectedFormId || "");
   const { submissions, isLoading: isLoadingSubmissions } = useGetSubmissions(selectedFormId || "");
+  // Check Pro access (lightweight — just checks if the query returns FORBIDDEN)
+  const { isForbidden: isFreeTier } = useGetProAnalytics(selectedFormId || "");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Auto-select the first form only if none is in the URL
   useEffect(() => {
     if (forms && forms.length > 0 && !selectedFormId) {
       const firstForm = forms[0];
-      if (firstForm) {
-        setSelectedFormId(firstForm.id);
-      }
+      if (firstForm) setSelectedFormId(firstForm.id);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forms, selectedFormId]);
 
   const isDark = mounted && theme === "dark";
@@ -89,7 +104,7 @@ export default function AnalyticsPage() {
 
   // CSV Export
   const handleExportCSV = () => {
-    if (!form || !submissions || !submissions.submissions || submissions.submissions.length === 0) {
+    if (!form || !submissions || submissions.length === 0) {
       toast.error("No submissions available to export");
       return;
     }
@@ -98,7 +113,7 @@ export default function AnalyticsPage() {
     form.fields.forEach((f) => headers.push(f.label));
     const csvRows = [headers.join(",")];
 
-    submissions.submissions.forEach((sub) => {
+    submissions.forEach((sub) => {
       const row = [sub.id, new Date(sub.createdAt).toLocaleString()];
       form.fields.forEach((f) => {
         const answer = sub.values.find((v) => v.formFieldId === f.id);
@@ -129,57 +144,38 @@ export default function AnalyticsPage() {
     toast.success("CSV file downloaded");
   };
 
-  const activeSubmissions = useMemo(() => submissions?.submissions || [], [submissions]);
-  const totalResponses = activeSubmissions.length;
-  const totalViews = submissions?.viewsCount || 0;
+  // Metrics from analytics endpoint
+  const totalResponses = analytics?.totalResponses ?? 0;
+  const totalViews = analytics?.totalViews ?? 0;
   const completionRate =
-    totalViews > 0 ? ((totalResponses / totalViews) * 100).toFixed(1) + "%" : "0.0%";
+    (analytics?.completionRate != null ? analytics.completionRate.toFixed(1) : "0.0") + "%";
+  const avgPerDay = analytics?.avgSubmissionsPerDay ?? 0;
+  const avgPerWeek = analytics?.avgSubmissionsPerWeek ?? 0;
+  const peakDay = analytics?.peakDay ?? null;
 
-  // Group by day of week for Timeline Chart
-  const timelineData = useMemo(() => {
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const timelineMap: Record<string, { Completed: number; Partial: number }> = {};
-    const today = new Date();
-
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const dayName = days[d.getDay()] || "Mon";
-      timelineMap[dayName] = { Completed: 0, Partial: 0 };
-    }
-
-    activeSubmissions.forEach((sub) => {
-      const date = new Date(sub.createdAt);
-      const dayName = days[date.getDay()] || "Mon";
-      if (timelineMap[dayName]) {
-        timelineMap[dayName].Completed += 1;
-      }
-    });
-
-    return Object.entries(timelineMap).map(([name, data]) => ({
-      name,
-      Completed: data.Completed,
-      Partial: Math.round(data.Completed * 0.3),
-    }));
-  }, [activeSubmissions]);
-
-  // Device breakdown data
+  // Device breakdown from analytics
   const deviceData = useMemo(() => {
-    const desktop = submissions?.deviceViews?.find((d) => d.device === "desktop")?.count || 0;
-    const mobile = submissions?.deviceViews?.find((d) => d.device === "mobile")?.count || 0;
-    const tablet = submissions?.deviceViews?.find((d) => d.device === "tablet")?.count || 0;
+    const deviceViews = analytics?.deviceViews ?? [];
+    const desktop = deviceViews.find((d) => d.device === "desktop")?.count ?? 0;
+    const mobile = deviceViews.find((d) => d.device === "mobile")?.count ?? 0;
+    const tablet = deviceViews.find((d) => d.device === "tablet")?.count ?? 0;
 
     return [
       { name: "Desktop", value: desktop, color: "#3b5e82" },
       { name: "Mobile", value: mobile, color: "#8e6e53" },
       { name: "Tablet", value: tablet, color: "#a1a1aa" },
     ];
-  }, [submissions]);
+  }, [analytics]);
+
+  // Daily trends from analytics (server-computed 30-day data)
+  const dailyTrends = analytics?.dailyTrends ?? [];
+
+
 
   // Filtered submissions based on search query
   const filteredSubmissions = useMemo(() => {
     const matchQuery = searchQuery.toLowerCase();
-    return activeSubmissions.filter((sub) => {
+    return submissions.filter((sub) => {
       const details = getRespondentDetails(sub);
       return (
         details.name.toLowerCase().includes(matchQuery) ||
@@ -187,9 +183,11 @@ export default function AnalyticsPage() {
         sub.id.toLowerCase().includes(matchQuery)
       );
     });
-  }, [activeSubmissions, searchQuery, getRespondentDetails]);
+  }, [submissions, searchQuery, getRespondentDetails]);
 
   if (!mounted) return null;
+
+  const isLoading = isLoadingForm || isLoadingAnalytics || isLoadingSubmissions;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-140px)] w-full">
@@ -203,7 +201,7 @@ export default function AnalyticsPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 space-y-6">
-        {isLoadingForm || isLoadingSubmissions ? (
+        {isLoading ? (
           <div className="h-64 flex items-center justify-center bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a]">
             <div className="flex flex-col items-center gap-2">
               <div className="w-6 h-6 border border-t-2 border-[#0d2137] dark:border-white border-t-transparent animate-spin rounded" />
@@ -253,7 +251,26 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              <div className="relative z-10 flex gap-2">
+              <div className="relative z-10 flex flex-wrap gap-2">
+                {/* View Detailed Analytics — Pro feature */}
+                {isFreeTier ? (
+                  <button
+                    onClick={() => setShowUpgrade(true)}
+                    className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#8e6e53] dark:text-[#d4af37] border border-[#d4af37]/40 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
+                  >
+                    <BarChart3 className="size-3.5" />
+                    <span>Detailed Analytics</span>
+                    <span className="text-[8px] border border-[#d4af37]/50 px-1 py-0.5 rounded font-bold">PRO+</span>
+                  </button>
+                ) : (
+                  <Link
+                    href={`/dashboard/analytics/${form.id}`}
+                    className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#8e6e53] dark:text-[#d4af37] border border-[#d4af37]/40 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"
+                  >
+                    <BarChart3 className="size-3.5" />
+                    <span>Detailed Analytics</span>
+                  </Link>
+                )}
                 <Link
                   href={`/dashboard/sketches/${form.id}`}
                   className="flex items-center gap-1.5 bg-[#faf7f0]/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 text-[#0d2137] dark:text-white border border-[#0d2137]/20 dark:border-white/15 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer shadow-[1px_1px_0px_0px_#0d2137] dark:shadow-none"
@@ -271,11 +288,22 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
+            {/* Upgrade modal */}
+            {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+
             <MetricsGrid
               isDark={isDark}
               totalResponses={totalResponses}
               completionRate={completionRate}
               totalViews={totalViews}
+              avgPerDay={avgPerDay}
+            />
+
+            <StatsRow
+              isDark={isDark}
+              peakDay={peakDay}
+              avgPerWeek={avgPerWeek}
+              completionRate={analytics?.completionRate ?? 0}
             />
 
             {/* Chart Grid */}
@@ -283,11 +311,11 @@ export default function AnalyticsPage() {
               <ResponseTimeline
                 isDark={isDark}
                 totalResponses={totalResponses}
-                timelineData={timelineData}
+                trends={dailyTrends}
               />
               <DeviceBreakdown
                 isDark={isDark}
-                totalResponses={totalResponses}
+                totalViews={totalViews}
                 deviceData={deviceData}
               />
             </div>
@@ -305,5 +333,13 @@ export default function AnalyticsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AnalyticsPageWrapper() {
+  return (
+    <Suspense>
+      <AnalyticsPage />
+    </Suspense>
   );
 }

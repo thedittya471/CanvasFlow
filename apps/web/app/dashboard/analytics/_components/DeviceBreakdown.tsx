@@ -11,11 +11,11 @@ interface DeviceData {
 
 interface DeviceBreakdownProps {
   isDark: boolean;
-  totalViews: number;
+  totalResponses: number;
   deviceData: DeviceData[];
 }
 
-export function DeviceBreakdown({ isDark, totalViews, deviceData }: DeviceBreakdownProps) {
+export function DeviceBreakdown({ isDark, totalResponses, deviceData }: DeviceBreakdownProps) {
   return (
     <div className="relative overflow-hidden bg-white dark:bg-[#1a1a1c] border-2 border-[#0d2137] dark:border-[#2a2a2a] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] dark:shadow-[3px_3px_0px_0px_#2a2a2a] min-h-75">
       <div
@@ -23,16 +23,11 @@ export function DeviceBreakdown({ isDark, totalViews, deviceData }: DeviceBreakd
         style={{ backgroundImage: isDark ? "url('/asset4.png')" : "url('/assest1.png')" }}
       />
       <div className="relative z-10 space-y-4 h-full flex flex-col justify-between">
-        <div className="space-y-0.5">
-          <h4 className="text-sm font-serif font-bold text-[#0d2137] dark:text-white uppercase tracking-wider">
-            Device Breakdown
-          </h4>
-          <p className="text-[9px] font-serif text-[#0d2137]/45 dark:text-white/35 italic">
-            From page views
-          </p>
-        </div>
+        <h4 className="text-sm font-serif font-bold text-[#0d2137] dark:text-white uppercase tracking-wider">
+          Device Breakdown
+        </h4>
 
-        {totalViews === 0 ? (
+        {totalResponses === 0 ? (
           <div className="flex-1 flex items-center justify-center text-xs font-serif italic text-[#0d2137]/40 dark:text-white/30">
             No responses recorded.
           </div>
@@ -67,7 +62,7 @@ export function DeviceBreakdown({ isDark, totalViews, deviceData }: DeviceBreakd
             <div className="w-full space-y-1.5">
               {deviceData.map((dev, idx) => {
                 const pct =
-                  totalViews > 0 ? ((dev.value / totalViews) * 100).toFixed(0) : "0";
+                  totalResponses > 0 ? ((dev.value / totalResponses) * 100).toFixed(0) : "0";
                 return (
                   <div
                     key={idx}

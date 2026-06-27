@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { useGetFormById, useSubmitForm, useRecordView } from "~/hooks/api/form";
+import { useGetFormById, useSubmitForm } from "~/hooks/api/form";
+import { useRecordView, useRecordFieldAnswer } from "~/hooks/api/analytics";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { EB_Garamond, Caveat } from "next/font/google";
@@ -33,15 +34,22 @@ export default function PublicFormPage() {
   const { form, isLoading, error } = useGetFormById(formId);
   const { submitForm, isPending } = useSubmitForm();
   const { recordView } = useRecordView();
+  const { recordFieldAnswer } = useRecordFieldAnswer();
 
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [siteRating, setSiteRating] = useState<number | null>(null);
+  // Track when the form opened so we can compute time_spent_ms on submit
+  const formOpenedAtRef = React.useRef<number>(Date.now());
+  // Guard: ensure recordView fires exactly once per page load
+  const viewRecordedRef = React.useRef(false);
 
   useEffect(() => {
     setMounted(true);
-    if (formId) {
+    formOpenedAtRef.current = Date.now();
+    if (formId && !viewRecordedRef.current) {
+      viewRecordedRef.current = true;
       const ua = window.navigator.userAgent.toLowerCase();
       let deviceType = "desktop";
       if (/tablet|ipad|playbook|silk/i.test(ua)) {
@@ -49,9 +57,19 @@ export default function PublicFormPage() {
       } else if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile|webos/i.test(ua)) {
         deviceType = "mobile";
       }
-      recordView({ formId, deviceType });
+      // Capture attribution from URL and document
+      const urlParams = new URLSearchParams(window.location.search);
+      recordView({
+        formId,
+        deviceType,
+        referrer: document.referrer || null,
+        utmSource: urlParams.get("utm_source"),
+        utmMedium: urlParams.get("utm_medium"),
+        utmCampaign: urlParams.get("utm_campaign"),
+      });
     }
-  }, [formId, recordView]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formId]);
 
   const isDark = mounted && theme === "dark";
 
@@ -100,6 +118,14 @@ export default function PublicFormPage() {
       return;
     }
 
+    // Record that this visitor answered this field (fire-and-forget, no await)
+    // Only record if the field has a non-empty answer
+    const hasAnswer = value !== undefined && value !== null && value !== "" &&
+      !(Array.isArray(value) && value.length === 0);
+    if (hasAnswer || currentField.type === "TOGGLE") {
+      recordFieldAnswer({ formId, fieldId: currentField.id, value });
+    }
+
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
@@ -109,7 +135,15 @@ export default function PublicFormPage() {
       }));
 
       submitForm(
-        { formId, values: payloadValues },
+        {
+          formId,
+          values: payloadValues,
+          referrer: document.referrer || null,
+          utmSource: new URLSearchParams(window.location.search).get("utm_source"),
+          utmMedium: new URLSearchParams(window.location.search).get("utm_medium"),
+          utmCampaign: new URLSearchParams(window.location.search).get("utm_campaign"),
+          timeSpentMs: Date.now() - formOpenedAtRef.current,
+        },
         {
           onSuccess: () => {
             setSubmitted(true);

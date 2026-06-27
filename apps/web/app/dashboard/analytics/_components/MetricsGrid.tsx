@@ -1,32 +1,24 @@
 "use client";
 
 import React from "react";
-import { TrendingUp, Clock, Layers, Activity } from "lucide-react";
+import { TrendingUp, Clock, Layers } from "lucide-react";
 
 interface MetricsGridProps {
   isDark: boolean;
   totalResponses: number;
   completionRate: string;
   totalViews: number;
-  avgPerDay: number;
 }
 
-export function MetricsGrid({
-  isDark,
-  totalResponses,
-  completionRate,
-  totalViews,
-  avgPerDay,
-}: MetricsGridProps) {
+export function MetricsGrid({ isDark, totalResponses, completionRate, totalViews }: MetricsGridProps) {
   const stats = [
     { title: "Total Responses", val: totalResponses, icon: Layers },
     { title: "Completion Rate", val: completionRate, icon: TrendingUp },
     { title: "Total Views", val: totalViews, icon: Clock },
-    { title: "Avg / Day", val: avgPerDay.toFixed(1), icon: Activity },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
       {stats.map((stat, idx) => {
         const Icon = stat.icon;
         return (

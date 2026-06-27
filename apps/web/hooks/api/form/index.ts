@@ -381,52 +381,6 @@ export const useSubmitForm = () => {
     }
 }
 
-export const useGetSubmissions = (formId: string) => {
-    const {
-        data: submissions,
-        error,
-        failureCount,
-        isError,
-        isSuccess,
-        status,
-        isLoading,
-        refetch
-    } = trpc.form.getSubmissions.useQuery({ formId }, { enabled: !!formId && formId.length === 36, refetchInterval: 20000 })
-
-    return {
-        submissions,
-        error,
-        isError,
-        isSuccess,
-        status,
-        failureCount,
-        isLoading,
-        refetch
-    }
-}
-
-export const useRecordView = () => {
-    const {
-        mutateAsync: recordViewAsync,
-        mutate: recordView,
-        error,
-        isError,
-        isPending,
-        isSuccess,
-        status
-    } = trpc.form.recordView.useMutation()
-
-    return {
-        recordViewAsync,
-        recordView,
-        error,
-        isError,
-        isPending,
-        isSuccess,
-        status
-    }
-}
-
 export const useGetDashboardStats = () => {
     const {
         data: stats,

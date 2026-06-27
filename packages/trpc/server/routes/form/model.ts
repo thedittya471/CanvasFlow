@@ -47,11 +47,6 @@ export {
     listFormFieldsOutput as listFormFieldsOutputModel
 } from "@repo/services/form-field/model"
 
-export const getSubmissionsInputModel = z.object({
-    formId: z.string().uuid().describe("Form ID")
-})
-export type GetSubmissionsInputModelType = z.infer<typeof getSubmissionsInputModel>
-
 export {
     getFormInput as getFormInputModel,
     getFormOutput as getFormOutputModel,
@@ -65,8 +60,4 @@ export {
 export {
     submitFormInput as submitFormInputModel,
     submitFormOutput as submitFormOutputModel,
-    getSubmissionsOutput as getSubmissionsOutputModel,
-    recordViewInput as recordViewInputModel,
-    recordViewOutput as recordViewOutputModel
 } from "@repo/services/form-submission/model"
-

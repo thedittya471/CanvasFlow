@@ -1,0 +1,1 @@
+ALTER TABLE "form_field_views" ADD COLUMN "value" jsonb;

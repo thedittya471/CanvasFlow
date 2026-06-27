@@ -59,10 +59,13 @@ class FormSubmissionService {
 
     const insertResult = await db.insert(formSubmissionsTable).values({
       formId,
-      values
-    }).returning({
-      id: formSubmissionsTable.id
-    })
+      values,
+      referrer: (payload as any).referrer ?? null,
+      utmSource: (payload as any).utmSource ?? null,
+      utmMedium: (payload as any).utmMedium ?? null,
+      utmCampaign: (payload as any).utmCampaign ?? null,
+      timeSpentMs: (payload as any).timeSpentMs ?? null,
+    }).returning({ id: formSubmissionsTable.id })
 
     const firstResult = insertResult[0]
     if (!firstResult) {
@@ -82,9 +85,7 @@ class FormSubmissionService {
       throw new Error("Form not found or unauthorized")
     }
 
-    // Submissions (full rows are needed for the analytics table) and the view
-    // aggregation are independent — run them in parallel. Device breakdown is
-    // a grouped COUNT instead of loading every view row.
+    // Submissions (full rows) and device view aggregation run in parallel
     const [submissions, deviceRows] = await Promise.all([
       db.select()
         .from(formSubmissionsTable)
@@ -107,16 +108,12 @@ class FormSubmissionService {
       else deviceMap.desktop += n
     })
 
-    const deviceViews = Object.entries(deviceMap).map(([device, count]) => ({
+    const deviceViews = Object.entries(deviceMap).map(([device, cnt]) => ({
       device,
-      count
+      count: cnt
     }))
 
-    return {
-      submissions,
-      viewsCount,
-      deviceViews
-    }
+    return { submissions, viewsCount, deviceViews }
   }
 
   public async recordView(payload: RecordViewInputType) {

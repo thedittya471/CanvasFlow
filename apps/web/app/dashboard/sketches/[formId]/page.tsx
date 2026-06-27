@@ -44,7 +44,7 @@ function BuilderCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // tRPC Hooks
-  const { form, isLoading: formLoading } = useGetForm(formId);
+  const { form, isLoading: formLoading, refetch: refetchForm } = useGetForm(formId);
   const { fields, isLoading: fieldsLoading } = useListFormFields(formId);
 
   const { setIsCreatingForm } = useDashboard();
@@ -392,6 +392,9 @@ function BuilderCanvas() {
         publishForm={publishForm}
         pendingNavRef={pendingNavRef}
         setShowUnsavedDialog={setShowUnsavedDialog}
+        onPublishSuccess={() => {
+          void refetchForm();
+        }}
       />
 
       {/* Main Workspace split */}

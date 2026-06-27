@@ -15,6 +15,27 @@
       "when": 1782499817481,
       "tag": "0001_strange_the_order",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782513576250,
+      "tag": "0002_wandering_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782516194845,
+      "tag": "0003_flawless_sugar_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782516446470,
+      "tag": "0004_tense_black_queen",
+      "breakpoints": true
     }
   ]
 }

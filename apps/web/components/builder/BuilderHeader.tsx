@@ -14,6 +14,7 @@ interface BuilderHeaderProps {
   handleSave: () => Promise<void>;
   setShowDeleteConfirm: (val: boolean) => void;
   publishForm: (args: { id: string }, callbacks: { onSuccess: () => void; onError: (err: any) => void }) => void;
+  onPublishSuccess?: () => void;
   pendingNavRef: React.MutableRefObject<string | null>;
   setShowUnsavedDialog: (val: boolean) => void;
 }
@@ -29,6 +30,7 @@ export function BuilderHeader({
   publishForm,
   pendingNavRef,
   setShowUnsavedDialog,
+  onPublishSuccess,
 }: BuilderHeaderProps) {
   return (
     <header className="h-16 px-6 border-b border-[#0d2137]/15 dark:border-white/10 flex items-center justify-between bg-white dark:bg-[#1c1c1e] z-10">
@@ -115,7 +117,10 @@ export function BuilderHeader({
             publishForm(
               { id: formId },
               {
-                onSuccess: () => toast.success("Form published successfully"),
+                onSuccess: () => {
+                  toast.success("Form published successfully");
+                  onPublishSuccess?.();
+                },
                 onError: (err) => toast.error(err.message || "Failed to publish form"),
               }
             );

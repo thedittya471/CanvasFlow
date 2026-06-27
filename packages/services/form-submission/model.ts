@@ -7,7 +7,13 @@ export const submitFormValueInput = z.object({
 
 export const submitFormInput = z.object({
   formId: z.string().uuid().describe("ID of the form to submit"),
-  values: z.array(submitFormValueInput).describe("Field values submitted")
+  values: z.array(submitFormValueInput).describe("Field values submitted"),
+  // Optional attribution — collected by the public form page
+  referrer: z.string().max(2048).optional().nullable(),
+  utmSource: z.string().max(255).optional().nullable(),
+  utmMedium: z.string().max(255).optional().nullable(),
+  utmCampaign: z.string().max(255).optional().nullable(),
+  timeSpentMs: z.number().int().optional().nullable(),
 })
 export type SubmitFormInputType = z.infer<typeof submitFormInput>
 
