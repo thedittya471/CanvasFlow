@@ -120,4 +120,125 @@
   body {
     @apply bg-background text-foreground;
   }
+  html {
+    scroll-behavior: smooth;
+  }
+  /* Anchored landing sections offset themselves so the fixed nav doesn't
+     overlap their top when scrolled to via in-page links. */
+  section[id] {
+    scroll-margin-top: 96px;
+  }
 }
+
+/* ============================================================
+   CanvasFlow — Daylight-style landing theme
+   Cream paper, editorial serif headlines, clean sans body,
+   flat orange CTA, subtle full-page blueprint grid.
+   ============================================================ */
+:root {
+  /* core palette */
+  --cf-cream: #fff7e9;
+  --cf-cream-2: #fbecd3;
+  --cf-ink: #161311;
+  --cf-ink-soft: #56504a;
+  --cf-line: rgba(22, 19, 17, 0.08);
+  --cf-line-strong: rgba(22, 19, 17, 0.14);
+  --cf-orange: #f66f00;
+  --cf-orange-hover: #e26300;
+
+  /* hero dark warm photo-feel */
+  --cf-hero-bg: #2a2620;
+}
+
+/* Warm text selection */
+.cf-landing ::selection {
+  background: var(--cf-orange);
+  color: #fff;
+}
+
+.cf-landing {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  background: var(--cf-cream);
+  color: var(--cf-ink);
+}
+
+/* Editorial serif numerals: optical-sizing for big headlines */
+.cf-display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+}
+
+.cf-eyebrow {
+  font-family: var(--font-mono-cf), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Full-page subtle blueprint grid (4 vertical guides + horizontal rules per section). */
+.cf-page-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    linear-gradient(to right, var(--cf-line) 1px, transparent 1px);
+  background-size: 25% 100%;
+  background-position: 25% 0;
+}
+
+/* Subtle grain texture (paper feel) */
+.cf-grain {
+  background-image: radial-gradient(rgba(22, 19, 17, 0.05) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+/* Photographic-feeling dark warm hero — looks like a backlit golden-hour scene,
+   no external image needed. Three layered radial+linear gradients + grain. */
+.cf-hero-photo {
+  background-color: #1c1814;
+  background-image:
+    radial-gradient(60% 80% at 80% 90%, rgba(255, 138, 52, 0.55), transparent 65%),
+    radial-gradient(50% 60% at 15% 8%, rgba(28, 22, 18, 0.85), transparent 70%),
+    radial-gradient(35% 40% at 70% 25%, rgba(168, 110, 62, 0.45), transparent 70%),
+    linear-gradient(180deg, #2a2620 0%, #3a2d20 45%, #6a4221 100%);
+}
+
+/* Vivid solid orange tile (used for the right-hand "energy panel" in hero). */
+.cf-orange-tile {
+  background-color: #f66f00;
+  background-image:
+    radial-gradient(120% 90% at 50% 42%, rgba(255, 214, 138, 0.35), transparent 60%),
+    repeating-linear-gradient(
+      108deg,
+      #ffa84a 0px,
+      #f87c14 70px,
+      #f66f00 130px,
+      #d85a00 190px,
+      #f66f00 250px,
+      #ffa84a 320px
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-float,
+  .cf-spin-slow {
+    animation: none !important;
+  }
+}
+
+@keyframes cf-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.cf-float { animation: cf-float 7s ease-in-out infinite; }
+
+@keyframes cf-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.cf-spin-slow { animation: cf-spin-slow 60s linear infinite; }

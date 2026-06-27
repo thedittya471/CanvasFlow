@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { GlobalProviders } from "~/providers/global";
 
@@ -10,6 +11,27 @@ const geistSans = localFont({
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
+});
+
+// Display serif — used for landing headlines (close to Daylight's editorial serif).
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+  axes: ["opsz", "SOFT"],
+});
+
+// Clean modern sans — body & UI (close to Daylight's Aeonik-style sans).
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jbMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono-cf",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,8 +48,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className="light" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${inter.variable} ${jbMono.variable}`}
+      >
         <GlobalProviders>{children}</GlobalProviders>
       </body>
     </html>
