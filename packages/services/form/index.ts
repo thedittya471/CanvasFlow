@@ -1,4 +1,4 @@
-import { db, eq, and, inArray, gte, count, usersTable } from "@repo/database"
+import { db, eq, and, inArray, gte, count, desc, usersTable } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
@@ -39,7 +39,7 @@ class FormService {
       startOfMonth.setHours(0, 0, 0, 0)
 
       const existingForms = await db
-        .select()
+        .select({ value: count() })
         .from(formsTable)
         .where(
           and(
@@ -48,7 +48,7 @@ class FormService {
           )
         )
 
-      if (existingForms.length >= formLimit) {
+      if (Number(existingForms[0]?.value ?? 0) >= formLimit) {
         throw new Error(`You have reached the limit of ${formLimit} forms per month for the ${userPlan} tier.`)
       }
     }
@@ -198,9 +198,17 @@ class FormService {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
     sevenDaysAgo.setHours(0, 0, 0, 0)
 
-    const recentFormsRaw = [...forms]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 4)
+    const recentFormsRaw = await db
+      .select({
+        id: formsTable.id,
+        title: formsTable.title,
+        isPublished: formsTable.isPublished,
+        createdAt: formsTable.createdAt,
+      })
+      .from(formsTable)
+      .where(eq(formsTable.ownerId, userId))
+      .orderBy(desc(formsTable.createdAt))
+      .limit(4)
     const recentIds = recentFormsRaw.map(f => f.id)
 
     // Run all aggregations in parallel as SQL counts/group-bys instead of

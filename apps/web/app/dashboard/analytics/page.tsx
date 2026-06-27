@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo, useCallback, Suspense } from "reac
 import { useTheme } from "next-themes";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useListFormsByUserId, useGetFormById } from "~/hooks/api/form";
-import { useGetFormAnalytics, useGetSubmissions, useGetProAnalytics } from "~/hooks/api/analytics";
+import { useGetFormAnalytics, useGetSubmissions } from "~/hooks/api/analytics";
+import { useGetMe } from "~/hooks/api/user";
 import { toast } from "sonner";
 import Link from "next/link";
 import { ExternalLink, Download, BarChart3 } from "lucide-react";
@@ -47,8 +48,8 @@ export function AnalyticsPage() {
   const { form, isLoading: isLoadingForm } = useGetFormById(selectedFormId || "");
   const { analytics, isLoading: isLoadingAnalytics } = useGetFormAnalytics(selectedFormId || "");
   const { submissions, isLoading: isLoadingSubmissions } = useGetSubmissions(selectedFormId || "");
-  // Check Pro access (lightweight — just checks if the query returns FORBIDDEN)
-  const { isForbidden: isFreeTier } = useGetProAnalytics(selectedFormId || "");
+  // Check plan — used to gate the "View Detailed Analytics" button
+  const { hasDetailedAnalytics: isFreeTier } = useGetMe();
 
   useEffect(() => {
     setMounted(true);
@@ -252,8 +253,8 @@ export function AnalyticsPage() {
               </div>
 
               <div className="relative z-10 flex flex-wrap gap-2">
-                {/* View Detailed Analytics — Pro feature */}
-                {isFreeTier ? (
+                {/* View Detailed Analytics — Pro+ feature */}
+                {!isFreeTier ? (
                   <button
                     onClick={() => setShowUpgrade(true)}
                     className="flex items-center gap-1.5 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 text-[#8e6e53] dark:text-[#d4af37] border border-[#d4af37]/40 py-1.5 px-3 text-[10px] uppercase font-serif font-bold tracking-wider rounded transition-all cursor-pointer"

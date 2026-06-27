@@ -173,7 +173,8 @@ class AnalyticsService {
       })
         .from(formSubmissionsTable)
         .where(eq(formSubmissionsTable.formId, formId))
-        .orderBy(desc(formSubmissionsTable.createdAt)),
+        .orderBy(desc(formSubmissionsTable.createdAt))
+        .limit(5000), // safety cap — enough for any real analytics calculation
 
       db.select({ value: count() }).from(formSubmissionsTable)
         .where(and(eq(formSubmissionsTable.formId, formId), gte(formSubmissionsTable.createdAt, ago30))),
@@ -439,6 +440,7 @@ class AnalyticsService {
   /**
    * Returns the full submission rows for a form (for the submissions table in the UI).
    * Kept separate from analytics so the heavy values jsonb is only loaded when needed.
+   * Limited to 200 most recent rows — enough for the UI table.
    */
   public async getSubmissionsList(payload: GetSubmissionsListInputType & { ownerId: string }) {
     const { formId } = await getSubmissionsListInput.parseAsync(payload)
@@ -453,6 +455,7 @@ class AnalyticsService {
       .from(formSubmissionsTable)
       .where(eq(formSubmissionsTable.formId, formId))
       .orderBy(desc(formSubmissionsTable.createdAt))
+      .limit(200)
 
     return { submissions }
   }

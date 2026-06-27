@@ -17,6 +17,26 @@ import { useDashboard } from "~/providers/dashboard-provider";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
+const formatDate = (dateStr: string) => {
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric"
+    });
+  } catch { return "Jan 1, 2026"; }
+};
+
+const getRelativeTime = (dateStr: string) => {
+  try {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins || 1} Min${diffMins === 1 ? "" : "s"} Ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} Hour${diffHours === 1 ? "" : "s"} Ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} Day${diffDays === 1 ? "" : "s"} Ago`;
+  } catch { return "2 Hours Ago"; }
+};
+
 export default function SketchesPage() {
   const { forms, isLoading } = useListFormsByUserId();
   const { openCreateFormModal } = useDashboard();
@@ -87,26 +107,6 @@ export default function SketchesPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete form");
     }
-  };
-
-  const formatDate = (dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric"
-      });
-    } catch { return "Jan 1, 2026"; }
-  };
-
-  const getRelativeTime = (dateStr: string) => {
-    try {
-      const diffMs = Date.now() - new Date(dateStr).getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMins / 60000 / 60);
-      if (diffMins < 60) return `${diffMins || 1} Min${diffMins === 1 ? "" : "s"} Ago`;
-      if (diffHours < 24) return `${diffHours} Hour${diffHours === 1 ? "" : "s"} Ago`;
-      const diffDays = Math.floor(diffHours / 24);
-      return `${diffDays} Day${diffDays === 1 ? "" : "s"} Ago`;
-    } catch { return "2 Hours Ago"; }
   };
 
   const getRefNo = (id: string, title: string) => {

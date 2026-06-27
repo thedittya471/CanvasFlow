@@ -25,6 +25,7 @@ export const useGetFormAnalytics = (formId: string) => {
 /**
  * Fetches the full submission rows for a form (includes values jsonb).
  * Kept separate so the heavy payload is only loaded when the table is open.
+ * Polls every 30s only when the page is visible.
  */
 export const useGetSubmissions = (formId: string) => {
     const {
@@ -36,7 +37,14 @@ export const useGetSubmissions = (formId: string) => {
         refetch,
     } = trpc.analytics.getSubmissions.useQuery(
         { formId },
-        { enabled: !!formId && formId.length === 36, refetchInterval: 20000 }
+        {
+            enabled: !!formId && formId.length === 36,
+            // Only poll when the tab is visible — avoids background churn
+            refetchInterval: (query) =>
+                typeof document !== "undefined" && document.visibilityState === "visible" && query.state.data
+                    ? 30_000
+                    : false,
+        }
     )
 
     return {
@@ -81,7 +89,8 @@ export const useRecordView = () => {
 /**
  * Pro-tier: per-question distribution, day-of-week breakdown,
  * 30/60/90d trend totals, response velocity.
- * Returns FORBIDDEN error for Free-tier users.
+ * Only call this when you've already confirmed the user has Pro+/Business plan
+ * via useGetMe — the server will still enforce it, but the client gates first.
  */
 export const useGetProAnalytics = (formId: string) => {
     const {
@@ -95,9 +104,7 @@ export const useGetProAnalytics = (formId: string) => {
         { enabled: !!formId && formId.length === 36, retry: false }
     )
 
-    const isForbidden = (error as any)?.data?.code === "FORBIDDEN"
-
-    return { proAnalytics, error, isLoading, isError, isForbidden, refetch }
+    return { proAnalytics, error, isLoading, isError, refetch }
 }
 
 /**

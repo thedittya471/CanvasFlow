@@ -13,4 +13,5 @@ export const formViewsTable = pgTable("form_views", {
     createdAt: timestamp('created_at').defaultNow().notNull()
 }, (table) => ({
     formIdx: index("form_views_form_id_idx").on(table.formId),
+    formCreatedIdx: index("form_views_form_created_idx").on(table.formId, table.createdAt),
 }))

@@ -11,10 +11,10 @@ import { createTRPCHttpBatchClientClient } from "~/trpc/create-client";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Serve cached data for 30s before considering it stale; avoids refetch
-      // storms when navigating between pages that share queries.
-      staleTime: 30_000,
-      // Don't refetch on every window focus — reduces redundant network churn.
+      // 5 min stale time — form lists, dashboard stats, user plan etc. only
+      // change on explicit user action, not passively. Avoids background
+      // refetch storms when navigating between pages sharing queries.
+      staleTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
       retry: 1,

@@ -1,0 +1,2 @@
+CREATE INDEX "form_views_form_created_idx" ON "form_views" USING btree ("form_id","created_at");--> statement-breakpoint
+CREATE INDEX "form_field_views_created_idx" ON "form_field_views" USING btree ("form_id","created_at");

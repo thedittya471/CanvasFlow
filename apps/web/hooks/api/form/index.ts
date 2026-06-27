@@ -231,7 +231,7 @@ export const useGetFormField = (id: string) => {
         status,
         isLoading,
         refetch
-    } = trpc.form.getFormField.useQuery({ id })
+    } = trpc.form.getFormField.useQuery({ id }, { enabled: !!id && id.length === 36 })
 
     return {
         formField,

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useGetFormById } from "~/hooks/api/form";
 import { useGetProAnalytics, useGetFormAnalytics } from "~/hooks/api/analytics";
+import { useGetMe } from "~/hooks/api/user";
 import { UpgradeModal } from "~/components/analytics/UpgradeModal";
 import { DowBreakdown } from "~/components/analytics/DowBreakdown";
 import { QuestionDistribution } from "~/components/analytics/QuestionDistribution";
@@ -97,8 +98,12 @@ function ProAnalyticsPage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  const { hasDetailedAnalytics, isLoading: meLoading } = useGetMe();
   const { form, isLoading: formLoading } = useGetFormById(formId);
-  const { proAnalytics, isLoading, isForbidden } = useGetProAnalytics(formId);
+
+  // Only fetch pro analytics if user actually has access — avoids unnecessary
+  // FORBIDDEN errors and lets us show the upgrade modal before any API call.
+  const { proAnalytics, isLoading: proLoading } = useGetProAnalytics(formId);
   const { analytics, isLoading: analyticsLoading } = useGetFormAnalytics(formId);
 
   useEffect(() => { setMounted(true); }, []);
@@ -114,7 +119,18 @@ function ProAnalyticsPage() {
     ];
   }, [analytics]);
 
-  if (!isLoading && isForbidden) {
+  // Wait for plan check to resolve
+  if (meLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
+        <div className="w-8 h-8 border-2 border-[#0d2137] dark:border-white border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Plan check done — user is not eligible, show upgrade modal immediately
+  // (no analytics API call was made for ineligible users)
+  if (!hasDetailedAnalytics) {
     return (
       <div className="min-h-screen bg-[#faf7f0] dark:bg-[#121212]">
         <UpgradeModal onClose={() => router.push(`/dashboard/analytics?form=${formId}`)} />
@@ -122,7 +138,7 @@ function ProAnalyticsPage() {
     );
   }
 
-  if (isLoading || formLoading || analyticsLoading) {
+  if (proLoading || formLoading || analyticsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#faf7f0] dark:bg-[#121212]">
         <div className="flex flex-col items-center gap-3">

@@ -36,6 +36,13 @@
       "when": 1782516446470,
       "tag": "0004_tense_black_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782540489144,
+      "tag": "0005_woozy_luminals",
+      "breakpoints": true
     }
   ]
 }
