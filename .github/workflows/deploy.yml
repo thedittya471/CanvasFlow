@@ -1,0 +1,120 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # manual button in the Actions tab — also lets you
+                    # redeploy any past commit by picking its ref. This
+                    # is our "rollback" since the VM has no releases dir.
+
+# Never run two deploys in parallel — they'd race on the VM filesystem.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  # NEXT_PUBLIC_* env vars are inlined into the client JS at BUILD time,
+  # so they must be present here, not just on the VM. Stored as a repo
+  # Variable (not Secret) since it's public anyway.
+  NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL_PROD }}
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Optional: tie this job to a GitHub Environment for required
+    # reviewers / protected secrets. Uncomment when you want a manual
+    # approval gate before the deploy happens.
+    # environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build everything (turbo)
+        run: pnpm build
+
+      # ─── Assemble release bundle ────────────────────────────────────
+      # Layout the VM expects (flat — overwrites in place each deploy):
+      #   bundle/
+      #     ├── ecosystem.config.cjs
+      #     ├── web/                  (Next.js standalone + static + public)
+      #     ├── api/                  (pnpm-deployed self-contained bundle)
+      #     └── db/                   (drizzle migrations + migrate.mjs + deps)
+      - name: Assemble release bundle
+        run: |
+          set -eux
+          mkdir -p bundle/web bundle/api bundle/db
+
+          # ── web: Next.js standalone needs static + public copied
+          #    next to the server.js.
+          cp -r apps/web/.next/standalone/. bundle/web/
+          mkdir -p bundle/web/apps/web/.next
+          cp -r apps/web/.next/static    bundle/web/apps/web/.next/static
+          cp -r apps/web/public          bundle/web/apps/web/public
+
+          # ── api: pnpm deploy produces a self-contained dir with
+          #    node_modules flattened for production.
+          pnpm --filter @repo/api deploy --prod bundle/api
+
+          # ── db: ship the migration SQL + migrate.mjs + the runtime
+          #    deps (drizzle-orm, pg). pnpm deploy handles all of this.
+          pnpm --filter @repo/database deploy --prod bundle/db
+          cp -r packages/database/drizzle bundle/db/drizzle
+          cp    packages/database/migrate.mjs bundle/db/migrate.mjs
+
+          # ── PM2 ecosystem
+          cp ecosystem.config.cjs bundle/ecosystem.config.cjs
+
+          # Tar it up — single artifact for upload.
+          tar -C bundle -czf canvasflow-release.tar.gz .
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pin host fingerprint to defeat MITM. SSH_KNOWN_HOSTS is the
+          # output of `ssh-keyscan -H <host>` run on a trusted machine.
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Upload bundle and release.sh to VM
+        run: |
+          set -eux
+          scp -i ~/.ssh/deploy_key -P "${{ secrets.SSH_PORT }}" \
+            canvasflow-release.tar.gz \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/canvasflow-release.tar.gz"
+          scp -i ~/.ssh/deploy_key -P "${{ secrets.SSH_PORT }}" \
+            scripts/release.sh \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/release.sh"
+
+      - name: Run release script on VM
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+              -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "chmod +x /tmp/release.sh && bash /tmp/release.sh /tmp/canvasflow-release.tar.gz"
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "### ✅ Deployed from \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- web: https://canvasflow.dittya.dev"     >> "$GITHUB_STEP_SUMMARY"
+          echo "- api: https://api.canvasflow.dittya.dev" >> "$GITHUB_STEP_SUMMARY"
+          echo ""                                          >> "$GITHUB_STEP_SUMMARY"
+          echo "To roll back: rerun this workflow against the previous commit" >> "$GITHUB_STEP_SUMMARY"
+          echo "via the **Run workflow** button on the Actions tab."           >> "$GITHUB_STEP_SUMMARY"

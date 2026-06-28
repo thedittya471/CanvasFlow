@@ -27,10 +27,19 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
   baseUrl: env.BASE_URL.concat("/api"),
 });
 
+// Origins that may hit the API with credentials. The first three are
+// kept for local dev / legacy previews. Production origins are appended
+// from `TRUSTED_ORIGINS` so we don't need a code change per environment.
+const extraOrigins = (env.TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
   "http://localhost:3000",
   "https://canvas-flow-web.vercel.app",
   "https://canvas-flow-web-git-main-dittya-maitys-projects.vercel.app",
+  ...extraOrigins,
 ];
 
 // CORS must run before every handler, including the better-auth handler.

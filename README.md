@@ -162,22 +162,160 @@ Filter to a single workspace with `pnpm -F web <script>` or `pnpm -F @repo/api <
 
 ```
 .
+├── .github/workflows
+│   ├── ci.yml            # PR checks: lint + typecheck
+│   └── deploy.yml        # main → build → ship → release on VM
 ├── apps
 │   ├── api               # Express + tRPC, Better Auth mount, Scalar docs
-│   └── web               # Next.js 16 studio
+│   └── web               # Next.js 16 studio (output: 'standalone')
 ├── packages
-│   ├── database          # Drizzle schema + models + migrations + pg pool
+│   ├── database          # Drizzle schema + models + migrations + pg pool + migrate.mjs
 │   ├── services          # Business logic (form, form-field, form-submission, analytics)
 │   ├── trpc              # Server router + shared client + procedures
 │   ├── logger            # Winston wrapper
 │   ├── eslint-config     # Shared ESLint config
 │   └── typescript-config # Shared tsconfig presets
+├── scripts
+│   ├── bootstrap.sh      # One-time VM setup (Node, pnpm, pm2, nginx, certbot, swap, ufw)
+│   └── release.sh        # Runs on the VM during each deploy
 ├── docker-compose.yml    # Local Postgres for development
+├── ecosystem.config.cjs  # PM2 process file used in production
 ├── setup.sh              # Hard-links root .env into every workspace
 ├── turbo.json
 ├── pnpm-workspace.yaml
 └── package.json
 ```
+
+## Deployment (production)
+
+The repo ships a full CI/CD pipeline for a single-VM production setup (Ubuntu 24.04). Two subdomains, in-place overwrite deploys, zero-downtime PM2 reloads. Nginx and TLS are configured **manually on the VM** (not from the repo) — installed by `bootstrap.sh`, then you write the site configs yourself.
+
+### Production architecture
+
+```
+GitHub push to main
+   │
+   ▼
+GitHub Actions (.github/workflows/deploy.yml)
+   ├─ pnpm install --frozen-lockfile
+   ├─ pnpm build       (Next standalone + tsup bundle)
+   ├─ pnpm deploy …    (self-contained api/ and db/ bundles)
+   ├─ tar              canvasflow-release.tar.gz
+   ├─ scp tarball + release.sh to VM
+   └─ ssh → bash release.sh /tmp/canvasflow-release.tar.gz
+                │
+                ▼
+       VM (~deploy/canvasflow/)
+       ├─ .env                          ← prod secrets, never overwritten
+       ├─ web/, api/, db/               ← replaced atomically each deploy
+       ├─ ecosystem.config.cjs
+       └─ PM2 ─▶ web on 127.0.0.1:3000
+                └▶ api on 127.0.0.1:8000
+
+       Nginx :443 ─▶ canvasflow.<root>     → 127.0.0.1:3000
+                  └▶ api.canvasflow.<root> → 127.0.0.1:8000
+```
+
+Each deploy extracts the new bundle into a temp dir, runs DB migrations from it (so a broken migration aborts before files are swapped), then `rsync --delete --exclude='.env'`s the temp dir over `~/canvasflow/` and reloads PM2.
+
+### Step 1 — Bootstrap the VM
+
+```sh
+# SSH in as a sudo-capable user (not the deploy user):
+git clone https://github.com/<you>/<repo> /tmp/canvasflow
+bash /tmp/canvasflow/scripts/bootstrap.sh
+```
+
+This installs Node 20, pnpm 9, PM2, Nginx, certbot, a 4GB swap file, `ufw`, and creates the `deploy` user + base directory at `/home/deploy/canvasflow/`. Idempotent — safe to re-run.
+
+### Step 2 — Configure secrets
+
+1. Paste the GitHub Actions deploy key's **public** part into `/home/deploy/.ssh/authorized_keys`.
+2. Fill in `/home/deploy/canvasflow/.env` with production values (see `.env.example`; pay attention to `BETTER_AUTH_SECRET`, `DATABASE_URL`, `TRUSTED_ORIGINS`, `COOKIE_DOMAIN`).
+3. In OAuth provider consoles (Google / GitHub), add the production redirect URIs:
+   - `https://api.<your-domain>/api/auth/callback/google`
+   - `https://api.<your-domain>/api/auth/callback/github`
+
+### Step 3 — Set GitHub Secrets / Variables
+
+Under **Settings → Secrets and variables → Actions**:
+
+| Kind | Key | Value |
+| --- | --- | --- |
+| Secret | `SSH_HOST` | VM public IP or DNS name |
+| Secret | `SSH_USER` | `deploy` |
+| Secret | `SSH_PORT` | `22` |
+| Secret | `SSH_PRIVATE_KEY` | Private half of the deploy keypair |
+| Secret | `SSH_KNOWN_HOSTS` | `ssh-keyscan -H <ssh_host>` output |
+| Variable | `NEXT_PUBLIC_API_URL_PROD` | `https://api.<your-domain>` |
+
+### Step 4 — First deploy
+
+Push to `main`. GH Actions will build, ship the bundle, run migrations, flip the `current` symlink, and start PM2. After the workflow turns green, the processes are listening on `127.0.0.1:3000` and `127.0.0.1:8000`.
+
+### Step 5 — Nginx + TLS (one-time, manual on the VM)
+
+Nginx is installed by `bootstrap.sh`. The site configs are managed by hand on the VM — write two server blocks, one per subdomain, then let certbot bolt TLS onto them.
+
+```sh
+# On the VM (any user with sudo)
+sudo nano /etc/nginx/sites-available/canvasflow-web   # see template below
+sudo nano /etc/nginx/sites-available/canvasflow-api   # see template below
+
+sudo ln -sf /etc/nginx/sites-available/canvasflow-web /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/canvasflow-api /etc/nginx/sites-enabled/
+
+sudo nginx -t && sudo systemctl reload nginx
+
+sudo certbot --nginx \
+  -d canvasflow.<your-domain> \
+  -d api.canvasflow.<your-domain>
+```
+
+Server block — web (`/etc/nginx/sites-available/canvasflow-web`):
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name canvasflow.<your-domain>;
+    location /.well-known/acme-challenge/ { root /var/www/html; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name canvasflow.<your-domain>;
+
+    # SSL block managed by certbot — leave blank initially; certbot fills it in.
+
+    client_max_body_size 10m;
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        "upgrade";
+    }
+}
+```
+
+Server block — api (`/etc/nginx/sites-available/canvasflow-api`): same shape, swap `127.0.0.1:3000` for `127.0.0.1:8000` and `canvasflow.<your-domain>` for `api.canvasflow.<your-domain>`. No `Upgrade`/`Connection` headers needed.
+
+### Rollback
+
+There's no on-VM rollback script — the deploy is in-place. To roll back:
+
+1. Go to **Actions → Deploy → Run workflow**.
+2. Pick the previous good commit as the ref.
+3. Run.
+
+The previous code is rebuilt and deployed in ~3 minutes. Database migrations are forward-only — code rollback won't undo schema changes, so be careful with destructive migrations.
 
 ## Contributing
 

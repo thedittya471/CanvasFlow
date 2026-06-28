@@ -19,6 +19,21 @@ if (githubClientId && githubClientSecret) {
     socialProviders.github = { clientId: githubClientId, clientSecret: githubClientSecret };
 }
 
+// Additional trusted origins from env (comma-separated). Lets us add
+// production / staging hosts without code edits.
+//   TRUSTED_ORIGINS=https://canvasflow.dittya.dev
+const extraTrustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+// Cookie domain for the subdomain split (web on `canvasflow.…`, api on
+// `api.canvasflow.…`). Setting this to `.canvasflow.dittya.dev` lets the
+// session cookie set by `/api/auth/*` be read by the web app. Omit in
+// dev — leaving it unset scopes the cookie to the request host, which
+// is what we want on `localhost`.
+const cookieDomain = process.env.COOKIE_DOMAIN || undefined;
+
 export const auth = betterAuth({
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:8000",
     database: drizzleAdapter(db, {
@@ -43,7 +58,8 @@ export const auth = betterAuth({
     trustedOrigins: [
         "http://localhost:3000",
         "https://canvas-flow-web.vercel.app",
-        "https://canvas-flow-web-git-main-dittya-maitys-projects.vercel.app"
+        "https://canvas-flow-web-git-main-dittya-maitys-projects.vercel.app",
+        ...extraTrustedOrigins,
     ],
     advanced: {
         cookiePrefix: "better-auth",
@@ -51,6 +67,7 @@ export const auth = betterAuth({
         defaultCookieAttributes: {
             sameSite: "none",
             secure: true,
+            ...(cookieDomain ? { domain: cookieDomain } : {}),
         }
     },
 });
