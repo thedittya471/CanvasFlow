@@ -79,26 +79,11 @@ fi
 
 # ─── App directory layout ───────────────────────────────────────────
 # Flat layout — each deploy overwrites web/, api/, db/, and the
-# ecosystem file. The .env at the root is preserved across deploys.
+# ecosystem file. The .env at the root is written by the GitHub Actions
+# deploy workflow from the PROD_ENV repo secret on every run; no need
+# to nano it on the VM by hand.
 echo "==> Preparing ${APP_DIR}"
 sudo -u "${DEPLOY_USER}" mkdir -p "${APP_DIR}"
-
-if [ ! -f "${APP_DIR}/.env" ]; then
-  sudo -u "${DEPLOY_USER}" touch "${APP_DIR}/.env"
-  sudo -u "${DEPLOY_USER}" chmod 600 "${APP_DIR}/.env"
-  echo "  ┌─ ACTION REQUIRED ────────────────────────────────────────"
-  echo "  │ Fill in production env at:                               "
-  echo "  │   ${APP_DIR}/.env                                        "
-  echo "  │                                                          "
-  echo "  │ Required keys (see repo's .env.example):                 "
-  echo "  │   NODE_ENV=production                                    "
-  echo "  │   PORT, BASE_URL, BETTER_AUTH_URL, WEB_URL,              "
-  echo "  │   NEXT_PUBLIC_API_URL, DATABASE_URL,                     "
-  echo "  │   BETTER_AUTH_SECRET (fresh openssl rand -base64 32),    "
-  echo "  │   TRUSTED_ORIGINS, COOKIE_DOMAIN,                        "
-  echo "  │   GOOGLE_*, GITHUB_* (optional)                          "
-  echo "  └──────────────────────────────────────────────────────────"
-fi
 
 # ─── PM2 boot ───────────────────────────────────────────────────────
 echo "==> Configuring pm2 to start on boot (as ${DEPLOY_USER})"
@@ -116,7 +101,7 @@ echo
 echo "✅ Bootstrap done. Next steps:"
 echo "   1. Paste the GH Actions deploy key public part into:"
 echo "        ${DEPLOY_HOME}/.ssh/authorized_keys"
-echo "   2. Fill in production env at: ${APP_DIR}/.env"
+echo "   2. Configure the PROD_ENV GitHub secret (the full .env file content)."
 echo "   3. Push to main — GH Actions will deploy."
 echo "   4. After the first deploy, set up nginx + TLS manually on the VM:"
 echo "      - write two server blocks under /etc/nginx/sites-available/"

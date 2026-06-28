@@ -92,6 +92,19 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      - name: Materialize production .env on VM
+        # The .env file is stored as a single multi-line secret in GitHub.
+        # We pipe it straight into ssh — the value never lands on disk on
+        # the runner and never appears in the workflow logs (ssh reads
+        # from stdin, GitHub's masking blocks any echo).
+        run: |
+          set -eu
+          printf '%s' "${{ secrets.PROD_ENV }}" | \
+            ssh -i ~/.ssh/deploy_key \
+                -p "${{ secrets.SSH_PORT }}" \
+                "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+                'cat > /home/deploy/canvasflow/.env && chmod 600 /home/deploy/canvasflow/.env'
+
       - name: Upload bundle and release.sh to VM
         run: |
           set -eux
