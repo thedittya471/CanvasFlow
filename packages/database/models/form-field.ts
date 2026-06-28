@@ -10,7 +10,8 @@ import {
     serial,
     numeric,
     pgEnum,
-    unique
+    unique,
+    index
 } from "drizzle-orm/pg-core"
 import { usersTable } from "./auth"
 import { formsTable } from "./form"
@@ -57,11 +58,16 @@ export const formFieldsTable = pgTable("form_fields", {
 
     description: text("description"),
 
+    // Optimistic-lock counter (see comment on forms.version)
+    version: integer("version").notNull().default(0),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 
 }, (table) => {
     return {
-        uniqueFormIdAndIndex: unique().on(table.formId, table.index)
+        uniqueFormIdAndIndex: unique().on(table.formId, table.index),
+        // Hot path for listing a form's fields ordered by index
+        formIdx: index("form_fields_form_idx").on(table.formId),
     }
 })

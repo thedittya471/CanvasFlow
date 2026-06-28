@@ -9,6 +9,13 @@ export type GetFormAnalyticsInputType = z.infer<typeof getFormAnalyticsInput>
 
 export const getSubmissionsListInput = z.object({
   formId: z.string().uuid().describe("Form ID"),
+  // Cursor-based pagination — see form-submission/model for the rationale.
+  cursor: z.string().datetime().optional().nullable().describe(
+    "ISO timestamp of the last submission from the previous page"
+  ),
+  limit: z.number().int().min(1).max(200).optional().default(50).describe(
+    "Max submissions to return (default 50, max 200)"
+  ),
 })
 export type GetSubmissionsListInputType = z.infer<typeof getSubmissionsListInput>
 
@@ -71,6 +78,8 @@ export type GetFormAnalyticsOutputType = z.infer<typeof getFormAnalyticsOutput>
 
 export const getSubmissionsListOutput = z.object({
   submissions: z.array(submissionOutput),
+  // null when there are no more pages
+  nextCursor: z.string().nullable(),
 })
 export type GetSubmissionsListOutputType = z.infer<typeof getSubmissionsListOutput>
 

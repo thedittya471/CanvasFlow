@@ -1,0 +1,2 @@
+ALTER TABLE "form_submissions" ADD COLUMN "visitor_id" varchar(64);--> statement-breakpoint
+CREATE UNIQUE INDEX "form_submissions_form_visitor_idx" ON "form_submissions" USING btree ("form_id","visitor_id") WHERE "form_submissions"."visitor_id" IS NOT NULL;

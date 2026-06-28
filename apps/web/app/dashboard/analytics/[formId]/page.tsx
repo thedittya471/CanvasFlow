@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,13 +22,75 @@ import { useGetFormById } from "~/hooks/api/form";
 import { useGetProAnalytics, useGetFormAnalytics } from "~/hooks/api/analytics";
 import { useGetMe } from "~/hooks/api/user";
 
-import { UpgradeModal } from "~/components/analytics/UpgradeModal";
-import { DowBreakdown } from "~/components/analytics/DowBreakdown";
-import { QuestionDistribution } from "~/components/analytics/QuestionDistribution";
-import { ResponseTimeline } from "~/components/analytics/ResponseTimeline";
-import { DeviceBreakdown } from "~/components/analytics/DeviceBreakdown";
-import { FieldCompletionRates } from "~/components/analytics/FieldCompletionRates";
-import { TrafficSources } from "~/components/analytics/TrafficSources";
+// Lazy-load the chart-heavy widgets. They all pull in `recharts`
+// (~140kb gzipped) which we don't want in the initial route bundle when
+// the user might be a Free-tier viewer redirected straight to the upgrade
+// modal. Loading them on the client also keeps SSR fast.
+const DowBreakdown = dynamic(
+  () => import("~/components/analytics/DowBreakdown").then((m) => m.DowBreakdown),
+  { ssr: false, loading: () => <ChartSkeleton title="Day of week" /> }
+);
+const QuestionDistribution = dynamic(
+  () =>
+    import("~/components/analytics/QuestionDistribution").then(
+      (m) => m.QuestionDistribution
+    ),
+  { ssr: false, loading: () => <ChartSkeleton title="Question breakdown" /> }
+);
+const ResponseTimeline = dynamic(
+  () =>
+    import("~/components/analytics/ResponseTimeline").then(
+      (m) => m.ResponseTimeline
+    ),
+  {
+    ssr: false,
+    loading: () => <ChartSkeleton title="Response timeline" className="lg:col-span-2" />,
+  }
+);
+const DeviceBreakdown = dynamic(
+  () =>
+    import("~/components/analytics/DeviceBreakdown").then(
+      (m) => m.DeviceBreakdown
+    ),
+  { ssr: false, loading: () => <ChartSkeleton title="Device breakdown" /> }
+);
+const FieldCompletionRates = dynamic(
+  () =>
+    import("~/components/analytics/FieldCompletionRates").then(
+      (m) => m.FieldCompletionRates
+    ),
+  { ssr: false, loading: () => <ChartSkeleton title="Field completion" /> }
+);
+const TrafficSources = dynamic(
+  () =>
+    import("~/components/analytics/TrafficSources").then((m) => m.TrafficSources),
+  { ssr: false, loading: () => <ChartSkeleton title="Traffic sources" /> }
+);
+// UpgradeModal is only shown on Free-tier access — load it on demand.
+const UpgradeModal = dynamic(
+  () =>
+    import("~/components/analytics/UpgradeModal").then((m) => m.UpgradeModal),
+  { ssr: false }
+);
+
+function ChartSkeleton({
+  title,
+  className,
+}: {
+  title: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5 min-h-[260px] flex flex-col ${className ?? ""}`}
+    >
+      <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">{title}</p>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[color:var(--cf-line-strong)] border-t-[color:var(--cf-orange)] rounded-full animate-spin" />
+      </div>
+    </div>
+  );
+}
 
 /* ─── shared mini-cards ──────────────────────────────────────────────── */
 

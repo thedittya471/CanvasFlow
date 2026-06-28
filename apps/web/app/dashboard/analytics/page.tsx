@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, Download, Sparkles } from "lucide-react";
@@ -15,14 +16,34 @@ import { toast } from "sonner";
 import { useListFormsByUserId, useGetFormById } from "~/hooks/api/form";
 import { useGetFormAnalytics, useGetSubmissions } from "~/hooks/api/analytics";
 import { useGetMe } from "~/hooks/api/user";
+import { useDebounce } from "~/hooks/useDebounce";
 
 import { AnalyticsSidebar } from "~/components/analytics/AnalyticsSidebar";
 import { MetricsGrid } from "~/components/analytics/MetricsGrid";
 import { StatsRow } from "~/components/analytics/StatsRow";
-import { ResponseTimeline } from "~/components/analytics/ResponseTimeline";
-import { DeviceBreakdown } from "~/components/analytics/DeviceBreakdown";
 import { SubmissionsTable } from "~/components/analytics/SubmissionsTable";
-import { UpgradeModal } from "~/components/analytics/UpgradeModal";
+
+// Lazy-load the recharts-backed widgets and the on-demand modal. Keeps the
+// initial route bundle lean — recharts alone is ~140kb gzipped.
+const ResponseTimeline = dynamic(
+  () =>
+    import("~/components/analytics/ResponseTimeline").then(
+      (m) => m.ResponseTimeline
+    ),
+  { ssr: false }
+);
+const DeviceBreakdown = dynamic(
+  () =>
+    import("~/components/analytics/DeviceBreakdown").then(
+      (m) => m.DeviceBreakdown
+    ),
+  { ssr: false }
+);
+const UpgradeModal = dynamic(
+  () =>
+    import("~/components/analytics/UpgradeModal").then((m) => m.UpgradeModal),
+  { ssr: false }
+);
 
 interface SubmissionValue {
   formFieldId: string;
@@ -40,6 +61,9 @@ export function AnalyticsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
+  // Debounce so filtering and any future expensive operations on the
+  // submissions list don't run on every keystroke.
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
   const [viewingSubmission, setViewingSubmission] =
     useState<Submission | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -57,7 +81,7 @@ export function AnalyticsPage() {
   const { analytics, isLoading: isLoadingAnalytics } = useGetFormAnalytics(
     selectedFormId || ""
   );
-  const { submissions, isLoading: isLoadingSubmissions } = useGetSubmissions(
+  const { submissions, isLoading: isLoadingSubmissions, hasNextPage, isFetchingNextPage, fetchNextPage } = useGetSubmissions(
     selectedFormId || ""
   );
   const { hasDetailedAnalytics: isFreeTier } = useGetMe();
@@ -174,7 +198,7 @@ export function AnalyticsPage() {
   const dailyTrends = analytics?.dailyTrends ?? [];
 
   const filteredSubmissions = useMemo(() => {
-    const matchQuery = searchQuery.toLowerCase();
+    const matchQuery = debouncedSearchQuery.toLowerCase();
     return submissions.filter((sub) => {
       const details = getRespondentDetails(sub);
       return (
@@ -183,7 +207,7 @@ export function AnalyticsPage() {
         sub.id.toLowerCase().includes(matchQuery)
       );
     });
-  }, [submissions, searchQuery, getRespondentDetails]);
+  }, [submissions, debouncedSearchQuery, getRespondentDetails]);
 
   const isLoading =
     isLoadingForm || isLoadingAnalytics || isLoadingSubmissions;
@@ -336,6 +360,9 @@ export function AnalyticsPage() {
               setViewingSubmission={setViewingSubmission}
               viewingSubmission={viewingSubmission}
               form={form}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              fetchNextPage={fetchNextPage}
             />
           </div>
         )}

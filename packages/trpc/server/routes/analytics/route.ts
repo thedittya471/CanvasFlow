@@ -64,6 +64,8 @@ export const analyticsRouter = router({
       return analyticsService.getSubmissionsList({
         formId: input.formId,
         ownerId: ctx.user.id,
+        cursor: input.cursor ?? null,
+        limit: input.limit,
       })
     }),
 

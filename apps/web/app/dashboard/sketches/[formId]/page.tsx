@@ -57,7 +57,7 @@ function BuilderCanvas() {
   const { form, isLoading: formLoading, refetch: refetchForm } = useGetForm(
     formId
   );
-  const { fields, isLoading: fieldsLoading } = useListFormFields(formId);
+  const { fields, isLoading: fieldsLoading, refetch: refetchFields } = useListFormFields(formId);
 
   const { setIsCreatingForm } = useDashboard();
   useEffect(() => {
@@ -116,6 +116,10 @@ function BuilderCanvas() {
       // capture server-assigned ids for newly-created fields so we can swap
       // local temp ids (`new-…`) → real UUIDs after the round-trip
       const tempIdToRealId = new Map<string, string>();
+      // capture the new optimistic-lock version per updated field so the
+      // local state stays in sync with what the server now considers
+      // authoritative (next update reads from here)
+      const updatedVersionById = new Map<string, number>();
 
       const createOps = localFields
         .filter((f) => f._isNew && !pendingDeletes.has(f.id))
@@ -149,6 +153,16 @@ function BuilderCanvas() {
             isRequired: f.isRequired,
             options: f.options ?? undefined,
             index: f.index ? String(f.index) : undefined,
+            // Optimistic-lock token. The server compare-and-sets against
+            // this; if another writer (e.g. the same form open in a
+            // second tab) raced us, the server throws and we surface the
+            // conflict below instead of silently overwriting their work.
+            expectedVersion:
+              typeof (f as any).version === "number"
+                ? (f as any).version
+                : 0,
+          }).then((data) => {
+            updatedVersionById.set(f.id, data.version);
           })
         );
 
@@ -158,15 +172,18 @@ function BuilderCanvas() {
 
       await Promise.all([...createOps, ...updateOps, ...deleteOps]);
 
-      // Apply server ids to local state, drop pending deletes, clear _isNew
+      // Apply server ids + new versions to local state, drop pending
+      // deletes, clear _isNew.
       setLocalFields((prev) =>
         prev
           .filter((f) => !pendingDeletes.has(f.id))
           .map((f) => {
             const realId = tempIdToRealId.get(f.id);
-            return realId
-              ? { ...f, id: realId, _isNew: false }
-              : { ...f, _isNew: false };
+            const newVersion = updatedVersionById.get(realId ?? f.id);
+            const next: any = { ...f, _isNew: false };
+            if (realId) next.id = realId;
+            if (newVersion !== undefined) next.version = newVersion;
+            return next;
           })
       );
       // Remap a selected temp id to its real id if it was just created
@@ -182,8 +199,33 @@ function BuilderCanvas() {
       setJustSaved(true);
       window.setTimeout(() => setJustSaved(false), 1800);
       toast.success("Saved");
-    } catch {
-      toast.error("Some changes failed to save — please retry");
+    } catch (err) {
+      // Detect optimistic-lock conflicts and surface them clearly.
+      // The server throws with these recognisable phrases (see form-field
+      // service). On conflict we refetch authoritative state and discard
+      // local in-flight edits — heavy-handed but predictable.
+      const message = err instanceof Error ? err.message : String(err);
+      const isLockConflict =
+        message.includes("modified by someone else") ||
+        message.includes("raced with another change");
+
+      if (isLockConflict) {
+        toast.error(
+          "This form was edited from another session — reloading your view"
+        );
+        // Pull authoritative state from the server. Local dirty edits are
+        // lost intentionally so we don't silently overwrite the other
+        // session. (Better collaborative resolution would need a real
+        // merge step — out of scope here.)
+        const refreshed = await refetchFields();
+        if (refreshed.data) {
+          setLocalFields(refreshed.data as any);
+          setDirtyIds(new Set());
+          setPendingDeletes(new Set());
+        }
+      } else {
+        toast.error("Some changes failed to save — please retry");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -197,6 +239,7 @@ function BuilderCanvas() {
     createFormFieldAsync,
     updateFormFieldAsync,
     deleteFormFieldAsync,
+    refetchFields,
   ]);
 
   const updateLocal = useCallback(
@@ -224,19 +267,47 @@ function BuilderCanvas() {
 
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = useReactFlow();
 
-  // Sync localFields → React Flow nodes/edges
+  // Sync localFields → React Flow nodes/edges.
+  // We intentionally *merge* instead of replacing the whole nodes array.
+  // Replacing would clobber React Flow's per-node internal state (the
+  // in-progress drag position, selection, hover) on every keystroke in
+  // the inspector — that was breaking drag-reorder because each
+  // `updateLocal` for a label edit would rebuild every node mid-frame.
   useEffect(() => {
-    const visible = localFields.filter((f) => !pendingDeletes.has(f.id));
-    setNodes(
-      visible.map((field, idx) => {
+    const visible = localFields
+      .filter((f) => !pendingDeletes.has(f.id))
+      // Sort by fractional index so the edge order (and any index-based
+      // fallback positions for unsaved fields) match the current logical
+      // sequence after a drag-reorder.
+      .sort(
+        (a, b) =>
+          parseFloat(String(a.index)) - parseFloat(String(b.index))
+      );
+    setNodes((prevNodes) => {
+      const prevById = new Map(prevNodes.map((n) => [n.id, n]));
+      return visible.map((field, idx) => {
+        const existing = prevById.get(field.id);
+        if (existing) {
+          // Existing node — preserve React Flow's live position, selection,
+          // dimensions, etc. Only refresh the field reference so the node's
+          // visual (label, options, required pill) reflects the latest edit.
+          return { ...existing, data: { field } };
+        }
+        // Brand new node — use the field's saved position or fall back to
+        // a stacked layout below existing nodes.
         const p =
           (typeof field.options === "object" && field.options
             ? (field.options as any)
             : {}
           ).position || { x: 300, y: idx * 200 + 80 };
-        return { id: field.id, type: "formField", position: p, data: { field } };
-      })
-    );
+        return {
+          id: field.id,
+          type: "formField",
+          position: p,
+          data: { field },
+        };
+      });
+    });
     const mappedEdges: Edge[] = [];
     for (let i = 0; i < visible.length - 1; i++) {
       const s = visible[i];
@@ -310,6 +381,10 @@ function BuilderCanvas() {
         type: type as any,
         options: { position },
         description: null,
+        // Optimistic-lock version. Brand-new local rows haven't been
+        // sent to the server yet, so 0 is the baseline — the first
+        // successful create will replace this with the server's value.
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
         _isNew: true,
@@ -468,6 +543,9 @@ function BuilderCanvas() {
         type: type as any,
         options: { position } as any,
         description: null,
+        // Optimistic-lock baseline for a not-yet-persisted field —
+        // the server will assign the real version on first create.
+        version: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
         _isNew: true,

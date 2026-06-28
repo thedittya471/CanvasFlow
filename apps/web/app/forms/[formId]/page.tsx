@@ -27,8 +27,40 @@ export default function PublicFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [siteRating, setSiteRating] = useState<number | null>(null);
 
+  // True once we know this visitor has already submitted this form — set
+  // by either the localStorage flag we write on success, or the server
+  // sentinel error on a duplicate submit attempt.
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+
   const formOpenedAtRef = React.useRef<number>(Date.now());
   const viewRecordedRef = React.useRef(false);
+  // Per-form visitor id. We compute it once on mount (matching the key
+  // recordView uses) so the same id is sent on every subsequent call —
+  // notably submitForm, which the server uses to enforce one-per-visitor.
+  const visitorIdRef = React.useRef<string | null>(null);
+  // Idempotency key — generated once per page mount and replayed if the
+  // user double-submits (rapid clicks, slow network retry). The server
+  // dedups on (form_id, idempotency_key) so duplicates collapse to the
+  // first successful submission.
+  const idempotencyKeyRef = React.useRef<string>(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+
+  // Restore "already submitted" from localStorage on first paint so a
+  // returning visitor sees the lockout immediately, before any network
+  // round-trip.
+  useEffect(() => {
+    if (!formId) return;
+    try {
+      if (window.localStorage.getItem(`cf_submitted_${formId}`) === "1") {
+        setAlreadySubmitted(true);
+      }
+    } catch {
+      // localStorage unavailable — we'll catch the duplicate at submit time.
+    }
+  }, [formId]);
 
   useEffect(() => {
     formOpenedAtRef.current = Date.now();
@@ -64,6 +96,9 @@ export default function PublicFormPage() {
         // back to no visitorId, which means no dedup (acceptable).
         visitorId = null;
       }
+      // Stash for submitForm — the same id is required for the one-per-
+      // visitor server-side check.
+      visitorIdRef.current = visitorId;
 
       const urlParams = new URLSearchParams(window.location.search);
       recordView({
@@ -130,6 +165,28 @@ export default function PublicFormPage() {
       return;
     }
 
+    // Format validation for typed inputs. We only enforce when the user
+    // actually supplied a value — empty optional fields can still pass.
+    if (typeof value === "string" && value.trim() !== "") {
+      if (currentField.type === "EMAIL") {
+        // Pragmatic email check: one '@', non-empty local part, dotted host.
+        const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+        if (!ok) {
+          toast.error("Please enter a valid email address");
+          return;
+        }
+      } else if (currentField.type === "URL") {
+        try {
+          // URL constructor enforces a real scheme + host; we only care
+          // whether it throws, so the value is discarded.
+          new URL(value.trim());
+        } catch {
+          toast.error("Please enter a valid URL (including https://)");
+          return;
+        }
+      }
+    }
+
     const hasAnswer =
       value !== undefined &&
       value !== null &&
@@ -153,6 +210,8 @@ export default function PublicFormPage() {
         {
           formId,
           values: payloadValues,
+          idempotencyKey: idempotencyKeyRef.current,
+          visitorId: visitorIdRef.current,
           referrer: document.referrer || null,
           utmSource: new URLSearchParams(window.location.search).get(
             "utm_source"
@@ -168,9 +227,29 @@ export default function PublicFormPage() {
         {
           onSuccess: () => {
             setSubmitted(true);
+            // Persist the lockout so a reload (or a fresh tab from the
+            // same browser) shows the "already submitted" screen
+            // instantly, without waiting on the network round-trip.
+            try {
+              window.localStorage.setItem(`cf_submitted_${formId}`, "1");
+            } catch {
+              // localStorage unavailable — server-side dedup still applies.
+            }
             toast.success("Thanks — your response was submitted");
           },
           onError: (err) => {
+            // Server signals "this visitor already submitted" with a
+            // sentinel string. Flip the UI to the lockout state
+            // instead of showing a generic error toast.
+            if (err.message === "ALREADY_SUBMITTED") {
+              try {
+                window.localStorage.setItem(`cf_submitted_${formId}`, "1");
+              } catch {
+                /* noop */
+              }
+              setAlreadySubmitted(true);
+              return;
+            }
             toast.error(err.message || "Failed to submit form");
           },
         }
@@ -187,6 +266,10 @@ export default function PublicFormPage() {
   if (isLoading) return <FormLoadingState />;
   if (error || !form) return <FormErrorState type="not-found" />;
   if (!form.isPublished) return <FormErrorState type="draft-mode" />;
+  // Returning visitor (or a duplicate submit attempt that came back from
+  // the server). Render the lockout instead of the form so they can't
+  // even start typing a second response.
+  if (alreadySubmitted) return <FormErrorState type="already-submitted" />;
 
   const formCode = form.slug.substring(0, 7).toUpperCase();
 

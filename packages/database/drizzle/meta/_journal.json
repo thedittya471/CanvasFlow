@@ -50,6 +50,20 @@
       "when": 1782642772129,
       "tag": "0006_bumpy_medusa",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782646031387,
+      "tag": "0007_bored_the_santerians",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782661015607,
+      "tag": "0008_lame_magneto",
+      "breakpoints": true
     }
   ]
 }

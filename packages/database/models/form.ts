@@ -5,6 +5,7 @@ import {
     timestamp,
     boolean,
     text,
+    integer,
     index
 } from 'drizzle-orm/pg-core'
 import { usersTable } from './auth'
@@ -24,6 +25,11 @@ export const formsTable = pgTable("forms", {
     isPublished: boolean("is_published").default(false).notNull(),
     isArchived: boolean("is_archived").default(false).notNull(),
     isOpen: boolean("is_open").default(true).notNull(),
+
+    // Optimistic-lock counter — incremented on every mutating update.
+    // Concurrent writers compare-and-set against this; the loser gets a
+    // 409-style conflict instead of silently overwriting fresher data.
+    version: integer("version").notNull().default(0),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),

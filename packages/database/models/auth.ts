@@ -5,6 +5,7 @@ import {
   boolean,
   text,
   pgEnum,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const subscriptionTypeEnum = pgEnum("subscription_type", ["Free", "Pro", "Pro+", "Business"]);
@@ -30,7 +31,12 @@ export const sessionsTable = pgTable("sessions", {
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
-});
+}, (table) => ({
+  // FK lookups (`SELECT * FROM sessions WHERE user_id = $1`) ran without
+  // an index until now. Frequently hit on every authenticated request.
+  userIdx: index("sessions_user_id_idx").on(table.userId),
+  expiresIdx: index("sessions_expires_at_idx").on(table.expiresAt),
+}));
 
 
 export const accountsTable = pgTable("account", {
@@ -47,7 +53,9 @@ export const accountsTable = pgTable("account", {
 	password: text("password"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdx: index("account_user_id_idx").on(table.userId),
+}));
 
 export const verificationsTable = pgTable("verification", {
   id: text("id").primaryKey(),

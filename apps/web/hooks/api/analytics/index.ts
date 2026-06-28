@@ -16,30 +16,46 @@ export const useGetFormAnalytics = (formId: string) => {
         refetch,
     } = trpc.analytics.getFormAnalytics.useQuery(
         { formId },
-        { enabled: !!formId && formId.length === 36 }
+        {
+            enabled: !!formId && formId.length === 36,
+            // Analytics for a published form changes only when new
+            // submissions arrive. 30s freshness gives back-nav within
+            // the dashboard near-instant feel while still picking up
+            // fresh responses on the next visit. Submission mutations
+            // do not invalidate this key (they come from public form
+            // visitors, not the studio user), so this is also the
+            // upper bound on UI staleness — adjust if you wire up a
+            // live channel later.
+            staleTime: 30_000,
+            refetchOnWindowFocus: false,
+        }
     )
 
     return { analytics, error, isLoading, isError, isSuccess, refetch }
 }
 
 /**
- * Fetches the full submission rows for a form (includes values jsonb).
- * Kept separate so the heavy payload is only loaded when the table is open.
- * Polls every 30s only when the page is visible.
+ * Cursor-paginated submissions for the analytics table.
+ *
+ * Each page returns up to `limit` rows older than the cursor (which is
+ * the createdAt ISO of the last row from the previous page). React Query
+ * concatenates pages internally; we flatten them into a single array for
+ * the consumer.
+ *
+ * Polling: refetches every 30s while the tab is visible. With infinite
+ * queries this refetches ALL loaded pages — fine for typical sizes,
+ * worth watching if a user loads thousands of rows.
  */
 export const useGetSubmissions = (formId: string) => {
-    const {
-        data,
-        error,
-        isLoading,
-        isError,
-        isSuccess,
-        refetch,
-    } = trpc.analytics.getSubmissions.useQuery(
-        { formId },
+    const PAGE_SIZE = 100
+    const enabled = !!formId && formId.length === 36
+
+    const result = trpc.analytics.getSubmissions.useInfiniteQuery(
+        { formId, limit: PAGE_SIZE },
         {
-            enabled: !!formId && formId.length === 36,
-            // Only poll when the tab is visible — avoids background churn
+            enabled,
+            initialCursor: null,
+            getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
             refetchInterval: (query) =>
                 typeof document !== "undefined" && document.visibilityState === "visible" && query.state.data
                     ? 30_000
@@ -47,13 +63,19 @@ export const useGetSubmissions = (formId: string) => {
         }
     )
 
+    // Flatten the pages so the consumer sees a single submissions list.
+    const submissions = result.data?.pages.flatMap((p) => p.submissions) ?? []
+
     return {
-        submissions: data?.submissions ?? [],
-        error,
-        isLoading,
-        isError,
-        isSuccess,
-        refetch,
+        submissions,
+        error: result.error,
+        isLoading: result.isLoading,
+        isError: result.isError,
+        isSuccess: result.isSuccess,
+        refetch: result.refetch,
+        fetchNextPage: result.fetchNextPage,
+        hasNextPage: !!result.hasNextPage,
+        isFetchingNextPage: result.isFetchingNextPage,
     }
 }
 

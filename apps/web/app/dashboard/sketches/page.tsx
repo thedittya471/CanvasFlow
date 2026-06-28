@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -15,6 +15,8 @@ import {
 
 import { useListFormsByUserId, useDeleteForm } from "~/hooks/api/form";
 import { useDashboard } from "~/providers/dashboard-provider";
+import { useDebounce } from "~/hooks/useDebounce";
+import { trpc } from "~/trpc/client";
 import { toast } from "sonner";
 
 /* ─── helpers ────────────────────────────────────────────────────────── */
@@ -66,6 +68,18 @@ export default function SketchesPage() {
   const [page, setPage] = useState(1);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // Debounce the search input — the filter pass runs over every form on
+  // every keystroke; debouncing keeps typing snappy and avoids resetting
+  // pagination mid-type. 200ms is below the perceptual threshold so the
+  // result still feels live.
+  const debouncedSearch = useDebounce(search, 200);
+
+  // Reset to page 1 whenever the *debounced* query changes so pagination
+  // matches the visible result set.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
   const processedForms = useMemo(() => {
     if (!forms) return [];
     let result = [...forms];
@@ -73,8 +87,8 @@ export default function SketchesPage() {
     if (filter === "DRAFTS") result = result.filter((f) => !f.isPublished);
     else if (filter === "PUBLISHED") result = result.filter((f) => f.isPublished);
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
       result = result.filter(
         (f) =>
           f.title.toLowerCase().includes(q) ||
@@ -92,7 +106,7 @@ export default function SketchesPage() {
     });
 
     return result;
-  }, [forms, filter, search, sort]);
+  }, [forms, filter, debouncedSearch, sort]);
 
   const totalPages = Math.ceil(processedForms.length / ITEMS_PER_PAGE) || 1;
   const paginatedForms = useMemo(() => {
@@ -146,10 +160,7 @@ export default function SketchesPage() {
             type="text"
             placeholder="Search forms..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[color:var(--cf-cream)] rounded-md ring-1 ring-[color:var(--cf-line)] focus:ring-2 focus:ring-[color:var(--cf-orange)] focus:outline-none pl-10 pr-3 h-[40px] text-[13.5px] text-[color:var(--cf-ink)] placeholder:text-[color:var(--cf-ink-soft)]/55 transition-shadow"
           />
         </div>
@@ -318,8 +329,21 @@ function FormCard({ form, onDelete }: FormCardProps) {
   const isPublished = form.isPublished;
   const responses = form.submissionsCount ?? 0;
 
+  // Hover/focus prefetch — warm the builder's tRPC caches so clicking the
+  // Open / Continue editing link feels instant. Cheap to call multiple
+  // times: tRPC dedups in-flight + already-cached prefetches.
+  const utils = trpc.useUtils();
+  const prefetchBuilder = () => {
+    void utils.form.getForm.prefetch({ id: form.id });
+    void utils.form.listFormFields.prefetch({ formId: form.id });
+  };
+
   return (
-    <div className="group bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] hover:ring-[color:var(--cf-line-strong)] transition-shadow p-4 flex flex-col gap-3 sm:gap-4">
+    <div
+      onMouseEnter={prefetchBuilder}
+      onFocus={prefetchBuilder}
+      className="group bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] hover:ring-[color:var(--cf-line-strong)] transition-shadow p-4 flex flex-col gap-3 sm:gap-4"
+    >
       {/* mini form preview — hidden on mobile to keep cards short */}
       <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] hidden sm:block">
         <div className="absolute inset-0 px-6 py-5 flex flex-col justify-center gap-3">
@@ -419,6 +443,13 @@ function FormCard({ form, onDelete }: FormCardProps) {
               type="button"
               title="Share form"
               aria-label="Share form"
+              onClick={() => {
+                const url = `${window.location.origin}/forms/${form.id}`;
+                navigator.clipboard
+                  .writeText(url)
+                  .then(() => toast.success("Link copied"))
+                  .catch(() => toast.error("Couldn't copy link"));
+              }}
               className="inline-flex items-center justify-center h-[38px] w-[38px] rounded-full ring-1 ring-[color:var(--cf-line-strong)] text-[color:var(--cf-ink)] hover:bg-[color:var(--cf-cream)] transition-colors cursor-pointer shrink-0"
             >
               <Share2 className="size-3.5" />

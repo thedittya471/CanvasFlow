@@ -1,4 +1,4 @@
-import { db, eq, and, inArray, gte, count, desc, usersTable } from "@repo/database"
+import { db, eq, and, gte, count, sql, usersTable } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
@@ -168,28 +168,6 @@ class FormService {
   public async getDashboardStats(payload: GetDashboardStatsInputType) {
     const { userId } = await getDashboardStatsInput.parseAsync(payload)
 
-    const forms = await db.select({
-      id: formsTable.id,
-      title: formsTable.title,
-      isPublished: formsTable.isPublished,
-      createdAt: formsTable.createdAt,
-    }).from(formsTable).where(eq(formsTable.ownerId, userId))
-
-    const totalSketches = forms.length
-    const publishedSketches = forms.filter(f => f.isPublished).length
-    const formIds = forms.map(f => f.id)
-
-    if (formIds.length === 0) {
-      return {
-        totalSketches: 0,
-        publishedSketches: 0,
-        totalResponses: 0,
-        responsesThisMonth: 0,
-        recentForms: [],
-        trends: []
-      }
-    }
-
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
@@ -200,50 +178,104 @@ class FormService {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 89)
     ninetyDaysAgo.setHours(0, 0, 0, 0)
 
-    const recentFormsRaw = await db
-      .select({
-        id: formsTable.id,
-        title: formsTable.title,
-        isPublished: formsTable.isPublished,
-        createdAt: formsTable.createdAt,
-      })
-      .from(formsTable)
-      .where(eq(formsTable.ownerId, userId))
-      .orderBy(desc(formsTable.createdAt))
-      .limit(4)
-    const recentIds = recentFormsRaw.map(f => f.id)
+    // ─── One round-trip, one connection ──────────────────────────────────
+    //
+    // The dashboard used to fan out four queries through Promise.all. On
+    // a cold pool each one had to wait its turn for a fresh TLS handshake
+    // to Neon's pooler (~300ms each), which serialized into ~1.7s wall
+    // time despite "running in parallel".
+    //
+    // Collapsing into a single statement with subqueries:
+    //   • one pg connection acquired (no handshake contention)
+    //   • one Neon round-trip
+    //   • Postgres planner can share the `forms WHERE owner_id` scan
+    //     across the four sub-aggregates instead of repeating it.
+    //
+    // Output shape mirrors the four old result sets so the JS below
+    // didn't need to change.
+    type DashboardRow = {
+      forms: Array<{ id: string; title: string; is_published: boolean; created_at: string }> | null
+      agg: { total: number; month: number } | null
+      per_form: Array<{ form_id: string; cnt: number }> | null
+      trends: Array<{ created_at: string }> | null
+    }
+    const rows = await db.execute<DashboardRow>(sql`
+      with owned as (
+        select id, title, is_published, created_at
+        from ${formsTable}
+        where ${formsTable.ownerId} = ${userId}
+      )
+      select
+        (select coalesce(json_agg(owned), '[]'::json) from owned) as forms,
+        (
+          select json_build_object(
+            'total', count(*),
+            'month', count(*) filter (where s.created_at >= ${startOfMonth})
+          )
+          from ${formSubmissionsTable} s
+          join owned o on s.form_id = o.id
+        ) as agg,
+        (
+          select coalesce(json_agg(t), '[]'::json) from (
+            select s.form_id, count(*)::int as cnt
+            from ${formSubmissionsTable} s
+            join owned o on s.form_id = o.id
+            group by s.form_id
+          ) t
+        ) as per_form,
+        (
+          select coalesce(json_agg(t), '[]'::json) from (
+            select s.created_at
+            from ${formSubmissionsTable} s
+            join owned o on s.form_id = o.id
+            where s.created_at >= ${ninetyDaysAgo}
+          ) t
+        ) as trends
+    `)
 
-    // Run all aggregations in parallel as SQL counts/group-bys instead of
-    // loading every submission row (incl. the `values` jsonb) into memory.
-    const [totalRow, monthRow, recentCounts, trendRows] = await Promise.all([
-      db.select({ value: count() })
-        .from(formSubmissionsTable)
-        .where(inArray(formSubmissionsTable.formId, formIds)),
-      db.select({ value: count() })
-        .from(formSubmissionsTable)
-        .where(and(
-          inArray(formSubmissionsTable.formId, formIds),
-          gte(formSubmissionsTable.createdAt, startOfMonth)
-        )),
-      recentIds.length > 0
-        ? db.select({ formId: formSubmissionsTable.formId, value: count() })
-            .from(formSubmissionsTable)
-            .where(inArray(formSubmissionsTable.formId, recentIds))
-            .groupBy(formSubmissionsTable.formId)
-        : Promise.resolve([] as { formId: string; value: number }[]),
-      // Only the last 90 days of timestamps (small) — for the trend chart.
-      db.select({ createdAt: formSubmissionsTable.createdAt })
-        .from(formSubmissionsTable)
-        .where(and(
-          inArray(formSubmissionsTable.formId, formIds),
-          gte(formSubmissionsTable.createdAt, ninetyDaysAgo)
-        )),
-    ])
+    const row = (rows as any).rows?.[0] as DashboardRow | undefined
+    const forms = (row?.forms ?? []).map((f) => ({
+      id: f.id,
+      title: f.title,
+      isPublished: f.is_published,
+      createdAt: new Date(f.created_at),
+    }))
+    const aggRow = [{
+      total: row?.agg?.total ?? 0,
+      month: row?.agg?.month ?? 0,
+    }]
+    const perFormCounts = (row?.per_form ?? []).map((r) => ({
+      formId: r.form_id,
+      value: r.cnt,
+    }))
+    const trendRows = (row?.trends ?? []).map((r) => ({
+      createdAt: new Date(r.created_at),
+    }))
 
-    const totalResponses = Number(totalRow[0]?.value ?? 0)
-    const responsesThisMonth = Number(monthRow[0]?.value ?? 0)
+    const totalSketches = forms.length
+    const publishedSketches = forms.filter(f => f.isPublished).length
 
-    const countByForm = new Map(recentCounts.map(r => [r.formId, Number(r.value)]))
+    if (totalSketches === 0) {
+      return {
+        totalSketches: 0,
+        publishedSketches: 0,
+        totalResponses: 0,
+        responsesThisMonth: 0,
+        recentForms: [],
+        trends: []
+      }
+    }
+
+    // Sort in memory and grab the four most recent — avoids the second
+    // SELECT on formsTable that the old implementation made.
+    const recentFormsRaw = [...forms]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 4)
+
+    const totalResponses = Number(aggRow[0]?.total ?? 0)
+    const responsesThisMonth = Number(aggRow[0]?.month ?? 0)
+
+    const countByForm = new Map(perFormCounts.map(r => [r.formId, Number(r.value)]))
     const recentForms = recentFormsRaw.map(f => ({
       id: f.id,
       title: f.title,

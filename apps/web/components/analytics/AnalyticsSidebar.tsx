@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { trpc } from "~/trpc/client";
 
 interface FormItem {
   id: string;
@@ -21,6 +22,20 @@ export function AnalyticsSidebar({
   selectedFormId,
   setSelectedFormId,
 }: AnalyticsSidebarProps) {
+  // Hover/focus prefetch — when the user is about to switch forms, warm
+  // the analytics + form data caches so the right pane updates with no
+  // visible loading state.
+  const utils = trpc.useUtils();
+  const prefetchForm = (id: string) => {
+    void utils.form.getFormById.prefetch({ id });
+    void utils.analytics.getFormAnalytics.prefetch({ formId: id });
+    // Submissions is now an infinite query — prefetch the first page so
+    // the cache key matches the consumer's useInfiniteQuery.
+    void utils.analytics.getSubmissions.prefetchInfinite({
+      formId: id,
+      limit: 100,
+    });
+  };
   return (
     <aside className="w-full lg:w-64 shrink-0 bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-4 lg:p-5 flex flex-col gap-3 lg:gap-4">
       <div className="space-y-1.5">
@@ -50,6 +65,8 @@ export function AnalyticsSidebar({
                   <button
                     key={f.id}
                     onClick={() => setSelectedFormId(f.id)}
+                    onMouseEnter={() => prefetchForm(f.id)}
+                    onFocus={() => prefetchForm(f.id)}
                     className={`shrink-0 inline-flex items-center gap-2 max-w-[14rem] px-3 py-1.5 rounded-full text-[12.5px] transition-colors cursor-pointer ring-1 ${
                       isActive
                         ? "bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] ring-[color:var(--cf-line-strong)]"
@@ -78,6 +95,8 @@ export function AnalyticsSidebar({
                   <button
                     key={f.id}
                     onClick={() => setSelectedFormId(f.id)}
+                    onMouseEnter={() => prefetchForm(f.id)}
+                    onFocus={() => prefetchForm(f.id)}
                     className={`w-full text-left px-3 py-2 rounded-md text-[13px] transition-colors flex items-center justify-between gap-2 cursor-pointer ${
                       isActive
                         ? "bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] ring-1 ring-[color:var(--cf-line-strong)]"

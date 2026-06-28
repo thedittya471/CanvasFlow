@@ -1,4 +1,4 @@
-import { db, eq, and, desc, gte, count } from "@repo/database"
+import { db, eq, and, desc, gte, lt, count } from "@repo/database"
 import { formsTable } from "@repo/database/models/form"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import { formSubmissionsTable } from "@repo/database/models/form-submission"
@@ -77,8 +77,13 @@ class AnalyticsService {
     })
     const deviceViews = Object.entries(deviceMap).map(([device, cnt]) => ({ device, count: cnt }))
 
+    // Submissions are now deduped per visitor at the DB level, so under
+    // normal conditions submissions ≤ views and this ratio sits in
+    // [0, 100]. Visitors without localStorage (private mode) bypass
+    // dedup, so we still clamp as defence-in-depth — the dashboard
+    // should never display a non-physical rate like 500%.
     const completionRate = totalViews > 0
-      ? parseFloat(((totalResponses / totalViews) * 100).toFixed(1))
+      ? parseFloat((Math.min((totalResponses / totalViews) * 100, 100)).toFixed(1))
       : 0
 
     // ─── Daily trends (last 30 days, zero-filled) ─────────────────────────
@@ -438,26 +443,47 @@ class AnalyticsService {
   }
 
   /**
-   * Returns the full submission rows for a form (for the submissions table in the UI).
-   * Kept separate from analytics so the heavy values jsonb is only loaded when needed.
-   * Limited to 200 most recent rows — enough for the UI table.
+   * Returns submissions for the UI table with cursor-based pagination.
+   *
+   * The cursor is the `createdAt` ISO timestamp of the last row from the
+   * previous page. The server returns up to `limit` rows older than that
+   * timestamp, plus a `nextCursor` if more rows exist. Cursor pagination
+   * is stable under inserts (offset pagination would shift as new rows
+   * arrive — the next page could repeat or skip rows).
    */
   public async getSubmissionsList(payload: GetSubmissionsListInputType & { ownerId: string }) {
-    const { formId } = await getSubmissionsListInput.parseAsync(payload)
+    const { formId, cursor, limit } = await getSubmissionsListInput.parseAsync(payload)
     const { ownerId } = payload
 
-    const [formRows] = [await db.select({ id: formsTable.id })
+    const formRows = await db.select({ id: formsTable.id })
       .from(formsTable)
-      .where(and(eq(formsTable.id, formId), eq(formsTable.ownerId, ownerId)))]
+      .where(and(eq(formsTable.id, formId), eq(formsTable.ownerId, ownerId)))
     if (!formRows[0]) throw new Error("Form not found or unauthorized")
 
-    const submissions = await db.select()
-      .from(formSubmissionsTable)
-      .where(eq(formSubmissionsTable.formId, formId))
-      .orderBy(desc(formSubmissionsTable.createdAt))
-      .limit(200)
+    const pageSize = limit ?? 50
+    const cursorDate = cursor ? new Date(cursor) : null
+    const whereClause = cursorDate
+      ? and(
+          eq(formSubmissionsTable.formId, formId),
+          lt(formSubmissionsTable.createdAt, cursorDate)
+        )
+      : eq(formSubmissionsTable.formId, formId)
 
-    return { submissions }
+    // Fetch pageSize+1 to peek at whether another page exists without a
+    // separate COUNT round-trip.
+    const rows = await db.select()
+      .from(formSubmissionsTable)
+      .where(whereClause)
+      .orderBy(desc(formSubmissionsTable.createdAt))
+      .limit(pageSize + 1)
+
+    const hasMore = rows.length > pageSize
+    const submissions = hasMore ? rows.slice(0, pageSize) : rows
+    const nextCursor = hasMore
+      ? submissions[submissions.length - 1]!.createdAt.toISOString()
+      : null
+
+    return { submissions, nextCursor }
   }
 
   /**

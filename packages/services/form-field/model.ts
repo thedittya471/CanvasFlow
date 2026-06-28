@@ -21,24 +21,30 @@ export const fieldTypeZodEnum = z.enum([
 
 export const createFormFieldInput = z.object({
     formId: z.string().uuid().describe("ID of the parent form"),
-    label: z.string().max(255, "Label is too long"),
-    placeholder: z.string().max(255).optional().nullable(),
+    label: z.string().trim().max(255, "Label is too long"),
+    placeholder: z.string().trim().max(255).optional().nullable(),
     isRequired: z.boolean().default(false),
     index: z.union([z.number(), z.string()]).transform(val => String(val)).optional().describe("Fractional index for sorting"),
     type: fieldTypeZodEnum.describe("Type of the field"),
     options: z.any().optional().nullable().describe("Options for select/radio/checkbox in JSON"),
-    description: z.string().optional().nullable().describe("Help text or description")
+    description: z.string().trim().max(2000).optional().nullable().describe("Help text or description")
 })
 
 export const updateFormFieldInput = z.object({
     id: z.string().uuid().describe("ID of the field to update"),
-    label: z.string().max(255).optional(),
-    placeholder: z.string().max(255).optional().nullable(),
+    label: z.string().trim().max(255).optional(),
+    placeholder: z.string().trim().max(255).optional().nullable(),
     isRequired: z.boolean().optional(),
     index: z.union([z.number(), z.string()]).transform(val => String(val)).optional().describe("Fractional index for sorting"),
+    // Optimistic-lock version. When supplied, the service must match it
+    // against the row's current version (see form-field service for the
+    // conditional update).
+    expectedVersion: z.number().int().nonnegative().optional().describe(
+      "Optimistic-lock token returned by the previous read of this field"
+    ),
     type: fieldTypeZodEnum.optional().describe("Type of the field"),
     options: z.any().optional().nullable().describe("Options for select/radio/checkbox in JSON"),
-    description: z.string().optional().nullable().describe("Help text or description")
+    description: z.string().trim().max(2000).optional().nullable().describe("Help text or description")
 })
 
 export const deleteFormFieldInput = z.object({
@@ -54,7 +60,8 @@ export const createFormFieldOutput = z.object({
 })
 
 export const updateFormFieldOutput = z.object({
-    id: z.string().uuid().describe("ID of the updated form field")
+    id: z.string().uuid().describe("ID of the updated form field"),
+    version: z.number().int().describe("New optimistic-lock version after the update")
 })
 
 export const deleteFormFieldOutput = z.object({
@@ -80,6 +87,7 @@ export const getFormFieldOutput = z.object({
     type: fieldTypeZodEnum.describe("Type of the field"),
     options: z.any().nullable().optional().describe("Options in JSON format"),
     description: z.string().nullable().optional().describe("Description or help text"),
+    version: z.number().int().describe("Optimistic-lock version"),
     createdAt: z.any().describe("Creation timestamp"),
     updatedAt: z.any().describe("Last update timestamp")
 })

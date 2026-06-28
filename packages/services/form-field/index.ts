@@ -1,4 +1,4 @@
-import { db, eq, max } from "@repo/database"
+import { db, eq, and, max } from "@repo/database"
 import { formFieldsTable } from "@repo/database/models/form-field"
 import {
     createFormFieldInput,
@@ -68,12 +68,21 @@ class FormFieldService {
     }
 
     public async updateFormField(payload: UpdateFormFieldInputType) {
-        const { id, label, placeholder, isRequired, index, type, options, description } = await updateFormFieldInput.parseAsync(payload)
+        const { id, label, placeholder, isRequired, index, type, options, description, expectedVersion } = await updateFormFieldInput.parseAsync(payload)
 
         const existingFieldResult = await db.select().from(formFieldsTable).where(eq(formFieldsTable.id, id))
         const existingField = existingFieldResult[0]
         if (!existingField) {
             throw new Error("Form field not found")
+        }
+
+        // Optimistic-lock check — if the caller supplied an expected version
+        // and the row has since moved past it, another client wrote first.
+        // We surface a recognisable conflict so the caller can resolve.
+        if (expectedVersion !== undefined && existingField.version !== expectedVersion) {
+            throw new Error(
+                `Form field was modified by someone else (expected version ${expectedVersion}, got ${existingField.version}). Reload and try again.`
+            )
         }
 
         let newLabelKey: string | undefined = undefined
@@ -88,6 +97,10 @@ class FormFieldService {
                 .replace(/(^-|-$)/g, "") || "field"
         }
 
+        // Conditional update — set the new values AND bump the version, but
+        // only where the version still matches what the client expected.
+        // Returning 0 rows here means another writer raced us; we surface a
+        // conflict so the caller can refetch.
         const updateResult = await db.update(formFieldsTable)
             .set({
                 ...(label !== undefined ? { label } : {}),
@@ -97,19 +110,31 @@ class FormFieldService {
                 ...(index !== undefined ? { index } : {}),
                 ...(type !== undefined ? { type } : {}),
                 ...(options !== undefined ? { options } : {}),
-                ...(description !== undefined ? { description } : {})
+                ...(description !== undefined ? { description } : {}),
+                version: existingField.version + 1,
             })
-            .where(eq(formFieldsTable.id, id))
+            .where(
+                expectedVersion !== undefined
+                    ? and(
+                        eq(formFieldsTable.id, id),
+                        eq(formFieldsTable.version, expectedVersion)
+                    )
+                    : eq(formFieldsTable.id, id)
+            )
             .returning({
-                id: formFieldsTable.id
+                id: formFieldsTable.id,
+                version: formFieldsTable.version,
             })
 
         if (!updateResult || updateResult.length === 0 || !updateResult[0]?.id) {
-            throw new Error("Failed to update form field or field not found")
+            // Either the row vanished (deleted concurrently) or the version
+            // didn't match (someone else wrote between our read and write).
+            throw new Error("Update raced with another change — please retry")
         }
 
         return {
-            id: updateResult[0].id
+            id: updateResult[0].id,
+            version: updateResult[0].version,
         }
     }
 

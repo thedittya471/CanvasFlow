@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 interface FormErrorStateProps {
-  type: "not-found" | "draft-mode";
+  type: "not-found" | "draft-mode" | "already-submitted";
 }
 
 export function FormErrorState({ type }: FormErrorStateProps) {
@@ -15,6 +15,12 @@ export function FormErrorState({ type }: FormErrorStateProps) {
           eyebrow: "Not live",
           title: "This form is still a draft",
           body: "The author hasn't published it yet, so it isn't accepting responses.",
+        }
+      : type === "already-submitted"
+      ? {
+          eyebrow: "Already submitted",
+          title: "You've responded to this form",
+          body: "Each visitor can submit this form once. Thanks — we already have your response on file.",
         }
       : {
           eyebrow: "Not found",

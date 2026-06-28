@@ -15,10 +15,12 @@ export const publicProcedure = tRPCContext.procedure;
 
 export const authenticatedProcedure = tRPCContext.procedure.use(async options => {
   const { ctx } = options
+  const tStart = Date.now()
 
   const session = await auth.api.getSession({
     headers: new Headers(ctx.req.headers as Record<string, string>),
   })
+  const tSession = Date.now() - tStart
 
   if (!session) {
     throw new TRPCError({
@@ -27,7 +29,8 @@ export const authenticatedProcedure = tRPCContext.procedure.use(async options =>
     })
   }
 
-  return options.next({
+  const tInner = Date.now()
+  const result = await options.next({
     ctx: {
       ...ctx,
       user: {
@@ -37,6 +40,20 @@ export const authenticatedProcedure = tRPCContext.procedure.use(async options =>
       }
     }
   })
+  const tInnerMs = Date.now() - tInner
+
+  // Server-Timing header lets us read these from the browser DevTools
+  // without trying to read the dev-server's TUI. Comma-separated entries
+  // per the W3C spec.
+  try {
+    const h = new Headers()
+    h.set("Server-Timing", `auth;dur=${tSession}, inner;dur=${tInnerMs}`)
+    ;(ctx as any).setHeaders?.(h)
+  } catch {
+    /* noop — header may already be sent */
+  }
+
+  return result
 })
 
 /**

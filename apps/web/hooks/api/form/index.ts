@@ -75,7 +75,15 @@ export const useListFormsByUserId = () => {
         status,
         isLoading,
         refetch
-    } = trpc.form.listFormsByUserId.useQuery()
+    } = trpc.form.listFormsByUserId.useQuery(undefined, {
+        // My Forms list is read on the sketches page and the analytics
+        // sidebar; both pages get hit on back-nav. Same caching policy
+        // as the dashboard — 60s freshness, no refetch-on-focus.
+        // Mutations (create/update/delete form) already invalidate this
+        // key, so stale data can't survive a real change.
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+    })
 
     return {
         forms,
@@ -121,6 +129,9 @@ export const useCreateFormField = () => {
                     type: input.type,
                     options: input.options ?? null,
                     description: input.description ?? null,
+                    // Optimistic baseline — the real version is set when
+                    // the server reply lands and the cache is refreshed.
+                    version: 0,
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 }
@@ -391,7 +402,17 @@ export const useGetDashboardStats = () => {
         status,
         isLoading,
         refetch
-    } = trpc.form.getDashboardStats.useQuery(undefined)
+    } = trpc.form.getDashboardStats.useQuery(undefined, {
+        // The dashboard is the landing page after sign-in and on every
+        // back-nav. Treat the result as fresh for 60s and serve from the
+        // query cache so revisits paint instantly. Mutations that affect
+        // these stats (create / delete form, etc.) already invalidate
+        // this key, so stale data can't linger past a write.
+        staleTime: 60_000,
+        // Don't double-fetch when the tab regains focus during normal
+        // use — the dashboard isn't a real-time view.
+        refetchOnWindowFocus: false,
+    })
 
     return {
         stats,

@@ -1,7 +1,9 @@
 "use client";
 
-import React from "react";
-import { Eye, Search, X } from "lucide-react";
+import React, { useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
+import { Eye, Search } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 interface SubmissionValue {
   formFieldId: string;
@@ -29,7 +31,22 @@ interface SubmissionsTableProps {
   setViewingSubmission: (sub: Submission | null) => void;
   viewingSubmission: Submission | null;
   form: { fields: FormField[] } | null | undefined;
+  // Pagination state from useGetSubmissions's underlying useInfiniteQuery
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  fetchNextPage?: () => void;
 }
+
+// Detail modal is only rendered when a row is clicked. Lazy-load it so it
+// stays out of the initial bundle.
+const SubmissionDetailModal = dynamic(
+  () => import("./SubmissionDetailModal").then((m) => m.SubmissionDetailModal),
+  { ssr: false }
+);
+
+const ROW_HEIGHT = 64; // px — fixed-height rows make virtualization simple
+const GRID_COLS =
+  "grid grid-cols-[minmax(0,1fr)_110px_160px_56px] sm:grid-cols-[minmax(0,1fr)_120px_180px_56px] gap-3 items-center";
 
 export function SubmissionsTable({
   filteredSubmissions,
@@ -39,7 +56,55 @@ export function SubmissionsTable({
   setViewingSubmission,
   viewingSubmission,
   form,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
 }: SubmissionsTableProps) {
+  // Scroll container for the virtualizer
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredSubmissions.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    // Render a few rows above/below the viewport so fast scrolls don't
+    // flash empty space.
+    overscan: 6,
+  });
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+
+  // Auto-load the next page when the user scrolls within ~3 rows of the
+  // bottom. Pairs with the visible "Load older" button so users can pull
+  // manually if the auto-trigger missed (e.g. they jumped to the bottom
+  // with End key before any rows rendered).
+  React.useEffect(() => {
+    const last = virtualItems[virtualItems.length - 1];
+    if (!last) return;
+    if (
+      hasNextPage &&
+      !isFetchingNextPage &&
+      last.index >= filteredSubmissions.length - 3
+    ) {
+      fetchNextPage?.();
+    }
+  }, [
+    virtualItems,
+    hasNextPage,
+    isFetchingNextPage,
+    filteredSubmissions.length,
+    fetchNextPage,
+  ]);
+
+  // Cap the scroll area: tall enough to feel like a real table, capped so
+  // it doesn't push the page off the bottom on small viewports.
+  const scrollHeight = useMemo(() => {
+    if (filteredSubmissions.length === 0) return 0;
+    // ~6 rows visible by default; clamp to 640px max.
+    return Math.min(filteredSubmissions.length * ROW_HEIGHT, 640);
+  }, [filteredSubmissions.length]);
+
   return (
     <>
       <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5">
@@ -49,6 +114,14 @@ export function SubmissionsTable({
             <h4 className="mt-2 cf-display text-[20px] leading-tight">
               Responses
             </h4>
+            {filteredSubmissions.length > 0 && (
+              <p className="mt-1 text-[11px] font-mono text-[color:var(--cf-ink-soft)]">
+                {filteredSubmissions.length}{" "}
+                {filteredSubmissions.length === 1 ? "row" : "rows"} ·
+                virtualised
+                {hasNextPage ? " · more available" : ""}
+              </p>
+            )}
           </div>
           <div className="w-full sm:w-72 relative">
             <input
@@ -68,38 +141,67 @@ export function SubmissionsTable({
               No submissions found.
             </div>
           ) : (
-            <div className="overflow-x-auto w-full">
-              <table className="w-full text-left text-[13px]">
-                <thead>
-                  <tr className="border-b border-[color:var(--cf-line)]">
-                    <th className="pb-3 font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium">
-                      Respondent
-                    </th>
-                    <th className="pb-3 font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium">
-                      Status
-                    </th>
-                    <th className="pb-3 font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium">
-                      Date
-                    </th>
-                    <th className="pb-3 font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium text-right">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSubmissions.map((sub) => {
-                    const details = getRespondentDetails(sub);
-                    const initials = details.name
-                      .substring(0, 2)
-                      .toUpperCase();
+            <div className="overflow-x-auto">
+              {/* min-width keeps the header + virtualized rows aligned even
+                  when the viewport is narrow; horizontal scroll on phones */}
+              <div className="min-w-[640px]">
+                {/* Header — outside the virtualized scroll area, always visible */}
+                <div
+                  className={`${GRID_COLS} px-1 pb-3 border-b border-[color:var(--cf-line)]`}
+                >
+                  <div className="font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium">
+                    Respondent
+                  </div>
+                  <div className="font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium">
+                    Status
+                  </div>
+                  <div className="font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium">
+                    Date
+                  </div>
+                  <div className="font-mono text-[11px] uppercase tracking-wider text-[color:var(--cf-ink-soft)] font-medium text-right">
+                    Action
+                  </div>
+                </div>
 
-                    return (
-                      <tr
-                        key={sub.id}
-                        className="border-b border-[color:var(--cf-line)] last:border-b-0 hover:bg-[color:var(--cf-cream)]/60 transition-colors"
-                      >
-                        <td className="py-3 pr-4">
-                          <div className="flex items-center gap-3">
+                {/* Virtualised body — only rows currently in/near the
+                    viewport are rendered. Scales to thousands of rows. */}
+                <div
+                  ref={scrollRef}
+                  className="overflow-y-auto"
+                  style={{ height: scrollHeight }}
+                  role="rowgroup"
+                >
+                  <div
+                    style={{
+                      height: totalSize,
+                      position: "relative",
+                      width: "100%",
+                    }}
+                  >
+                    {virtualItems.map((vi) => {
+                      const sub = filteredSubmissions[vi.index]!;
+                      const details = getRespondentDetails(sub);
+                      const initials = details.name
+                        .substring(0, 2)
+                        .toUpperCase();
+
+                      return (
+                        <div
+                          key={sub.id}
+                          data-index={vi.index}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: vi.size,
+                            transform: `translateY(${vi.start}px)`,
+                          }}
+                          className={`${GRID_COLS} px-1 border-b border-[color:var(--cf-line)] hover:bg-[color:var(--cf-cream)]/60 transition-colors text-[13px]`}
+                          role="row"
+                        >
+                          {/* Respondent */}
+                          <div className="flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-full bg-[color:var(--cf-ink)] text-white flex items-center justify-center text-[11px] font-medium shrink-0">
                               {initials || "?"}
                             </div>
@@ -112,103 +214,69 @@ export function SubmissionsTable({
                               </div>
                             </div>
                           </div>
-                        </td>
-                        <td className="py-3 pr-4">
+
+                          {/* Status */}
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[color:var(--cf-ink-soft)]">
                             <span className="size-1.5 rounded-full bg-[color:var(--cf-orange)]" />
                             Completed
                           </span>
-                        </td>
-                        <td className="py-3 pr-4 text-[12px] font-mono text-[color:var(--cf-ink-soft)]">
-                          {new Date(sub.createdAt).toLocaleString()}
-                        </td>
-                        <td className="py-3 text-right">
-                          <button
-                            onClick={() => setViewingSubmission(sub)}
-                            className="p-2 rounded-md ring-1 ring-[color:var(--cf-line-strong)] hover:bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] transition-colors cursor-pointer"
-                            title="View details"
-                            aria-label="View submission details"
-                          >
-                            <Eye className="size-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+
+                          {/* Date */}
+                          <div className="text-[12px] font-mono text-[color:var(--cf-ink-soft)] truncate">
+                            {new Date(sub.createdAt).toLocaleString()}
+                          </div>
+
+                          {/* Action */}
+                          <div className="text-right">
+                            <button
+                              onClick={() => setViewingSubmission(sub)}
+                              className="p-2 rounded-md ring-1 ring-[color:var(--cf-line-strong)] hover:bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] transition-colors cursor-pointer"
+                              title="View details"
+                              aria-label="View submission details"
+                            >
+                              <Eye className="size-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Pagination footer — manual fallback for the auto-trigger
+                    above. Surfaces loading state when more rows are coming. */}
+                {(hasNextPage || isFetchingNextPage) && (
+                  <div className="flex items-center justify-center gap-3 mt-3 pt-3 border-t border-[color:var(--cf-line)]">
+                    {isFetchingNextPage ? (
+                      <span className="inline-flex items-center gap-2 text-[12px] font-mono text-[color:var(--cf-ink-soft)]">
+                        <span className="size-3 border-2 border-[color:var(--cf-line-strong)] border-t-[color:var(--cf-orange)] rounded-full animate-spin" />
+                        Loading older submissions...
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fetchNextPage?.()}
+                        className="text-[12px] font-medium text-[color:var(--cf-ink)] hover:text-[color:var(--cf-orange)] ring-1 ring-[color:var(--cf-line-strong)] hover:ring-[color:var(--cf-orange)] bg-[color:var(--cf-cream)] hover:bg-[color:var(--cf-cream-2)] px-4 h-[32px] rounded-full transition-colors cursor-pointer"
+                      >
+                        Load older submissions
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Submission detail modal */}
+      {/* Submission detail modal — code-split, only loaded when opened */}
       {viewingSubmission && form && (
-        <div className="fixed inset-0 bg-[color:var(--cf-ink)]/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[color:var(--cf-cream-2)] rounded-2xl ring-1 ring-[color:var(--cf-line-strong)] max-w-lg w-full relative shadow-[0_40px_80px_-30px_rgba(22,19,17,0.4)] flex flex-col max-h-[90vh]">
-            <div className="px-6 pt-6 pb-4 border-b border-[color:var(--cf-line)] relative">
-              <button
-                onClick={() => setViewingSubmission(null)}
-                className="absolute right-4 top-4 p-1.5 text-[color:var(--cf-ink-soft)] hover:text-[color:var(--cf-ink)] rounded-md hover:bg-[color:var(--cf-cream)] cursor-pointer transition-colors"
-                aria-label="Close"
-              >
-                <X className="size-4" />
-              </button>
-
-              <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
-                Submission
-              </p>
-              <h4 className="mt-2 cf-display text-[22px] leading-tight pr-8 truncate">
-                {getRespondentDetails(viewingSubmission).name}
-              </h4>
-              <p className="mt-1 text-[12px] font-mono text-[color:var(--cf-ink-soft)]">
-                {new Date(viewingSubmission.createdAt).toLocaleString()}
-              </p>
-            </div>
-
-            <div className="px-6 py-5 overflow-y-auto flex-1 space-y-4">
-              {form.fields.map((field) => {
-                const answer = viewingSubmission.values.find(
-                  (v) => v.formFieldId === field.id
-                );
-                let displayVal = "No answer provided";
-                if (
-                  answer?.value !== undefined &&
-                  answer?.value !== null &&
-                  answer?.value !== ""
-                ) {
-                  if (Array.isArray(answer.value)) {
-                    displayVal = answer.value.join(", ");
-                  } else if (typeof answer.value === "boolean") {
-                    displayVal = answer.value ? "Yes" : "No";
-                  } else {
-                    displayVal = String(answer.value);
-                  }
-                }
-
-                return (
-                  <div key={field.id} className="space-y-1.5">
-                    <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
-                      {field.label}
-                    </p>
-                    <div className="text-[13px] text-[color:var(--cf-ink)] bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] rounded-md px-3 py-2.5">
-                      {displayVal}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="px-6 pb-6 pt-4 border-t border-[color:var(--cf-line)] flex justify-end">
-              <button
-                onClick={() => setViewingSubmission(null)}
-                className="px-5 py-2 text-[13px] font-medium rounded-full bg-[color:var(--cf-ink)] hover:bg-black text-white transition-colors cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <SubmissionDetailModal
+          submission={viewingSubmission}
+          form={form}
+          getRespondentDetails={getRespondentDetails}
+          onClose={() => setViewingSubmission(null)}
+        />
       )}
     </>
   );
