@@ -3,30 +3,22 @@ name: Deploy
 on:
   push:
     branches: [main]
-  workflow_dispatch: # manual button in the Actions tab — also lets you
-                    # redeploy any past commit by picking its ref. This
-                    # is our "rollback" since the VM has no releases dir.
+  workflow_dispatch: # manual button — also lets you redeploy any commit
+                    # (this is our "rollback")
 
-# Never run two deploys in parallel — they'd race on the VM filesystem.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 env:
   # NEXT_PUBLIC_* env vars are inlined into the client JS at BUILD time,
-  # so they must be present here, not just on the VM. Stored as a repo
-  # Variable (not Secret) since it's public anyway.
+  # so they must be present here, not just on the VM.
   NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL_PROD }}
 
 jobs:
   deploy:
-    name: Build and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Optional: tie this job to a GitHub Environment for required
-    # reviewers / protected secrets. Uncomment when you want a manual
-    # approval gate before the deploy happens.
-    # environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -40,87 +32,81 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build everything (turbo)
+      - name: Build
         run: pnpm build
 
-      # ─── Assemble release bundle ────────────────────────────────────
-      # Layout the VM expects (flat — overwrites in place each deploy):
-      #   bundle/
-      #     ├── ecosystem.config.cjs
-      #     ├── web/                  (Next.js standalone + static + public)
-      #     ├── api/                  (pnpm-deployed self-contained bundle)
-      #     └── db/                   (drizzle migrations + migrate.mjs + deps)
-      - name: Assemble release bundle
+      - name: Stage release bundle
         run: |
           set -eux
-          mkdir -p bundle/web bundle/api bundle/db
+          mkdir -p _release/web _release/api _release/db
 
-          # ── web: Next.js standalone needs static + public copied
-          #    next to the server.js.
-          cp -r apps/web/.next/standalone/. bundle/web/
-          mkdir -p bundle/web/apps/web/.next
-          cp -r apps/web/.next/static    bundle/web/apps/web/.next/static
-          cp -r apps/web/public          bundle/web/apps/web/public
+          # Web: Next.js standalone is self-contained; just copy static + public next to it.
+          cp -r apps/web/.next/standalone/. _release/web/
+          mkdir -p _release/web/apps/web/.next
+          cp -r apps/web/.next/static _release/web/apps/web/.next/static
+          cp -r apps/web/public        _release/web/apps/web/public
 
-          # ── api: pnpm deploy produces a self-contained dir with
-          #    node_modules flattened for production.
-          pnpm --filter @repo/api deploy --prod bundle/api
+          # API: pnpm deploy produces a self-contained dir (dist + node_modules + package.json)
+          pnpm --filter @repo/api      deploy --prod _release/api
+          # DB: same trick, plus the drizzle SQL + migrate.mjs.
+          pnpm --filter @repo/database deploy --prod _release/db
+          cp -r packages/database/drizzle _release/db/drizzle
+          cp    packages/database/migrate.mjs _release/db/migrate.mjs
 
-          # ── db: ship the migration SQL + migrate.mjs + the runtime
-          #    deps (drizzle-orm, pg). pnpm deploy handles all of this.
-          pnpm --filter @repo/database deploy --prod bundle/db
-          cp -r packages/database/drizzle bundle/db/drizzle
-          cp    packages/database/migrate.mjs bundle/db/migrate.mjs
+          cp ecosystem.config.cjs _release/ecosystem.config.cjs
 
-          # ── PM2 ecosystem
-          cp ecosystem.config.cjs bundle/ecosystem.config.cjs
-
-          # Tar it up — single artifact for upload.
-          tar -C bundle -czf canvasflow-release.tar.gz .
-
-      - name: Set up SSH
+      - name: Write .env from secret
+        env:
+          PROD_ENV: ${{ secrets.PROD_ENV }}
         run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          # Pin host fingerprint to defeat MITM. SSH_KNOWN_HOSTS is the
-          # output of `ssh-keyscan -H <host>` run on a trusted machine.
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
+          printf '%s\n' "$PROD_ENV" > _release/.env
+          chmod 600 _release/.env
 
-      - name: Materialize production .env on VM
-        # The .env file is stored as a single multi-line secret in GitHub.
-        # We pipe it straight into ssh — the value never lands on disk on
-        # the runner and never appears in the workflow logs (ssh reads
-        # from stdin, GitHub's masking blocks any echo).
-        run: |
-          set -eu
-          printf '%s' "${{ secrets.PROD_ENV }}" | \
-            ssh -i ~/.ssh/deploy_key \
-                -p "${{ secrets.SSH_PORT }}" \
-                "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-                'cat > /home/deploy/canvasflow/.env && chmod 600 /home/deploy/canvasflow/.env'
+      - name: Copy files to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "_release/*,_release/.env"
+          target: "/home/deploy/canvasflow"
+          strip_components: 1
+          overwrite: true
 
-      - name: Upload bundle and release.sh to VM
-        run: |
-          set -eux
-          scp -i ~/.ssh/deploy_key -P "${{ secrets.SSH_PORT }}" \
-            canvasflow-release.tar.gz \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/canvasflow-release.tar.gz"
-          scp -i ~/.ssh/deploy_key -P "${{ secrets.SSH_PORT }}" \
-            scripts/release.sh \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/release.sh"
+      - name: Migrate + reload PM2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -eu
+            cd /home/deploy/canvasflow
+            chmod 600 .env
 
-      - name: Run release script on VM
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-              -p "${{ secrets.SSH_PORT }}" \
-              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-              "chmod +x /tmp/release.sh && bash /tmp/release.sh /tmp/canvasflow-release.tar.gz"
+            # dotenv reads .env from cwd in each process — symlink so
+            # both api and web (and the migrator) all find it.
+            ln -sf "$PWD/.env" api/.env
+            ln -sf "$PWD/.env" web/apps/web/.env
+            ln -sf "$PWD/.env" db/.env
+
+            # Apply pending DB migrations. If this fails, pm2 reload is
+            # never reached and the running app keeps serving the old code.
+            set -a; . ./.env; set +a
+            (cd db && node migrate.mjs)
+
+            # Start or reload PM2.
+            if pm2 describe canvasflow-api >/dev/null 2>&1; then
+              pm2 reload ecosystem.config.cjs --update-env
+            else
+              pm2 start  ecosystem.config.cjs
+              pm2 save
+            fi
 
       - name: Summary
         if: success()
@@ -128,6 +114,3 @@ jobs:
           echo "### ✅ Deployed from \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- web: https://canvasflow.dittya.dev"     >> "$GITHUB_STEP_SUMMARY"
           echo "- api: https://api.canvasflow.dittya.dev" >> "$GITHUB_STEP_SUMMARY"
-          echo ""                                          >> "$GITHUB_STEP_SUMMARY"
-          echo "To roll back: rerun this workflow against the previous commit" >> "$GITHUB_STEP_SUMMARY"
-          echo "via the **Run workflow** button on the Actions tab."           >> "$GITHUB_STEP_SUMMARY"
