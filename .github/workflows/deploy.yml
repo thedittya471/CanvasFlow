@@ -60,8 +60,11 @@ jobs:
         env:
           PROD_ENV: ${{ secrets.PROD_ENV }}
         run: |
+          # File is world-readable on the runner so the scp-action's
+          # Docker container can read it. It only lives here for ~10s
+          # before the runner is destroyed. Once it lands on the VM
+          # the next step chmod's it back to 600.
           printf '%s\n' "$PROD_ENV" > _release/.env
-          chmod 600 _release/.env
 
       - name: Copy files to VM
         uses: appleboy/scp-action@v0.1.7
@@ -71,7 +74,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           source: "_release/*,_release/.env"
-          target: "/home/deploy/canvasflow"
+          target: "/home/dittya/projects/canvasflow"
           strip_components: 1
           overwrite: true
 
@@ -84,7 +87,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -eu
-            cd /home/deploy/canvasflow
+            cd /home/dittya/projects/canvasflow
             chmod 600 .env
 
             # dotenv reads .env from cwd in each process — symlink so

@@ -13,7 +13,7 @@
  * NSG should only have 22/80/443 open externally.
  */
 
-const BASE = "/home/deploy/canvasflow";
+const BASE = "/home/dittya/projects/canvasflow";
 
 module.exports = {
   apps: [
