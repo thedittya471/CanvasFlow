@@ -2,58 +2,64 @@
 
 import React from "react";
 
-interface FieldRate { fieldId: string; fieldLabel: string; rate: number; }
+interface FieldRate {
+  fieldId: string;
+  fieldLabel: string;
+  rate: number;
+}
 
 interface FieldCompletionRatesProps {
   fieldCompletionRates: FieldRate[];
 }
 
-export function FieldCompletionRates({ fieldCompletionRates }: FieldCompletionRatesProps) {
-  if (fieldCompletionRates.length === 0) {
-    return null;
-  }
+function rateColor(rate: number): string {
+  if (rate >= 80) return "#16a34a";
+  if (rate >= 50) return "#f66f00";
+  return "#c1281d";
+}
+
+export function FieldCompletionRates({
+  fieldCompletionRates,
+}: FieldCompletionRatesProps) {
+  if (fieldCompletionRates.length === 0) return null;
 
   return (
-    <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137]">
-      <div className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
-        style={{ backgroundImage: "url('/assest1.png')"}} />
-      <div className="relative z-10 space-y-4">
-        <div className="space-y-0.5">
-          <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">
-            Field Completion
-          </h4>
-          <p className="text-[9px] font-serif text-[#0d2137]/45 italic">
-            Of all visitors who opened the form, % who answered each field
-          </p>
-        </div>
-        <div className="space-y-3">
-          {fieldCompletionRates.map(field => (
+    <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5">
+      <div>
+        <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Completion</p>
+        <h4 className="mt-2 cf-display text-[20px] leading-tight">
+          Field completion
+        </h4>
+        <p className="mt-1 text-[12px] text-[color:var(--cf-ink-soft)]">
+          Of all visitors who opened the form, % who answered each field
+        </p>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        {fieldCompletionRates.map((field) => {
+          const color = rateColor(field.rate);
+          return (
             <div key={field.fieldId} className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <span className="text-[11px] font-serif text-[#0d2137] truncate pr-3 font-medium">
+              <div className="flex justify-between items-center gap-3">
+                <span className="text-[13px] text-[color:var(--cf-ink)] truncate">
                   {field.fieldLabel}
                 </span>
-                <span className="text-[10px] font-serif font-bold tabular-nums shrink-0"
-                  style={{ color: field.rate >= 80 ? ("#16a34a") : field.rate >= 50 ? ("#8e6e53") : ("#dc2626") }}>
+                <span
+                  className="text-[12px] font-mono font-medium tabular-nums shrink-0"
+                  style={{ color }}
+                >
                   {field.rate}%
                 </span>
               </div>
-              <div className="h-1.5 bg-[#0d2137]/8 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[color:var(--cf-cream)] rounded-full overflow-hidden ring-1 ring-[color:var(--cf-line)]">
                 <div
                   className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${field.rate}%`,
-                    background: field.rate >= 80
-                      ? ("#16a34a")
-                      : field.rate >= 50
-                      ? ("#8e6e53")
-                      : ("#dc2626"),
-                  }}
+                  style={{ width: `${field.rate}%`, background: color }}
                 />
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

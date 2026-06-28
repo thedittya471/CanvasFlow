@@ -14,6 +14,10 @@ export type GetSubmissionsListInputType = z.infer<typeof getSubmissionsListInput
 
 export const recordViewInput = z.object({
   formId: z.string().uuid().describe("Form ID"),
+  // Per-form visitor UUID generated client-side and stored in localStorage.
+  // When present the server dedups views in a 30-minute window so reloads
+  // don't inflate the count.
+  visitorId: z.string().max(64).optional().nullable(),
   deviceType: z.string().describe("Device type: desktop | mobile | tablet"),
   referrer: z.string().max(2048).optional().nullable(),
   utmSource: z.string().max(255).optional().nullable(),

@@ -43,6 +43,13 @@
       "when": 1782540489144,
       "tag": "0005_woozy_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782642772129,
+      "tag": "0006_bumpy_medusa",
+      "breakpoints": true
     }
   ]
 }

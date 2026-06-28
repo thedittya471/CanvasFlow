@@ -1,22 +1,30 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ReactFlow,
-  ReactFlowProvider,
   Background,
   BackgroundVariant,
-  useNodesState,
-  useEdgesState,
-  useReactFlow,
-  Panel,
-  Node,
   Edge,
+  Node,
+  Panel,
+  ReactFlow,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Lock, Unlock, Maximize2, Plus, Minus } from "lucide-react";
+import { Lock, Maximize2, Minus, Plus, Unlock } from "lucide-react";
+import { toast } from "sonner";
+
 import {
   useGetForm,
   useListFormFields,
@@ -26,24 +34,29 @@ import {
   usePublishForm,
   useDeleteForm,
 } from "~/hooks/api/form";
-import { toast } from "sonner";
 import { useDashboard } from "~/providers/dashboard-provider";
-import { nodeTypes, getFieldOptionsArray } from "~/components/builder/FormFieldNode";
+import {
+  nodeTypes,
+  getFieldOptionsArray,
+} from "~/components/builder/FormFieldNode";
 import { FieldSidebar } from "~/components/builder/FieldSidebar";
 import { FieldInspector } from "~/components/builder/FieldInspector";
 import { BuilderHeader } from "~/components/builder/BuilderHeader";
 import { UnsavedDialog } from "~/components/builder/UnsavedDialog";
 import { DeleteFormDialog } from "~/components/builder/DeleteFormDialog";
+import { MobileFieldList } from "~/components/builder/mobile/MobileFieldList";
+import { MobileAddFieldSheet } from "~/components/builder/mobile/MobileAddFieldSheet";
+import { MobileFieldEditorSheet } from "~/components/builder/mobile/MobileFieldEditorSheet";
 
-// Main Builder Canvas Component
 function BuilderCanvas() {
   const params = useParams();
   const router = useRouter();
   const formId = params.formId as string;
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
-  // tRPC Hooks
-  const { form, isLoading: formLoading, refetch: refetchForm } = useGetForm(formId);
+  const { form, isLoading: formLoading, refetch: refetchForm } = useGetForm(
+    formId
+  );
   const { fields, isLoading: fieldsLoading } = useListFormFields(formId);
 
   const { setIsCreatingForm } = useDashboard();
@@ -53,19 +66,20 @@ function BuilderCanvas() {
     }
   }, [formLoading, fieldsLoading, setIsCreatingForm]);
 
-  const { createFormField } = useCreateFormField();
-  const { updateFormField } = useUpdateFormField();
-  const { deleteFormField } = useDeleteFormField();
+  const { createFormFieldAsync } = useCreateFormField();
+  const { updateFormFieldAsync } = useUpdateFormField();
+  const { deleteFormFieldAsync } = useDeleteFormField();
   const { publishForm, isPending: publishPending } = usePublishForm();
   const { deleteFormAsync, isPending: deletePending } = useDeleteForm();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ─── Local draft state ────────────────────────────────────────────────────
+  /* ─── Local draft state ────────────────────────────────────────────── */
   type LocalField = NonNullable<typeof fields>[number] & { _isNew?: boolean };
   const [localFields, setLocalFields] = useState<LocalField[]>([]);
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const pendingNavRef = useRef<string | null>(null);
   const isDirtyRef = useRef(false);
@@ -80,101 +94,122 @@ function BuilderCanvas() {
     if (fields && localFields.length === 0) {
       setLocalFields(fields as LocalField[]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ""; }
+      if (isDirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
-  // ─── Save all pending changes ─────────────────────────────────────────────
+  /* ─── Save all pending changes ─────────────────────────────────────── */
   const handleSave = useCallback(async () => {
     if (!isDirty || isSaving) return;
     setIsSaving(true);
     try {
-      const ops: Promise<unknown>[] = [];
+      // capture server-assigned ids for newly-created fields so we can swap
+      // local temp ids (`new-…`) → real UUIDs after the round-trip
+      const tempIdToRealId = new Map<string, string>();
 
-      localFields
+      const createOps = localFields
         .filter((f) => f._isNew && !pendingDeletes.has(f.id))
-        .forEach((f) => {
-          ops.push(
-            new Promise<void>((resolve, reject) => {
-              createFormField(
-                {
-                  formId,
-                  label: f.label,
-                  type: f.type as any,
-                  isRequired: f.isRequired,
-                  placeholder: f.placeholder ?? undefined,
-                  description: f.description ?? undefined,
-                  options: f.options ?? undefined,
-                  index: f.index ? parseFloat(String(f.index)) : undefined,
-                },
-                { onSuccess: () => resolve(), onError: (e) => reject(e) }
-              );
-            })
-          );
+        .map((f) => {
+          const tempId = f.id;
+          return createFormFieldAsync({
+            formId,
+            label: f.label,
+            type: f.type as any,
+            isRequired: f.isRequired,
+            placeholder: f.placeholder ?? undefined,
+            description: f.description ?? undefined,
+            options: f.options ?? undefined,
+            index: f.index ? parseFloat(String(f.index)) : undefined,
+          }).then((data: any) => {
+            if (data?.id) tempIdToRealId.set(tempId, data.id);
+          });
         });
 
-      localFields
-        .filter((f) => !f._isNew && dirtyIds.has(f.id) && !pendingDeletes.has(f.id))
-        .forEach((f) => {
-          ops.push(
-            new Promise<void>((resolve, reject) => {
-              updateFormField(
-                {
-                  id: f.id,
-                  label: f.label,
-                  placeholder: f.placeholder ?? undefined,
-                  description: f.description ?? undefined,
-                  isRequired: f.isRequired,
-                  options: f.options ?? undefined,
-                  index: f.index ? String(f.index) : undefined,
-                },
-                { onSuccess: () => resolve(), onError: (e) => reject(e) }
-              );
-            })
-          );
-        });
+      const updateOps = localFields
+        .filter(
+          (f) =>
+            !f._isNew && dirtyIds.has(f.id) && !pendingDeletes.has(f.id)
+        )
+        .map((f) =>
+          updateFormFieldAsync({
+            id: f.id,
+            label: f.label,
+            placeholder: f.placeholder ?? undefined,
+            description: f.description ?? undefined,
+            isRequired: f.isRequired,
+            options: f.options ?? undefined,
+            index: f.index ? String(f.index) : undefined,
+          })
+        );
 
-      localFields
+      const deleteOps = localFields
         .filter((f) => !f._isNew && pendingDeletes.has(f.id))
-        .forEach((f) => {
-          ops.push(
-            new Promise<void>((resolve, reject) => {
-              deleteFormField(
-                { id: f.id },
-                { onSuccess: () => resolve(), onError: (e) => reject(e) }
-              );
-            })
-          );
-        });
+        .map((f) => deleteFormFieldAsync({ id: f.id }));
 
-      await Promise.all(ops);
+      await Promise.all([...createOps, ...updateOps, ...deleteOps]);
+
+      // Apply server ids to local state, drop pending deletes, clear _isNew
+      setLocalFields((prev) =>
+        prev
+          .filter((f) => !pendingDeletes.has(f.id))
+          .map((f) => {
+            const realId = tempIdToRealId.get(f.id);
+            return realId
+              ? { ...f, id: realId, _isNew: false }
+              : { ...f, _isNew: false };
+          })
+      );
+      // Remap a selected temp id to its real id if it was just created
+      setSelectedNodeId((prev) =>
+        prev && tempIdToRealId.has(prev)
+          ? (tempIdToRealId.get(prev) as string)
+          : prev
+      );
       setDirtyIds(new Set());
       setPendingDeletes(new Set());
-      setLocalFields((prev) =>
-        prev.filter((f) => !pendingDeletes.has(f.id)).map((f) => ({ ...f, _isNew: false }))
-      );
-      toast.success("Blueprint saved");
+
+      // Brief "Saved" confirmation in the header button
+      setJustSaved(true);
+      window.setTimeout(() => setJustSaved(false), 1800);
+      toast.success("Saved");
     } catch {
       toast.error("Some changes failed to save — please retry");
     } finally {
       setIsSaving(false);
     }
-  }, [isDirty, isSaving, localFields, dirtyIds, pendingDeletes, formId, createFormField, updateFormField, deleteFormField]);
+  }, [
+    isDirty,
+    isSaving,
+    localFields,
+    dirtyIds,
+    pendingDeletes,
+    formId,
+    createFormFieldAsync,
+    updateFormFieldAsync,
+    deleteFormFieldAsync,
+  ]);
 
-  // ─── Helper: mark a local field as dirty ─────────────────────────────────
-  const updateLocal = useCallback((id: string, patch: Partial<LocalField>) => {
-    setLocalFields((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
-    setDirtyIds((prev) => new Set(prev).add(id));
-  }, []);
+  const updateLocal = useCallback(
+    (id: string, patch: Partial<LocalField>) => {
+      setLocalFields((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, ...patch } : f))
+      );
+      setDirtyIds((prev) => new Set(prev).add(id));
+    },
+    []
+  );
 
-  // ─── React Flow state ─────────────────────────────────────────────────────
+  /* ─── React Flow state ─────────────────────────────────────────────── */
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -198,7 +233,7 @@ function BuilderCanvas() {
           (typeof field.options === "object" && field.options
             ? (field.options as any)
             : {}
-          ).position || { x: 300, y: idx * 170 + 80 };
+          ).position || { x: 300, y: idx * 200 + 80 };
         return { id: field.id, type: "formField", position: p, data: { field } };
       })
     );
@@ -213,14 +248,15 @@ function BuilderCanvas() {
           target: t.id,
           animated: true,
           style: {
-            stroke: "#3b5e82",
+            stroke: "#f66f00",
             strokeWidth: 1.5,
+            strokeOpacity: 0.55,
             strokeDasharray: "4,4",
           },
         });
     }
     setEdges(mappedEdges);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localFields, pendingDeletes]);
 
   const selectedField = useMemo(
@@ -236,10 +272,10 @@ function BuilderCanvas() {
       setDescription(selectedField.description || "");
       setOptionsList(getFieldOptionsArray(selectedField));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedField?.id]);
 
-  // ─── Drag & Drop ──────────────────────────────────────────────────────────
+  /* ─── Drag & Drop ──────────────────────────────────────────────────── */
   const onDragStart = (event: React.DragEvent, type: string) => {
     event.dataTransfer.setData("application/reactflow", type);
     event.dataTransfer.effectAllowed = "move";
@@ -255,7 +291,10 @@ function BuilderCanvas() {
       event.preventDefault();
       const type = event.dataTransfer.getData("application/reactflow");
       if (!type || !reactFlowWrapper.current) return;
-      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
       const tempId = `new-${Date.now()}`;
       const nextIndex = (
         localFields.filter((f) => !pendingDeletes.has(f.id)).length + 1
@@ -288,7 +327,6 @@ function BuilderCanvas() {
 
   const onPaneClick = useCallback(() => setSelectedNodeId(null), []);
 
-  // ─── Node drag: update position locally ───────────────────────────────────
   const onNodeDragStop = useCallback(
     (_event: any, node: Node) => {
       const currentField = localFields.find((f) => f.id === node.id);
@@ -299,13 +337,15 @@ function BuilderCanvas() {
           : {};
       const sortedNodes = [...nodes];
       const idx = sortedNodes.findIndex((n) => n.id === node.id);
-      if (idx !== -1) sortedNodes[idx] = { ...sortedNodes[idx]!, position: node.position };
+      if (idx !== -1)
+        sortedNodes[idx] = { ...sortedNodes[idx]!, position: node.position };
       sortedNodes.sort((a, b) => a.position.y - b.position.y);
       const originalOrder = localFields
         .filter((f) => !pendingDeletes.has(f.id))
         .map((f) => f.id);
       const newOrder = sortedNodes.map((n) => n.id);
-      const orderChanged = JSON.stringify(originalOrder) !== JSON.stringify(newOrder);
+      const orderChanged =
+        JSON.stringify(originalOrder) !== JSON.stringify(newOrder);
 
       let newIndex: string = String(currentField.index);
       if (orderChanged) {
@@ -321,7 +361,8 @@ function BuilderCanvas() {
           const below = (sortedNodes[newIdx + 1]?.data as any)?.field;
           if (above && below)
             newIndex = (
-              (parseFloat(above.index) + parseFloat(below.index)) / 2
+              (parseFloat(above.index) + parseFloat(below.index)) /
+              2
             ).toFixed(2);
         }
       }
@@ -350,26 +391,124 @@ function BuilderCanvas() {
     toast("Field removed — save to confirm", { duration: 2000 });
   }, [selectedNodeId]);
 
+  /* ─── Mobile editor state & helpers ─────────────────────────────────
+   * The mobile UI shares all underlying state (localFields, dirtyIds,
+   * pendingDeletes, selectedNodeId) with the desktop canvas. These two
+   * flags just control which bottom sheet is visible on phones/tablets.
+   */
+  const [mobileAddOpen, setMobileAddOpen] = useState(false);
+  const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
+
+  // Visible fields sorted by current index — what the mobile list renders.
+  const visibleSortedFields = useMemo(
+    () =>
+      localFields
+        .filter((f) => !pendingDeletes.has(f.id))
+        .sort(
+          (a, b) =>
+            parseFloat(String(a.index)) - parseFloat(String(b.index))
+        ),
+    [localFields, pendingDeletes]
+  );
+
+  // Tap a field card → select + open editor sheet.
+  const handleMobileTapField = useCallback((id: string) => {
+    setSelectedNodeId(id);
+    setMobileEditorOpen(true);
+  }, []);
+
+  // Close the editor sheet and clear selection so the desktop highlight
+  // doesn't carry over if the user resizes.
+  const handleCloseMobileEditor = useCallback(() => {
+    setMobileEditorOpen(false);
+    setSelectedNodeId(null);
+  }, []);
+
+  // Arrow-button reorder: swap index values with the adjacent visible
+  // field. Predictable and avoids touch-DnD pain on phones.
+  const handleMobileMove = useCallback(
+    (id: string, direction: "up" | "down") => {
+      const i = visibleSortedFields.findIndex((f) => f.id === id);
+      if (i === -1) return;
+      const j = direction === "up" ? i - 1 : i + 1;
+      if (j < 0 || j >= visibleSortedFields.length) return;
+      const a = visibleSortedFields[i]!;
+      const b = visibleSortedFields[j]!;
+      updateLocal(a.id, { index: String(b.index) });
+      updateLocal(b.id, { index: String(a.index) });
+    },
+    [visibleSortedFields, updateLocal]
+  );
+
+  // Add a new field via the mobile sheet. Places the new node below the
+  // last one so the desktop canvas still renders sensibly if the user
+  // opens this form on a larger screen later.
+  const handleMobileAddField = useCallback(
+    (type: string) => {
+      const last = visibleSortedFields[visibleSortedFields.length - 1];
+      const lastIndexNum = last ? parseFloat(String(last.index)) : 0;
+      const nextIndex = (lastIndexNum + 1).toFixed(2);
+
+      const lastPos = (last?.options as any)?.position as
+        | { x: number; y: number }
+        | undefined;
+      const position = lastPos
+        ? { x: lastPos.x, y: lastPos.y + 200 }
+        : { x: 300, y: visibleSortedFields.length * 200 + 80 };
+
+      const tempId = `new-${Date.now()}`;
+      const newField: LocalField = {
+        id: tempId,
+        formId,
+        label: "",
+        labelKey: "field",
+        placeholder: null,
+        index: nextIndex,
+        isRequired: false,
+        type: type as any,
+        options: { position } as any,
+        description: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        _isNew: true,
+      };
+      setLocalFields((prev) => [...prev, newField]);
+      setDirtyIds((prev) => new Set(prev).add(tempId));
+      setSelectedNodeId(tempId);
+      setMobileAddOpen(false);
+      setMobileEditorOpen(true);
+    },
+    [visibleSortedFields, formId]
+  );
+
   if (formLoading || fieldsLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0]">
-        <div className="w-8 h-8 border-2 border-[#0d2137] border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen w-full flex items-center justify-center bg-[color:var(--cf-cream)]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[color:var(--cf-line-strong)] border-t-[color:var(--cf-orange)] rounded-full animate-spin" />
+          <span className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+            Loading canvas...
+          </span>
+        </div>
       </div>
     );
   }
 
   if (!form) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#faf7f0]">
-        <div className="text-center space-y-4">
-          <h3 className="text-xl font-serif font-bold text-[#0d2137]">
-            Blueprint not found
+      <div className="h-screen w-full flex items-center justify-center bg-[color:var(--cf-cream)]">
+        <div className="text-center space-y-4 max-w-sm">
+          <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+            Not found
+          </p>
+          <h3 className="cf-display text-[24px] leading-tight">
+            We couldn&apos;t find this form
           </h3>
           <Link
             href="/dashboard/sketches"
-            className="text-xs uppercase font-serif tracking-wider font-bold text-[#8e6e53] hover:underline"
+            className="inline-flex items-center gap-1.5 px-5 h-[40px] rounded-full bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white text-[13px] font-medium transition-colors"
           >
-            Back to Catalog
+            Back to forms
           </Link>
         </div>
       </div>
@@ -377,12 +516,13 @@ function BuilderCanvas() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#faf7f0] font-sans transition-colors duration-300">
+    <div className="fixed inset-0 flex flex-col bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)]">
       <BuilderHeader
         form={form}
         formId={formId}
         isDirty={isDirty}
         isSaving={isSaving}
+        justSaved={justSaved}
         publishPending={publishPending}
         handleSave={handleSave}
         setShowDeleteConfirm={setShowDeleteConfirm}
@@ -394,83 +534,132 @@ function BuilderCanvas() {
         }}
       />
 
-      {/* Main Workspace split */}
       <div className="flex-1 flex overflow-hidden">
-        <FieldSidebar onDragStart={onDragStart} />
+        {/* Desktop canvas — drag-and-drop builder. Hidden below lg where
+            touch DnD doesn't work well; the mobile list takes over there. */}
+        <div className="hidden lg:flex flex-1 overflow-hidden">
+          <FieldSidebar onDragStart={onDragStart} />
 
-        {/* Middle Canvas Area */}
-        <main
-          ref={reactFlowWrapper}
-          className="flex-1 h-full relative"
-          onDragOver={onDragOver}
-          onDrop={onDrop}
-        >
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            nodeTypes={nodeTypes}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            onNodeDragStop={onNodeDragStop}
-            fitView
-            minZoom={0.5}
-            maxZoom={1.5}
-            nodesDraggable={!isLocked}
-            panOnDrag={!isLocked}
-            zoomOnScroll={!isLocked}
-            preventScrolling={isLocked}
-            proOptions={{ hideAttribution: true }}
+          <main
+            ref={reactFlowWrapper}
+            className="flex-1 h-full relative bg-[color:var(--cf-cream)]"
+            onDragOver={onDragOver}
+            onDrop={onDrop}
           >
-            <Background
-              variant={BackgroundVariant.Dots}
-              color={"rgba(13, 33, 55, 0.3)"}
-              gap={16}
-              size={1.5}
-            />
-
-            <Panel
-              position="bottom-left"
-              className="bg-white border-2 border-[#0d2137]/15 rounded-md p-1 shadow-[2px_2px_0px_0px_rgba(13,33,55,0.05)] flex flex-col gap-1 z-10"
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              onNodeClick={onNodeClick}
+              onPaneClick={onPaneClick}
+              onNodeDragStop={onNodeDragStop}
+              fitView
+              minZoom={0.5}
+              maxZoom={1.5}
+              nodesDraggable={!isLocked}
+              panOnDrag={!isLocked}
+              zoomOnScroll={!isLocked}
+              preventScrolling={isLocked}
+              proOptions={{ hideAttribution: true }}
             >
-              <button
-                onClick={() => zoomIn()}
-                title="Zoom In"
-                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center"
-              >
-                <Plus className="size-3.5" />
-              </button>
-              <button
-                onClick={() => zoomOut()}
-                title="Zoom Out"
-                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center"
-              >
-                <Minus className="size-3.5" />
-              </button>
-              <button
-                onClick={() => fitView({ duration: 400 })}
-                title="Fit View"
-                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center"
-              >
-                <Maximize2 className="size-3.5" />
-              </button>
-              <button
-                onClick={() => setIsLocked(!isLocked)}
-                title={isLocked ? "Unlock Canvas" : "Lock Canvas"}
-                className="p-1.5 hover:bg-[#faf8f5] text-[#0d2137] rounded cursor-pointer transition-colors flex items-center justify-center border-t border-[#0d2137]/10 pt-1.5 mt-0.5"
-              >
-                {isLocked ? (
-                  <Lock className="size-3.5 text-[#8e6e53]" />
-                ) : (
-                  <Unlock className="size-3.5 opacity-60" />
-                )}
-              </button>
-            </Panel>
-          </ReactFlow>
-        </main>
+              <Background
+                variant={BackgroundVariant.Dots}
+                color="rgba(22, 19, 17, 0.18)"
+                gap={16}
+                size={1.5}
+              />
 
-        <FieldInspector
+              <Panel
+                position="bottom-left"
+                className="bg-[color:var(--cf-cream-2)] ring-1 ring-[color:var(--cf-line)] rounded-xl p-1 flex flex-col gap-0.5 shadow-[0_4px_12px_-6px_rgba(22,19,17,0.15)]"
+              >
+                <button
+                  onClick={() => zoomIn()}
+                  title="Zoom in"
+                  aria-label="Zoom in"
+                  className="size-7 rounded-md text-[color:var(--cf-ink)] hover:bg-[color:var(--cf-cream)] hover:text-[color:var(--cf-orange)] flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                </button>
+                <button
+                  onClick={() => zoomOut()}
+                  title="Zoom out"
+                  aria-label="Zoom out"
+                  className="size-7 rounded-md text-[color:var(--cf-ink)] hover:bg-[color:var(--cf-cream)] hover:text-[color:var(--cf-orange)] flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <Minus className="size-3.5" />
+                </button>
+                <button
+                  onClick={() => fitView({ duration: 400 })}
+                  title="Fit view"
+                  aria-label="Fit view"
+                  className="size-7 rounded-md text-[color:var(--cf-ink)] hover:bg-[color:var(--cf-cream)] hover:text-[color:var(--cf-orange)] flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <Maximize2 className="size-3.5" />
+                </button>
+                <div className="h-px bg-[color:var(--cf-line)] mx-1 my-0.5" />
+                <button
+                  onClick={() => setIsLocked(!isLocked)}
+                  title={isLocked ? "Unlock canvas" : "Lock canvas"}
+                  aria-label={isLocked ? "Unlock canvas" : "Lock canvas"}
+                  className={`size-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
+                    isLocked
+                      ? "text-[color:var(--cf-orange)] bg-[color:var(--cf-orange)]/10"
+                      : "text-[color:var(--cf-ink-soft)] hover:bg-[color:var(--cf-cream)] hover:text-[color:var(--cf-ink)]"
+                  }`}
+                >
+                  {isLocked ? (
+                    <Lock className="size-3.5" />
+                  ) : (
+                    <Unlock className="size-3.5" />
+                  )}
+                </button>
+              </Panel>
+            </ReactFlow>
+          </main>
+
+          <FieldInspector
+            selectedField={selectedField}
+            label={label}
+            setLabel={setLabel}
+            placeholder={placeholder}
+            setPlaceholder={setPlaceholder}
+            description={description}
+            setDescription={setDescription}
+            isRequired={isRequired}
+            handleRequiredChange={handleRequiredChange}
+            optionsList={optionsList}
+            setOptionsList={setOptionsList}
+            updateLocal={updateLocal}
+            handleDeleteField={handleDeleteField}
+          />
+        </div>
+
+        {/* Mobile / tablet stacked list editor. Same state as desktop,
+            different surface — tap to edit, arrows to reorder. */}
+        <div className="lg:hidden flex-1 flex flex-col overflow-hidden bg-[color:var(--cf-cream)]">
+          <MobileFieldList
+            fields={visibleSortedFields}
+            onTapField={handleMobileTapField}
+            onMove={handleMobileMove}
+            onAdd={() => setMobileAddOpen(true)}
+          />
+        </div>
+      </div>
+
+      {/* Mobile sheets — wrapped in lg:hidden so they never appear on
+          desktop even if their open state happens to be true. */}
+      <div className="lg:hidden">
+        <MobileAddFieldSheet
+          open={mobileAddOpen}
+          onClose={() => setMobileAddOpen(false)}
+          onSelect={handleMobileAddField}
+        />
+        <MobileFieldEditorSheet
+          open={mobileEditorOpen}
+          onClose={handleCloseMobileEditor}
           selectedField={selectedField}
           label={label}
           setLabel={setLabel}
@@ -496,10 +685,12 @@ function BuilderCanvas() {
           try {
             isDirtyRef.current = false;
             await deleteFormAsync({ id: formId });
-            toast.success("Blueprint deleted");
+            toast.success("Form deleted");
             router.push("/dashboard/sketches");
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Failed to delete");
+            toast.error(
+              err instanceof Error ? err.message : "Failed to delete"
+            );
             setShowDeleteConfirm(false);
           }
         }}
@@ -513,7 +704,8 @@ function BuilderCanvas() {
           setDirtyIds(new Set());
           setPendingDeletes(new Set());
           setShowUnsavedDialog(false);
-          if (pendingNavRef.current) window.location.href = pendingNavRef.current;
+          if (pendingNavRef.current)
+            window.location.href = pendingNavRef.current;
         }}
         onSaveAndLeave={async () => {
           await handleSave();
@@ -521,7 +713,8 @@ function BuilderCanvas() {
           setDirtyIds(new Set());
           setPendingDeletes(new Set());
           setShowUnsavedDialog(false);
-          if (pendingNavRef.current) window.location.href = pendingNavRef.current;
+          if (pendingNavRef.current)
+            window.location.href = pendingNavRef.current;
         }}
       />
     </div>

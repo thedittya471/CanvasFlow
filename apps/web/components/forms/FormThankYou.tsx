@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Star } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Star } from "lucide-react";
 import { toast } from "sonner";
 
 interface FormThankYouProps {
@@ -11,11 +12,12 @@ interface FormThankYouProps {
 
 export function FormThankYou({ siteRating, setSiteRating }: FormThankYouProps) {
   return (
-    <div className="max-w-xl w-full border border-white/30 p-12 md:p-14 rounded-lg bg-white/45 backdrop-blur-xl shadow-[0px_10px_35px_rgba(13,33,55,0.06)] text-center space-y-6 animate-card -translate-y-14">
-      <div className="mx-auto size-20 bg-green-500/10 text-green-600 border border-green-500/20 rounded-full flex items-center justify-center animate-pop">
-        <svg className="size-10" viewBox="0 0 52 52" fill="none">
+    <div className="w-full max-w-md text-center space-y-8 cf-animate-card">
+      {/* animated check */}
+      <div className="mx-auto size-16 rounded-full bg-[color:var(--cf-orange)]/12 ring-1 ring-[color:var(--cf-orange)]/25 flex items-center justify-center text-[color:var(--cf-orange)] cf-animate-pop">
+        <svg className="size-8" viewBox="0 0 52 52" fill="none">
           <circle
-            className="check-circle-anim"
+            className="cf-check-circle"
             cx="26"
             cy="26"
             r="23"
@@ -24,7 +26,7 @@ export function FormThankYou({ siteRating, setSiteRating }: FormThankYouProps) {
             strokeLinecap="round"
           />
           <path
-            className="check-mark-anim"
+            className="cf-check-mark"
             d="M16 26l7 7 13-13"
             stroke="currentColor"
             strokeWidth="3"
@@ -33,27 +35,27 @@ export function FormThankYou({ siteRating, setSiteRating }: FormThankYouProps) {
           />
         </svg>
       </div>
+
+      {/* message */}
       <div className="space-y-3">
-        <h2
-          className="text-3xl font-bold text-[#0d2137] tracking-wide"
-          style={{ fontFamily: "var(--font-garamond)" }}
-        >
-          Thank You
+        <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+          Response received
+        </p>
+        <h2 className="cf-display text-[34px] sm:text-[40px] leading-tight text-[color:var(--cf-ink)]">
+          Thanks for your time.
         </h2>
-        <p
-          className="text-lg text-[#0d2137]/65 leading-relaxed italic max-w-sm mx-auto"
-          style={{ fontFamily: "var(--font-caveat)" }}
-        >
-          Your response has been submitted and stored in the catalog.
+        <p className="text-[14.5px] text-[color:var(--cf-ink-soft)] leading-relaxed max-w-sm mx-auto">
+          Your response has been recorded. You can close this tab whenever
+          you&apos;re ready.
         </p>
       </div>
 
-      {/* Interactive Rating Section */}
-      <div className="space-y-3 pt-6 border-t border-[#0d2137]/10">
-        <span className="text-[10px] uppercase tracking-widest font-serif font-bold text-[#0d2137]/60 block">
-          {siteRating ? "Thank you for your rating!" : "Rate your experience on our site"}
-        </span>
-        <div className="flex items-center justify-center gap-2">
+      {/* site rating */}
+      <div className="border-t border-[color:var(--cf-line)] pt-6 space-y-3">
+        <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+          {siteRating ? "Thanks for the rating" : "How was the experience?"}
+        </p>
+        <div className="flex items-center justify-center gap-1">
           {[1, 2, 3, 4, 5].map((score) => {
             const isStarred = siteRating !== null && siteRating >= score;
             return (
@@ -62,15 +64,16 @@ export function FormThankYou({ siteRating, setSiteRating }: FormThankYouProps) {
                 type="button"
                 onClick={() => {
                   setSiteRating(score);
-                  toast.success("Thank you for your feedback!");
+                  toast.success("Thanks for the feedback");
                 }}
-                className="text-[#0d2137] hover:scale-110 transition-transform cursor-pointer"
+                className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                aria-label={`Rate ${score} out of 5`}
               >
                 <Star
                   className={`size-6 ${
                     isStarred
-                      ? "text-[#8e6e53] fill-[#8e6e53]"
-                      : "opacity-25"
+                      ? "fill-[color:var(--cf-orange)] text-[color:var(--cf-orange)]"
+                      : "text-[color:var(--cf-ink)]/15 fill-current"
                   }`}
                 />
               </button>
@@ -79,26 +82,18 @@ export function FormThankYou({ siteRating, setSiteRating }: FormThankYouProps) {
         </div>
       </div>
 
-      {/* Account Creation Call To Action */}
-      <div className="space-y-4 pt-6 border-t border-[#0d2137]/10">
-        <div className="space-y-1">
-          <h4 className="text-xs uppercase tracking-widest font-serif font-bold text-[#0d2137]">
-            Design Your Own CanvasFlow Forms
-          </h4>
-          <p
-            className="text-sm text-[#0d2137]/55 italic"
-            style={{ fontFamily: "var(--font-caveat)" }}
-          >
-            If you enjoyed this form builder style, sign up to start drafting today!
-          </p>
-        </div>
-        <a
+      {/* CTA */}
+      <div className="border-t border-[color:var(--cf-line)] pt-6 space-y-4">
+        <p className="text-[13px] text-[color:var(--cf-ink-soft)] leading-relaxed max-w-xs mx-auto">
+          Like this form? Build your own — free to start, no card required.
+        </p>
+        <Link
           href="/signUp"
-          className="inline-block bg-[#0d2137] hover:bg-[#1a3854] text-white py-3 px-8 text-[9px] uppercase font-bold tracking-widest transition-all shadow-[0_4px_12px_rgba(13,33,55,0.15)] rounded-none animate-pop"
-          style={{ fontFamily: "var(--font-garamond)" }}
+          className="group inline-flex items-center gap-1.5 h-[44px] px-6 bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white rounded-full text-[14px] font-medium tracking-tight transition-colors"
         >
-          Create a Free Account
-        </a>
+          Open CanvasFlow
+          <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </Link>
       </div>
     </div>
   );

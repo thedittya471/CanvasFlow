@@ -30,10 +30,10 @@ class FormSubmissionService {
     const userResult = await db.select({ plan: usersTable.plan }).from(usersTable).where(eq(usersTable.id, form.ownerId))
     const userPlan = userResult[0]?.plan || "Free"
 
-    let submissionLimit = 100
-    if (userPlan === "Pro") submissionLimit = 1000
-    else if (userPlan === "Pro+") submissionLimit = 5000
-    else if (userPlan === "Business") submissionLimit = 25000
+    let submissionLimit = 1000
+    if (userPlan === "Pro") submissionLimit = 10000
+    else if (userPlan === "Pro+") submissionLimit = 50000
+    else if (userPlan === "Business") submissionLimit = 500000
 
     const startOfMonth = new Date()
     startOfMonth.setDate(1)

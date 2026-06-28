@@ -26,14 +26,21 @@ class FormFieldService {
     }
 
     public async createFormField(payload: CreateFormFieldInputType) {
-        const { formId, label, placeholder, isRequired, type, options, description } = await createFormFieldInput.parseAsync(payload)
+        const { formId, label, placeholder, isRequired, index: clientIndex, type, options, description } = await createFormFieldInput.parseAsync(payload)
 
         const labelKey = label
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/(^-|-$)/g, "") || "field"
 
-        const index = await this.getNextIndex(formId)
+        // Honor the client-supplied index when present. The client knows
+        // the order of any batch of new fields it's about to send and ships
+        // unique values; this avoids a race when `handleSave` fires multiple
+        // creates via Promise.all (each parallel call would otherwise read
+        // the same MAX(index) and collide on the unique (form_id, index)
+        // constraint). Fall back to server-computed next index when the
+        // caller doesn't supply one.
+        const index = clientIndex ?? (await this.getNextIndex(formId))
 
         const insertResult = await db.insert(formFieldsTable).values({
             formId,

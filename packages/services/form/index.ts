@@ -28,9 +28,9 @@ class FormService {
     const userResult = await db.select({ plan: usersTable.plan }).from(usersTable).where(eq(usersTable.id, ownerId))
     const userPlan = userResult[0]?.plan || "Free"
 
-    let formLimit = 5
-    if (userPlan === "Pro") formLimit = 15
-    else if (userPlan === "Pro+") formLimit = 30
+    let formLimit = 10
+    if (userPlan === "Pro") formLimit = 50
+    else if (userPlan === "Pro+") formLimit = 200
     else if (userPlan === "Business") formLimit = Infinity
 
     if (formLimit !== Infinity) {
@@ -194,9 +194,11 @@ class FormService {
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
 
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
-    sevenDaysAgo.setHours(0, 0, 0, 0)
+    // Trend chart covers up to 90 days so the dashboard can render
+    // 7d / 30d / 90d windows from a single fetch.
+    const ninetyDaysAgo = new Date()
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 89)
+    ninetyDaysAgo.setHours(0, 0, 0, 0)
 
     const recentFormsRaw = await db
       .select({
@@ -229,12 +231,12 @@ class FormService {
             .where(inArray(formSubmissionsTable.formId, recentIds))
             .groupBy(formSubmissionsTable.formId)
         : Promise.resolve([] as { formId: string; value: number }[]),
-      // Only the last 7 days of timestamps (small) — for the trend chart.
+      // Only the last 90 days of timestamps (small) — for the trend chart.
       db.select({ createdAt: formSubmissionsTable.createdAt })
         .from(formSubmissionsTable)
         .where(and(
           inArray(formSubmissionsTable.formId, formIds),
-          gte(formSubmissionsTable.createdAt, sevenDaysAgo)
+          gte(formSubmissionsTable.createdAt, ninetyDaysAgo)
         )),
     ])
 
@@ -252,7 +254,7 @@ class FormService {
 
     const trendsMap: Record<string, number> = {}
     const today = new Date()
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 89; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(today.getDate() - i)
       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

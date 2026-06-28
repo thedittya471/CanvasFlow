@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
+import { toast } from "sonner";
+
 import { useGetFormById, useSubmitForm } from "~/hooks/api/form";
 import { useRecordView, useRecordFieldAnswer } from "~/hooks/api/analytics";
-import { toast } from "sonner";
-import { EB_Garamond, Caveat } from "next/font/google";
 import { FormLoadingState } from "~/components/forms/FormLoadingState";
 import { FormErrorState } from "~/components/forms/FormErrorState";
 import { FormThankYou } from "~/components/forms/FormThankYou";
@@ -14,20 +13,9 @@ import { FormQuestion } from "~/components/forms/FormQuestion";
 import { FormHeader } from "~/components/forms/FormHeader";
 import { FormFooter } from "~/components/forms/FormFooter";
 
-const ebGaramond = EB_Garamond({
-  subsets: ["latin"],
-  variable: "--font-garamond",
-});
-
-const caveat = Caveat({
-  subsets: ["latin"],
-  variable: "--font-caveat",
-});
-
 export default function PublicFormPage() {
   const params = useParams();
   const formId = params.formId as string;
-  const [mounted, setMounted] = useState(false);
 
   const { form, isLoading, error } = useGetFormById(formId);
   const { submitForm, isPending } = useSubmitForm();
@@ -38,13 +26,11 @@ export default function PublicFormPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [siteRating, setSiteRating] = useState<number | null>(null);
-  // Track when the form opened so we can compute time_spent_ms on submit
+
   const formOpenedAtRef = React.useRef<number>(Date.now());
-  // Guard: ensure recordView fires exactly once per page load
   const viewRecordedRef = React.useRef(false);
 
   useEffect(() => {
-    setMounted(true);
     formOpenedAtRef.current = Date.now();
     if (formId && !viewRecordedRef.current) {
       viewRecordedRef.current = true;
@@ -52,13 +38,37 @@ export default function PublicFormPage() {
       let deviceType = "desktop";
       if (/tablet|ipad|playbook|silk/i.test(ua)) {
         deviceType = "tablet";
-      } else if (/mobile|iphone|ipod|android|blackberry|opera mini|iemobile|webos/i.test(ua)) {
+      } else if (
+        /mobile|iphone|ipod|android|blackberry|opera mini|iemobile|webos/i.test(
+          ua
+        )
+      ) {
         deviceType = "mobile";
       }
-      // Capture attribution from URL and document
+
+      // Per-form visitor UUID kept in localStorage so reloads dedup on the
+      // server. Scoped per form so we can't cross-track between forms.
+      const storageKey = `cf_vid_${formId}`;
+      let visitorId: string | null = null;
+      try {
+        visitorId = window.localStorage.getItem(storageKey);
+        if (!visitorId) {
+          visitorId =
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          window.localStorage.setItem(storageKey, visitorId);
+        }
+      } catch {
+        // localStorage can throw in privacy modes / disabled storage — fall
+        // back to no visitorId, which means no dedup (acceptable).
+        visitorId = null;
+      }
+
       const urlParams = new URLSearchParams(window.location.search);
       recordView({
         formId,
+        visitorId,
         deviceType,
         referrer: document.referrer || null,
         utmSource: urlParams.get("utm_source"),
@@ -66,10 +76,10 @@ export default function PublicFormPage() {
         utmCampaign: urlParams.get("utm_campaign"),
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formId]);
 
-  // Set default values for toggles from field options
+  // default values for toggles
   useEffect(() => {
     if (form?.fields) {
       const defaults: Record<string, any> = {};
@@ -99,7 +109,9 @@ export default function PublicFormPage() {
 
   const progressPercent =
     totalQuestions > 0
-      ? Math.round((Math.max(currentQuestionIndex, answeredCount) / totalQuestions) * 100)
+      ? Math.round(
+          (Math.max(currentQuestionIndex, answeredCount) / totalQuestions) * 100
+        )
       : 0;
 
   const handleNext = () => {
@@ -108,15 +120,20 @@ export default function PublicFormPage() {
     const value = answers[currentField.id];
     if (
       currentField.isRequired &&
-      (value === undefined || value === "" || (Array.isArray(value) && value.length === 0))
+      (value === undefined ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0))
     ) {
-      toast.error(`Please answer the required field: "${currentField.label}"`);
+      toast.error(
+        `Please answer the required field: "${currentField.label}"`
+      );
       return;
     }
 
-    // Record that this visitor answered this field (fire-and-forget, no await)
-    // Only record if the field has a non-empty answer
-    const hasAnswer = value !== undefined && value !== null && value !== "" &&
+    const hasAnswer =
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
       !(Array.isArray(value) && value.length === 0);
     if (hasAnswer || currentField.type === "TOGGLE") {
       recordFieldAnswer({ formId, fieldId: currentField.id, value });
@@ -125,25 +142,33 @@ export default function PublicFormPage() {
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      const payloadValues = Object.entries(answers).map(([fieldId, value]) => ({
-        formFieldId: fieldId,
-        value,
-      }));
+      const payloadValues = Object.entries(answers).map(
+        ([fieldId, value]) => ({
+          formFieldId: fieldId,
+          value,
+        })
+      );
 
       submitForm(
         {
           formId,
           values: payloadValues,
           referrer: document.referrer || null,
-          utmSource: new URLSearchParams(window.location.search).get("utm_source"),
-          utmMedium: new URLSearchParams(window.location.search).get("utm_medium"),
-          utmCampaign: new URLSearchParams(window.location.search).get("utm_campaign"),
+          utmSource: new URLSearchParams(window.location.search).get(
+            "utm_source"
+          ),
+          utmMedium: new URLSearchParams(window.location.search).get(
+            "utm_medium"
+          ),
+          utmCampaign: new URLSearchParams(window.location.search).get(
+            "utm_campaign"
+          ),
           timeSpentMs: Date.now() - formOpenedAtRef.current,
         },
         {
           onSuccess: () => {
             setSubmitted(true);
-            toast.success("Submission successfully registered");
+            toast.success("Thanks — your response was submitted");
           },
           onError: (err) => {
             toast.error(err.message || "Failed to submit form");
@@ -160,77 +185,67 @@ export default function PublicFormPage() {
   };
 
   if (isLoading) return <FormLoadingState />;
-  if (error || !form) return <FormErrorState type="blueprint-mismatch" />;
+  if (error || !form) return <FormErrorState type="not-found" />;
   if (!form.isPublished) return <FormErrorState type="draft-mode" />;
 
   const formCode = form.slug.substring(0, 7).toUpperCase();
 
   return (
-    <div
-      className={`${ebGaramond.variable} ${caveat.variable} min-h-screen w-full bg-[#faf7f0] flex flex-col justify-between items-center p-8 md:p-12 relative select-none overflow-hidden transition-colors duration-300 font-sans`}
-    >
+    <div className="cf-landing min-h-screen w-full bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] flex flex-col items-center px-6 sm:px-10 py-6 sm:py-8 relative overflow-hidden">
       <style>{`
-        @keyframes drawCheck {
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes checkPop {
-          0% { transform: scale(0.8); opacity: 0; }
-          50% { transform: scale(1.1); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes cardSlideIn {
-          from { transform: translateY(15px); opacity: 0; }
+        @keyframes cf-card-in {
+          from { transform: translateY(12px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
-        .check-circle-anim {
+        @keyframes cf-draw-check {
+          to { stroke-dashoffset: 0; }
+        }
+        @keyframes cf-check-pop {
+          0% { transform: scale(0.85); opacity: 0; }
+          60% { transform: scale(1.06); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .cf-animate-card {
+          animation: cf-card-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .cf-animate-pop {
+          animation: cf-check-pop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+        .cf-check-circle {
           stroke-dasharray: 150;
           stroke-dashoffset: 150;
-          animation: drawCheck 0.8s ease-in-out forwards;
+          animation: cf-draw-check 0.7s ease-in-out forwards;
         }
-        .check-mark-anim {
+        .cf-check-mark {
           stroke-dasharray: 50;
           stroke-dashoffset: 50;
-          animation: drawCheck 0.5s ease-in-out 0.6s forwards;
-        }
-        .animate-card {
-          animation: cardSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-pop {
-          animation: checkPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          animation: cf-draw-check 0.5s ease-in-out 0.55s forwards;
         }
       `}</style>
 
-      {/* Blueprint Parchment Main Page Background Image */}
-      {mounted && (
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          <Image
-            src={"/card-background.png"}
-            alt="Main Page Background"
-            fill
-            priority
-            className="object-cover opacity-[0.95] transition-all duration-300"
-          />
-        </div>
-      )}
+      <FormHeader
+        progressPercent={progressPercent}
+        submitted={submitted}
+        formCode={formCode}
+        formTitle={form.title}
+      />
 
-      <FormHeader progressPercent={progressPercent} submitted={submitted} formCode={formCode} />
-
-      <main className="w-full flex-1 flex flex-col items-center justify-start z-10 pt-16 md:pt-20 pb-6">
+      <main className="w-full max-w-2xl flex-1 flex flex-col items-center justify-center py-10 sm:py-14">
         {submitted ? (
-          <FormThankYou siteRating={siteRating} setSiteRating={setSiteRating} />
+          <FormThankYou
+            siteRating={siteRating}
+            setSiteRating={setSiteRating}
+          />
         ) : totalQuestions === 0 ? (
-          <div className="max-w-xl w-full border border-white/30 p-16 rounded-lg bg-white/45 backdrop-blur-xl shadow-[0px_10px_35px_rgba(13,33,55,0.06)] text-center space-y-3 -translate-y-14">
-            <h3
-              className="text-xl font-bold text-[#0d2137]"
-              style={{ fontFamily: "var(--font-garamond)" }}
-            >
-              Empty Canvas
+          <div className="w-full max-w-md text-center space-y-3 cf-animate-card">
+            <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+              Empty form
+            </p>
+            <h3 className="cf-display text-[28px] leading-tight">
+              Nothing to fill out yet
             </h3>
-            <p
-              className="text-sm text-[#0d2137]/50 italic"
-              style={{ fontFamily: "var(--font-caveat)" }}
-            >
-              This form does not contain any draft fields.
+            <p className="text-[14px] text-[color:var(--cf-ink-soft)] leading-relaxed">
+              The author hasn&apos;t added any questions to this form.
             </p>
           </div>
         ) : (

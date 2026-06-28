@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 interface DeviceData {
   name: string;
@@ -16,79 +16,83 @@ interface DeviceBreakdownProps {
 
 export function DeviceBreakdown({ totalViews, deviceData }: DeviceBreakdownProps) {
   return (
-    <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] min-h-75">
-      <div
-        className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
-        style={{ backgroundImage: "url('/assest1.png')"}}
-      />
-      <div className="relative z-10 space-y-4 h-full flex flex-col justify-between">
-        <div className="space-y-0.5">
-          <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">
-            Device Breakdown
-          </h4>
-          <p className="text-[9px] font-serif text-[#0d2137]/45 italic">
-            From page views
-          </p>
+    <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5 min-h-[300px] flex flex-col">
+      <div>
+        <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Devices</p>
+        <h4 className="mt-2 cf-display text-[20px] leading-tight">
+          Device breakdown
+        </h4>
+        <p className="mt-1 text-[12px] text-[color:var(--cf-ink-soft)]">
+          From page views
+        </p>
+      </div>
+
+      {totalViews === 0 ? (
+        <div className="flex-1 flex items-center justify-center text-[13px] text-[color:var(--cf-ink-soft)]">
+          No responses recorded.
         </div>
-
-        {totalViews === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-xs font-serif italic text-[#0d2137]/40">
-            No responses recorded.
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col justify-center items-center gap-4">
-            <div className="size-28 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={deviceData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={36}
-                    outerRadius={48}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {deviceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col justify-center items-center">
-                <span className="text-lg font-serif font-bold text-[#0d2137]">100%</span>
-                <span className="text-[7px] text-[#0d2137]/50 uppercase tracking-widest font-serif font-bold">
-                  Total
-                </span>
-              </div>
+      ) : (
+        <div className="flex-1 flex flex-col justify-center items-center gap-4 mt-4">
+          <div className="size-28 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={deviceData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={36}
+                  outerRadius={48}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {deviceData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col justify-center items-center pointer-events-none">
+              <span className="cf-display text-[20px] leading-none">
+                {totalViews}
+              </span>
+              <span className="cf-eyebrow text-[color:var(--cf-ink-soft)] mt-1 text-[9px]">
+                total
+              </span>
             </div>
+          </div>
 
-            <div className="w-full space-y-1.5">
-              {deviceData.map((dev, idx) => {
-                const pct =
-                  totalViews > 0 ? ((dev.value / totalViews) * 100).toFixed(0) : "0";
-                return (
-                  <div
-                    key={idx}
-                    className="flex justify-between items-center text-[10px] font-serif uppercase tracking-wider text-[#0d2137]"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="size-2 rounded-full"
-                        style={{ backgroundColor: dev.color }}
-                      />
-                      <span>{dev.name}</span>
-                    </div>
-                    <span className="font-bold">
-                      {dev.value} ({pct}%)
+          <div className="w-full space-y-1.5">
+            {deviceData.map((dev, idx) => {
+              const pct =
+                totalViews > 0
+                  ? ((dev.value / totalViews) * 100).toFixed(0)
+                  : "0";
+              return (
+                <div
+                  key={idx}
+                  className="flex justify-between items-center text-[12px] font-mono text-[color:var(--cf-ink-soft)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: dev.color }}
+                    />
+                    <span className="text-[color:var(--cf-ink)]">
+                      {dev.name}
                     </span>
                   </div>
-                );
-              })}
-            </div>
+                  <span className="tabular-nums">
+                    <span className="text-[color:var(--cf-ink)]">
+                      {dev.value}
+                    </span>{" "}
+                    ({pct}%)
+                  </span>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

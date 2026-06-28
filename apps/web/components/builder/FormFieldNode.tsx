@@ -3,225 +3,102 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
 import {
-  Type,
   AlignLeft,
-  Mail,
   Binary,
-  Phone,
+  Calendar,
+  CheckSquare,
+  Clock,
   Link2,
   List,
-  CheckSquare,
+  Mail,
+  Phone,
   Star,
-  Calendar,
-  Clock,
   ToggleLeft,
+  Type,
 } from "lucide-react";
 
-// Define field metadata for the left sidebar
+// Available field metadata for the left sidebar
 export const AVAILABLE_FIELDS = [
-  { type: "TEXT", label: "Short Text", icon: Type, description: "Single line input" },
-  { type: "TEXTAREA", label: "Long Text", icon: AlignLeft, description: "Multi-line input" },
+  { type: "TEXT", label: "Short text", icon: Type, description: "Single line input" },
+  { type: "TEXTAREA", label: "Long text", icon: AlignLeft, description: "Multi-line input" },
   { type: "EMAIL", label: "Email", icon: Mail, description: "Email address input" },
   { type: "NUMBER", label: "Number", icon: Binary, description: "Numeric value input" },
   { type: "PHONE", label: "Phone", icon: Phone, description: "Telephone number input" },
   { type: "URL", label: "URL", icon: Link2, description: "Website link input" },
-  { type: "SELECT", label: "Single Select", icon: List, description: "Dropdown menu" },
+  { type: "SELECT", label: "Single select", icon: List, description: "Dropdown menu" },
   { type: "CHECKBOX", label: "Checkbox", icon: CheckSquare, description: "Multiple checkboxes" },
   { type: "RATING", label: "Rating", icon: Star, description: "Star selection" },
   { type: "DATE", label: "Date", icon: Calendar, description: "Calendar selection" },
   { type: "TIME", label: "Time", icon: Clock, description: "Time selection" },
-  { type: "TOGGLE", label: "Toggle", icon: ToggleLeft, description: "Switch switch toggle" },
+  { type: "TOGGLE", label: "Toggle", icon: ToggleLeft, description: "Yes / no switch" },
 ];
 
-// Helper to get matching icon for field type
 export const getFieldIcon = (type: string) => {
   const match = AVAILABLE_FIELDS.find((f) => f.type === type);
   return match ? match.icon : Type;
 };
 
-// Helper to get matching choices array
 export const getFieldOptionsArray = (field: any): string[] => {
-  if (Array.isArray(field.options)) {
-    return field.options;
-  }
-  if (field.options && typeof field.options === "object" && Array.isArray(field.options.choices)) {
+  if (Array.isArray(field.options)) return field.options;
+  if (
+    field.options &&
+    typeof field.options === "object" &&
+    Array.isArray(field.options.choices)
+  ) {
     return field.options.choices;
   }
-  return ["Option 1", "Option 2"]; // default fallback
+  return ["Option 1", "Option 2"];
 };
 
-// Custom Node Component to match sketches theme
-export const FormFieldNode = ({ data, selected }: { data: any; selected: boolean }) => {
+export const FormFieldNode = ({
+  data,
+  selected,
+}: {
+  data: any;
+  selected: boolean;
+}) => {
   const { field } = data;
   const IconComponent = getFieldIcon(field.type);
 
   return (
     <div
-      className={`w-72 bg-[#faf8f5] border-2 rounded transition-all select-none duration-200 cursor-pointer shadow-[3px_3px_0px_0px_rgba(13,33,55,0.05)] ${
+      className={`w-72 bg-[color:var(--cf-cream-2)] rounded-xl transition-all select-none cursor-pointer shadow-[0_8px_24px_-12px_rgba(22,19,17,0.18)] ${
         selected
-          ? "border-[#3b5e82] ring-1 ring-[#3b5e82]/20 shadow-[5px_5px_0px_0px_#3b5e82]"
-          : "border-[#0d2137]/15 hover:border-[#0d2137]/30"
+          ? "ring-2 ring-[color:var(--cf-orange)] ring-offset-2 ring-offset-[color:var(--cf-cream)]"
+          : "ring-1 ring-[color:var(--cf-line)] hover:ring-[color:var(--cf-line-strong)]"
       }`}
     >
-      {/* Top Dotted DND Handle Indicator */}
-      <div
-        className="h-1.5 bg-cover opacity-30 border-b border-[#0d2137]/10"
-        style={{
-          backgroundImage: "radial-gradient(#0d2137 1px, transparent 1px)",
-          backgroundSize: "4px 4px",
-        }}
-      />
-
       <div className="p-4 space-y-3">
-        {/* Node Header */}
-        <div className="flex justify-between items-center text-[9px] font-serif uppercase tracking-widest text-[#0d2137]/50 font-bold">
-          <div className="flex items-center gap-1.5">
-            <IconComponent className="size-3" />
-            <span>{field.type.replace("_", " ")} Node</span>
+        {/* header */}
+        <div className="flex justify-between items-center">
+          <div className="inline-flex items-center gap-1.5 cf-eyebrow text-[color:var(--cf-ink-soft)]">
+            <IconComponent className="size-3 text-[color:var(--cf-orange)]" />
+            <span>{field.type.replace("_", " ")}</span>
           </div>
           {field.isRequired && (
-            <span className="bg-[#244f75]/10 text-[#244f75] px-1.5 py-0.5 rounded border border-[#244f75]/20 text-[8px] font-bold">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-[color:var(--cf-orange)]/15 text-[color:var(--cf-orange)] ring-1 ring-[color:var(--cf-orange)]/30">
               Req
             </span>
           )}
         </div>
 
-        {/* Node Body */}
+        {/* label + description */}
         <div className="space-y-1.5">
-          <h4 className="font-serif font-bold text-[#0d2137] text-[14px] leading-snug line-clamp-2">
-            {field.label || `Untitled ${field.type.replace("_", " ").toLowerCase()}`}
+          <h4 className="cf-display text-[16px] leading-snug text-[color:var(--cf-ink)] line-clamp-2">
+            {field.label ||
+              `Untitled ${field.type.replace("_", " ").toLowerCase()}`}
           </h4>
 
           {field.description && (
-            <p className="text-[10px] text-[#0d2137]/50 leading-relaxed font-serif italic">
+            <p className="text-[11px] text-[color:var(--cf-ink-soft)] leading-relaxed">
               {field.description}
             </p>
           )}
+        </div>
 
-          {/* Simulated Input Field (Sketches Style) */}
-          <div className="pt-1">
-            {field.type === "SELECT" ? (
-              <div className="flex flex-col gap-1.5 mt-1 border border-[#0d2137]/10 p-2 rounded bg-white/40">
-                {getFieldOptionsArray(field)
-                  .slice(0, 3)
-                  .map((opt, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-[10px] font-serif text-[#0d2137]/65"
-                    >
-                      <span>{opt}</span>
-                      <span className="text-[8px] opacity-40">▼</span>
-                    </div>
-                  ))}
-                {getFieldOptionsArray(field).length > 3 && (
-                  <div className="text-[8px] font-serif italic text-center text-[#0d2137]/45 pt-0.5">
-                    + {getFieldOptionsArray(field).length - 3} more options
-                  </div>
-                )}
-              </div>
-            ) : field.type === "CHECKBOX" ? (
-              <div className="flex flex-col gap-1.5 mt-1">
-                {getFieldOptionsArray(field)
-                  .slice(0, 3)
-                  .map((opt, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 text-[10px] font-serif text-[#0d2137]/65"
-                    >
-                      <div className="size-3 border border-[#0d2137]/25 rounded-sm" />
-                      <span>{opt}</span>
-                    </div>
-                  ))}
-                {getFieldOptionsArray(field).length > 3 && (
-                  <div className="text-[8px] font-serif italic text-[#0d2137]/45 pl-5 pt-0.5">
-                    + {getFieldOptionsArray(field).length - 3} more options
-                  </div>
-                )}
-              </div>
-            ) : field.type === "RATING" ? (
-              <div className="flex items-center gap-1 mt-1">
-                {Array.from({ length: (field.options as any)?.max || 5 }).map((_, i) => (
-                  <Star key={i} className="size-3.5 text-[#0d2137]/25 fill-transparent" />
-                ))}
-              </div>
-            ) : field.type === "DATE" ? (
-              <div className="border-b border-[#0d2137]/15 py-1 text-[11px] font-serif text-[#0d2137]/65 tracking-wide select-none flex justify-between items-center">
-                <span>
-                  {(field.options as any)?.minDate || (field.options as any)?.maxDate ? (
-                    <span className="italic text-[10px] opacity-85">
-                      {(field.options as any)?.minDate
-                        ? `From ${(field.options as any).minDate}`
-                        : ""}
-                      {(field.options as any)?.maxDate
-                        ? ` to ${(field.options as any).maxDate}`
-                        : ""}
-                    </span>
-                  ) : (
-                    field.placeholder || "Select a date..."
-                  )}
-                </span>
-                <Calendar className="size-3.5 opacity-40 shrink-0" />
-              </div>
-            ) : field.type === "TIME" ? (
-              <div className="border-b border-[#0d2137]/15 py-1 text-[11px] font-serif text-[#0d2137]/65 tracking-wide select-none flex justify-between items-center">
-                <span>
-                  {(field.options as any)?.minTime || (field.options as any)?.maxTime ? (
-                    <span className="italic text-[10px] opacity-85">
-                      {(field.options as any)?.minTime
-                        ? `From ${(field.options as any).minTime}`
-                        : ""}
-                      {(field.options as any)?.maxTime
-                        ? ` to ${(field.options as any).maxTime}`
-                        : ""}
-                    </span>
-                  ) : (
-                    field.placeholder || "Select a time..."
-                  )}
-                </span>
-                <Clock className="size-3.5 opacity-40 shrink-0" />
-              </div>
-            ) : field.type === "TOGGLE" ? (
-              <div className="flex items-center justify-between py-1.5 text-[11px] font-serif text-[#0d2137]/65">
-                <span
-                  className={
-                    !(field.options as any)?.defaultValue
-                      ? "font-bold text-[#8e6e53]"
-                      : "opacity-50"
-                  }
-                >
-                  {(field.options as any)?.inactiveLabel || "No"}
-                </span>
-
-                <div
-                  className={`relative inline-flex h-4.5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out ${
-                    (field.options as any)?.defaultValue
-                      ? "bg-[#3b5e82]"
-                      : "bg-[#0d2137]/15"
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block size-3.5 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${
-                      (field.options as any)?.defaultValue ? "translate-x-4.5" : "translate-x-0"
-                    }`}
-                  />
-                </div>
-
-                <span
-                  className={
-                    (field.options as any)?.defaultValue
-                      ? "font-bold text-[#3b5e82]"
-                      : "opacity-50"
-                  }
-                >
-                  {(field.options as any)?.activeLabel || "Yes"}
-                </span>
-              </div>
-            ) : (
-              <div className="border-b border-[#0d2137]/15 py-1 text-[11px] font-caveat italic text-[#0d2137]/40 tracking-wide select-none">
-                {field.placeholder || "Draft answer here..."}
-              </div>
-            )}
-          </div>
+        {/* preview */}
+        <div className="pt-1">
+          <FieldPreview field={field} />
         </div>
       </div>
 
@@ -229,18 +106,170 @@ export const FormFieldNode = ({ data, selected }: { data: any; selected: boolean
       <Handle
         type="target"
         position={Position.Top}
-        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }}
+        style={{
+          width: 8,
+          height: 8,
+          background: "var(--cf-orange)",
+          border: "2px solid var(--cf-cream-2)",
+        }}
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        style={{ width: "8px", height: "8px", background: "#3b5e82", border: "2px solid #faf8f5" }}
+        style={{
+          width: 8,
+          height: 8,
+          background: "var(--cf-orange)",
+          border: "2px solid var(--cf-cream-2)",
+        }}
       />
     </div>
   );
 };
 
-// Node type registry
+/* ─── per-type preview ────────────────────────────────────────────────── */
+
+function FieldPreview({ field }: { field: any }) {
+  if (field.type === "SELECT") {
+    const options = getFieldOptionsArray(field);
+    return (
+      <div className="bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] rounded-md p-2 space-y-1">
+        {options.slice(0, 3).map((opt, i) => (
+          <div
+            key={i}
+            className="flex items-center justify-between text-[11px] text-[color:var(--cf-ink-soft)]"
+          >
+            <span className="truncate pr-2">{opt}</span>
+            <span className="text-[9px] text-[color:var(--cf-ink-soft)]/50">
+              ▼
+            </span>
+          </div>
+        ))}
+        {options.length > 3 && (
+          <p className="text-[10px] font-mono text-[color:var(--cf-ink-soft)]/50 text-center pt-0.5">
+            + {options.length - 3} more
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (field.type === "CHECKBOX") {
+    const options = getFieldOptionsArray(field);
+    return (
+      <div className="space-y-1.5">
+        {options.slice(0, 3).map((opt, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-2 text-[11px] text-[color:var(--cf-ink-soft)]"
+          >
+            <div className="size-3 rounded-sm ring-1 ring-[color:var(--cf-line-strong)] bg-[color:var(--cf-cream)] shrink-0" />
+            <span className="truncate">{opt}</span>
+          </div>
+        ))}
+        {options.length > 3 && (
+          <p className="text-[10px] font-mono text-[color:var(--cf-ink-soft)]/50 pl-5">
+            + {options.length - 3} more
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (field.type === "RATING") {
+    const max = (field.options as any)?.max ?? 5;
+    return (
+      <div className="flex items-center gap-1">
+        {Array.from({ length: max }).map((_, i) => (
+          <Star
+            key={i}
+            className="size-3.5 text-[color:var(--cf-ink)]/15 fill-current"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (field.type === "DATE") {
+    const o = field.options as any;
+    const range =
+      o?.minDate || o?.maxDate
+        ? `${o?.minDate ? `From ${o.minDate}` : ""}${
+            o?.maxDate ? ` to ${o.maxDate}` : ""
+          }`
+        : field.placeholder || "Select a date";
+    return (
+      <div className="bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] rounded-md px-3 py-2 text-[12px] text-[color:var(--cf-ink-soft)] flex justify-between items-center">
+        <span className="truncate pr-2">{range}</span>
+        <Calendar className="size-3.5 text-[color:var(--cf-ink-soft)]/55 shrink-0" />
+      </div>
+    );
+  }
+
+  if (field.type === "TIME") {
+    const o = field.options as any;
+    const range =
+      o?.minTime || o?.maxTime
+        ? `${o?.minTime ? `From ${o.minTime}` : ""}${
+            o?.maxTime ? ` to ${o.maxTime}` : ""
+          }`
+        : field.placeholder || "Select a time";
+    return (
+      <div className="bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] rounded-md px-3 py-2 text-[12px] text-[color:var(--cf-ink-soft)] flex justify-between items-center">
+        <span className="truncate pr-2">{range}</span>
+        <Clock className="size-3.5 text-[color:var(--cf-ink-soft)]/55 shrink-0" />
+      </div>
+    );
+  }
+
+  if (field.type === "TOGGLE") {
+    const o = field.options as any;
+    const on = !!o?.defaultValue;
+    return (
+      <div className="flex items-center justify-between gap-3">
+        <span
+          className={`text-[11px] ${
+            !on
+              ? "font-medium text-[color:var(--cf-ink)]"
+              : "text-[color:var(--cf-ink-soft)]/55"
+          }`}
+        >
+          {o?.inactiveLabel || "No"}
+        </span>
+        <div
+          className={`relative inline-flex h-4 w-8 shrink-0 rounded-full transition-colors ${
+            on
+              ? "bg-[color:var(--cf-orange)]"
+              : "bg-[color:var(--cf-ink)]/15"
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block size-3 mt-0.5 transform rounded-full bg-white shadow transition-transform ${
+              on ? "translate-x-4" : "translate-x-0.5"
+            }`}
+          />
+        </div>
+        <span
+          className={`text-[11px] ${
+            on
+              ? "font-medium text-[color:var(--cf-orange)]"
+              : "text-[color:var(--cf-ink-soft)]/55"
+          }`}
+        >
+          {o?.activeLabel || "Yes"}
+        </span>
+      </div>
+    );
+  }
+
+  // text/textarea/email/number/phone/url
+  return (
+    <div className="bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] rounded-md px-3 py-2 text-[12px] text-[color:var(--cf-ink-soft)]/55">
+      {field.placeholder || "Answer here..."}
+    </div>
+  );
+}
+
 export const nodeTypes = {
   formField: FormFieldNode,
 };

@@ -463,11 +463,35 @@ class AnalyticsService {
   /**
    * Records a form page view with device type.
    * Called by the public form page on mount — no auth required.
+   *
+   * Dedup: when the client supplies a visitorId (a per-form UUID kept in
+   * localStorage), we skip the insert if a row already exists for this
+   * (formId, visitorId) pair within the last 30 minutes. That collapses
+   * reload-spam into a single view per browsing session.
    */
   public async recordView(payload: RecordViewInputType) {
-    const { formId, deviceType, referrer, utmSource, utmMedium, utmCampaign } = await recordViewInput.parseAsync(payload)
+    const { formId, visitorId, deviceType, referrer, utmSource, utmMedium, utmCampaign } = await recordViewInput.parseAsync(payload)
+
+    if (visitorId) {
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
+      const existing = await db
+        .select({ id: formViewsTable.id })
+        .from(formViewsTable)
+        .where(and(
+          eq(formViewsTable.formId, formId),
+          eq(formViewsTable.visitorId, visitorId),
+          gte(formViewsTable.createdAt, thirtyMinutesAgo),
+        ))
+        .limit(1)
+
+      if (existing.length > 0) {
+        return { success: true }
+      }
+    }
+
     await db.insert(formViewsTable).values({
       formId,
+      visitorId: visitorId ?? null,
       deviceType,
       referrer: referrer ?? null,
       utmSource: utmSource ?? null,

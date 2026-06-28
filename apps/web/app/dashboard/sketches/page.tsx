@@ -1,40 +1,59 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Search,
-  ChevronDown,
-  Plus,
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
+  ChevronDown,
+  Plus,
+  Search,
   Share2,
-  Pin,
-  Trash2
+  Trash2,
 } from "lucide-react";
+
 import { useListFormsByUserId, useDeleteForm } from "~/hooks/api/form";
 import { useDashboard } from "~/providers/dashboard-provider";
 import { toast } from "sonner";
 
+/* ─── helpers ────────────────────────────────────────────────────────── */
+
 const formatDate = (dateStr: string) => {
   try {
     return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric"
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
-  } catch { return "Jan 1, 2026"; }
+  } catch {
+    return "—";
+  }
 };
 
 const getRelativeTime = (dateStr: string) => {
   try {
     const diffMs = Date.now() - new Date(dateStr).getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 60) return `${diffMins || 1} Min${diffMins === 1 ? "" : "s"} Ago`;
+    if (diffMins < 60) return `${diffMins || 1}m ago`;
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours} Hour${diffHours === 1 ? "" : "s"} Ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays} Day${diffDays === 1 ? "" : "s"} Ago`;
-  } catch { return "2 Hours Ago"; }
+    return `${diffDays}d ago`;
+  } catch {
+    return "—";
+  }
 };
+
+const FILTERS = [
+  { id: "ALL", label: "All" },
+  { id: "DRAFTS", label: "Drafts" },
+  { id: "PUBLISHED", label: "Published" },
+];
+
+const ITEMS_PER_PAGE = 6;
+
+/* ─── page ──────────────────────────────────────────────────────────── */
 
 export default function SketchesPage() {
   const { forms, isLoading } = useListFormsByUserId();
@@ -42,32 +61,25 @@ export default function SketchesPage() {
   const { deleteFormAsync, isPending: isDeleting } = useDeleteForm();
 
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("createdAt");
-  const [filter, setFilter] = useState("ALL");
+  const [sort, setSort] = useState<"createdAt" | "title">("createdAt");
+  const [filter, setFilter] = useState<string>("ALL");
   const [page, setPage] = useState(1);
-  const itemsPerPage = 6;
-
-  // Confirm-delete state
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const processedForms = useMemo(() => {
     if (!forms) return [];
     let result = [...forms];
 
-    if (filter === "DRAFTS") {
-      result = result.filter(f => !f.isPublished);
-    } else if (filter === "PUBLISHED") {
-      result = result.filter(f => f.isPublished);
-    } else if (filter === "ARCHIVED") {
-      result = result.filter(f => f.isArchived);
-    }
+    if (filter === "DRAFTS") result = result.filter((f) => !f.isPublished);
+    else if (filter === "PUBLISHED") result = result.filter((f) => f.isPublished);
 
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter(f =>
-        f.title.toLowerCase().includes(q) ||
-        f.description?.toLowerCase().includes(q) ||
-        f.slug.toLowerCase().includes(q)
+      result = result.filter(
+        (f) =>
+          f.title.toLowerCase().includes(q) ||
+          f.description?.toLowerCase().includes(q) ||
+          f.slug.toLowerCase().includes(q),
       );
     }
 
@@ -75,77 +87,206 @@ export default function SketchesPage() {
       if (sort === "createdAt") {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
-      if (sort === "title") {
-        return a.title.localeCompare(b.title);
-      }
+      if (sort === "title") return a.title.localeCompare(b.title);
       return 0;
     });
 
     return result;
   }, [forms, filter, search, sort]);
 
-  const totalPages = Math.ceil(processedForms.length / itemsPerPage) || 1;
+  const totalPages = Math.ceil(processedForms.length / ITEMS_PER_PAGE) || 1;
   const paginatedForms = useMemo(() => {
-    const start = (page - 1) * itemsPerPage;
-    return processedForms.slice(start, start + itemsPerPage);
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return processedForms.slice(start, start + ITEMS_PER_PAGE);
   }, [processedForms, page]);
 
   const handleDelete = async (formId: string) => {
     try {
       await deleteFormAsync({ id: formId });
-      toast.success("Blueprint deleted from catalog");
+      toast.success("Form deleted");
       setConfirmDeleteId(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete form");
     }
   };
 
-  const getRefNo = (id: string, title: string) => {
-    const letters = title.split(" ").map(w => w[0]).filter(Boolean).join("").slice(0, 3).toUpperCase();
-    return `REF. NO: ${id.slice(0, 4).toUpperCase()}-${letters || "SK"}`;
-  };
-
-  const getIllustration = (title: string, index: number) => {
-    const t = title.toLowerCase();
-    if (t.includes("bridge")) return "/card4.png";
-    if (t.includes("skyline") || t.includes("city")) return "/card3.png";
-    if (t.includes("art") || t.includes("annex")) return "/card2.png";
-    if (t.includes("heritage") || t.includes("survey") || t.includes("site")) return "/card-1.png";
-    const num = (index % 4) + 1;
-    return num === 1 ? "/card-1.png" : `/card${num}.png`;
-  };
-
-  const confirmDeleteForm = forms?.find(f => f.id === confirmDeleteId);
+  const confirmDeleteForm = forms?.find((f) => f.id === confirmDeleteId);
+  const hasActiveFilters = !!search || filter !== "ALL";
 
   return (
     <div className="space-y-8">
-      {/* Confirm delete dialog */}
-      {confirmDeleteId && confirmDeleteForm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0d2137]/50 backdrop-blur-sm">
-          <div className="bg-white border-2 border-[#0d2137] p-8 rounded shadow-[6px_6px_0px_0px_#0d2137] max-w-sm w-full mx-4 space-y-4">
-            <div className="space-y-1">
-              <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-red-500 block">
-                — Permanent Action
-              </span>
-              <h3 className="text-xl font-serif font-bold text-[#0d2137]">
-                Delete Blueprint?
-              </h3>
-              <p className="text-sm text-[#0d2137]/70 font-serif leading-relaxed">
-                <span className="font-bold text-[#0d2137]">&ldquo;{confirmDeleteForm.title}&rdquo;</span> and all its fields and submissions will be permanently removed. This cannot be undone.
-              </p>
+      {/* ───── hero ───── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+        <div>
+          <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">My forms</p>
+          <h1 className="mt-3 cf-display text-[36px] sm:text-[48px] leading-[0.95]">
+            Your studio
+          </h1>
+          <p className="mt-3 text-[14.5px] text-[color:var(--cf-ink-soft)] leading-relaxed max-w-md">
+            {forms?.length ?? 0}{" "}
+            {forms?.length === 1 ? "form" : "forms"} in your workspace.
+          </p>
+        </div>
+
+        <button
+          onClick={openCreateFormModal}
+          className="inline-flex items-center justify-center gap-1.5 h-[44px] px-5 bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white rounded-full text-[13.5px] font-medium tracking-tight transition-colors self-start sm:self-auto"
+        >
+          <Plus className="size-4" />
+          New form
+        </button>
+      </div>
+
+      {/* ───── toolbar ───── */}
+      <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-3">
+        {/* search */}
+        <div className="relative w-full md:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[color:var(--cf-ink-soft)]" />
+          <input
+            type="text"
+            placeholder="Search forms..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="w-full bg-[color:var(--cf-cream)] rounded-md ring-1 ring-[color:var(--cf-line)] focus:ring-2 focus:ring-[color:var(--cf-orange)] focus:outline-none pl-10 pr-3 h-[40px] text-[13.5px] text-[color:var(--cf-ink)] placeholder:text-[color:var(--cf-ink-soft)]/55 transition-shadow"
+          />
+        </div>
+
+        {/* sort + filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2">
+            <span className="cf-eyebrow text-[color:var(--cf-ink-soft)] shrink-0">
+              Sort
+            </span>
+            <div className="relative">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as "createdAt" | "title")}
+                className="appearance-none bg-[color:var(--cf-cream)] rounded-md ring-1 ring-[color:var(--cf-line)] py-2 pl-3 pr-8 text-[13px] text-[color:var(--cf-ink)] focus:outline-none focus:ring-2 focus:ring-[color:var(--cf-orange)] cursor-pointer"
+              >
+                <option value="createdAt">Date created</option>
+                <option value="title">Title</option>
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-[color:var(--cf-ink-soft)] pointer-events-none" />
             </div>
-            <div className="flex gap-3 justify-end pt-2">
+          </div>
+
+          <div className="hidden sm:block h-5 w-px bg-[color:var(--cf-line-strong)]" />
+
+          <div className="inline-flex bg-[color:var(--cf-cream)] p-1 rounded-full text-[12px] font-medium select-none ring-1 ring-[color:var(--cf-line)] overflow-x-auto">
+            {FILTERS.map((f) => {
+              const isActive = filter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => {
+                    setFilter(f.id);
+                    setPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full transition-colors cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? "bg-[color:var(--cf-cream-2)] text-[color:var(--cf-ink)] ring-1 ring-[color:var(--cf-line-strong)]"
+                      : "text-[color:var(--cf-ink-soft)] hover:text-[color:var(--cf-ink)]"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ───── grid ───── */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <div className="w-8 h-8 border-2 border-[color:var(--cf-line-strong)] border-t-[color:var(--cf-orange)] rounded-full animate-spin" />
+          <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+            Loading your forms...
+          </p>
+        </div>
+      ) : paginatedForms.length === 0 ? (
+        <EmptyState
+          onCreate={openCreateFormModal}
+          hasFilters={hasActiveFilters}
+          onClearFilters={() => {
+            setSearch("");
+            setFilter("ALL");
+            setPage(1);
+          }}
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {paginatedForms.map((form) => (
+            <FormCard
+              key={form.id}
+              form={form}
+              onDelete={() => setConfirmDeleteId(form.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ───── pagination ───── */}
+      {!isLoading && processedForms.length > ITEMS_PER_PAGE && (
+        <div className="flex flex-col sm:flex-row justify-between items-center border-t border-[color:var(--cf-line)] pt-6 gap-3">
+          <p className="text-[12px] font-mono text-[color:var(--cf-ink-soft)]">
+            Page <span className="text-[color:var(--cf-ink)]">{page}</span> of{" "}
+            {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="bg-[color:var(--cf-cream-2)] hover:bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] ring-1 ring-[color:var(--cf-line)] p-2 rounded-full transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Previous page"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="bg-[color:var(--cf-cream-2)] hover:bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] ring-1 ring-[color:var(--cf-line)] p-2 rounded-full transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Next page"
+            >
+              <ArrowRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ───── delete confirm ───── */}
+      {confirmDeleteId && confirmDeleteForm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[color:var(--cf-ink)]/45 backdrop-blur-sm p-4">
+          <div className="bg-[color:var(--cf-cream-2)] rounded-2xl ring-1 ring-[color:var(--cf-line-strong)] p-7 max-w-sm w-full shadow-[0_30px_80px_-30px_rgba(22,19,17,0.35)]">
+            <p className="cf-eyebrow text-[color:var(--cf-orange)]">
+              Permanent action
+            </p>
+            <h3 className="mt-3 cf-display text-[22px] leading-snug text-[color:var(--cf-ink)]">
+              Delete this form?
+            </h3>
+            <p className="mt-2 text-[13.5px] text-[color:var(--cf-ink-soft)] leading-relaxed">
+              <span className="text-[color:var(--cf-ink)] font-medium">
+                &ldquo;{confirmDeleteForm.title}&rdquo;
+              </span>{" "}
+              and all its fields and submissions will be permanently removed.
+              This cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3 pt-6">
               <button
                 onClick={() => setConfirmDeleteId(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider border-2 border-[#0d2137]/20 rounded text-[#0d2137]/70 hover:bg-[#0d2137]/5 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 text-[13px] font-medium rounded-full text-[color:var(--cf-ink)] hover:bg-[color:var(--cf-cream)] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDelete(confirmDeleteId)}
                 disabled={isDeleting}
-                className="px-4 py-2 text-xs font-serif font-bold uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white rounded cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                className="inline-flex items-center gap-1.5 px-5 py-2 text-[13px] font-medium rounded-full bg-[#c1281d] hover:bg-[#a92218] text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 <Trash2 className="size-3.5" />
                 {isDeleting ? "Deleting..." : "Delete"}
@@ -154,215 +295,190 @@ export default function SketchesPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-serif font-bold text-[#0d2137]/60">
-            <span>Studio</span>
-            <span className="text-[#0d2137]/30 font-sans">›</span>
-            <span className="text-[#0d2137] border-b border-[#0d2137]/30 pb-0.5">My Sketches</span>
+/* ─── form card ──────────────────────────────────────────────────────── */
+
+interface FormCardProps {
+  form: {
+    id: string;
+    title: string;
+    isPublished: boolean;
+    submissionsCount?: number;
+    createdAt: string;
+    publishedAt?: string | null;
+    updatedAt: string;
+  };
+  onDelete: () => void;
+}
+
+function FormCard({ form, onDelete }: FormCardProps) {
+  const isPublished = form.isPublished;
+  const responses = form.submissionsCount ?? 0;
+
+  return (
+    <div className="group bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] hover:ring-[color:var(--cf-line-strong)] transition-shadow p-4 flex flex-col gap-3 sm:gap-4">
+      {/* mini form preview — hidden on mobile to keep cards short */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] hidden sm:block">
+        <div className="absolute inset-0 px-6 py-5 flex flex-col justify-center gap-3">
+          {/* fake title */}
+          <div className="h-1.5 w-1/3 rounded-full bg-[color:var(--cf-ink)]/20" />
+
+          {/* fake fields */}
+          <div className="space-y-1.5 mt-1">
+            <div className="h-2 w-full rounded-sm bg-[color:var(--cf-cream-2)] ring-1 ring-[color:var(--cf-line)]" />
+            <div className="h-2 w-full rounded-sm bg-[color:var(--cf-cream-2)] ring-1 ring-[color:var(--cf-line)]" />
+            <div className="h-2 w-4/5 rounded-sm bg-[color:var(--cf-cream-2)] ring-1 ring-[color:var(--cf-line)]" />
           </div>
-          <h2 className="text-4xl md:text-5xl font-serif text-[#0d2137] font-bold tracking-tight mt-2.5">
-            Drafting Table
-          </h2>
-          <p className="text-lg font-caveat text-[#8e6e53] mt-1 italic">
-            Reviewing {forms?.length || 0} active architectural forms...
-          </p>
+
+          {/* fake submit */}
+          <div className="mt-2">
+            <span
+              className={`block h-3 w-16 rounded-full ${
+                isPublished
+                  ? "bg-[color:var(--cf-ink)]"
+                  : "bg-[color:var(--cf-orange)]"
+              }`}
+            />
+          </div>
         </div>
 
-        <button
-          onClick={openCreateFormModal}
-          className="bg-[#0d2137] text-[#faf7f0] py-3 px-5 rounded border-2 border-[#0d2137] hover:bg-[#1a3854] active:bg-[#071321] transition-all flex items-center justify-center gap-2 font-serif text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_#8e6e53] hover:shadow-[1px_1px_0px_0px_#8e6e53] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer self-start sm:self-auto"
+        {/* status pill — inside preview on sm+ */}
+        <span
+          className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider ring-1 ${
+            isPublished
+              ? "bg-[color:var(--cf-orange)]/15 text-[color:var(--cf-orange)] ring-[color:var(--cf-orange)]/40"
+              : "bg-[color:var(--cf-cream-2)] text-[color:var(--cf-ink-soft)] ring-[color:var(--cf-line-strong)]"
+          }`}
         >
-          <span className="flex items-center justify-center border border-current rounded-full p-0.5 size-4">
-            <Plus className="size-2.5 stroke-[3px]" />
-          </span>
-          <span>New Sketch</span>
-        </button>
+          {isPublished ? "Published" : "Draft"}
+        </span>
       </div>
 
-      <div className="bg-[#f5ebd7] border border-[#0d2137]/10 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm backdrop-blur-xs">
-        <div className="relative w-full md:max-w-xs">
-          <Search className="absolute left-3 top-3.5 size-4 text-[#0d2137]/40" />
-          <input
-            type="text"
-            placeholder="Search archives..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full bg-white/60 border border-[#0d2137]/10 p-2.5 pl-10 text-sm focus:outline-none focus:ring-1 focus:ring-[#8e6e53] text-[#0d2137] font-serif rounded-md transition-colors"
-          />
-        </div>
+      {/* title + meta */}
+      <div className="flex-1 space-y-3">
+        {/* status pill — visible only on mobile, since preview is hidden */}
+        <span
+          className={`sm:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider ring-1 ${
+            isPublished
+              ? "bg-[color:var(--cf-orange)]/15 text-[color:var(--cf-orange)] ring-[color:var(--cf-orange)]/40"
+              : "bg-[color:var(--cf-cream-2)] text-[color:var(--cf-ink-soft)] ring-[color:var(--cf-line-strong)]"
+          }`}
+        >
+          {isPublished ? "Published" : "Draft"}
+        </span>
 
-        <div className="flex flex-col sm:flex-row items-center gap-6 w-full md:w-auto">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/50 shrink-0">Sort:</span>
-            <div className="relative w-full sm:w-auto">
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="w-full sm:w-auto bg-transparent border-0 py-2.5 pl-0 pr-6 text-xs font-serif font-bold uppercase tracking-wider text-[#0d2137] rounded appearance-none focus:outline-none cursor-pointer"
-              >
-                <option value="createdAt" className="bg-[#f5ebd7]">Date Created</option>
-                <option value="title" className="bg-[#f5ebd7]">Title</option>
-              </select>
-              <ChevronDown className="absolute right-0 top-3.5 size-3 text-[#0d2137]/60 pointer-events-none" />
-            </div>
-          </div>
-
-          <div className="h-5 w-px bg-[#0d2137]/10 hidden sm:block" />
-
-          <div className="flex bg-[#faf7f0]/60 p-1 border border-[#0d2137]/10 rounded-full text-[10px] font-serif font-bold uppercase tracking-wider select-none w-full sm:w-auto justify-between sm:justify-start gap-1">
-            {["ALL", "DRAFTS", "PUBLISHED", "ARCHIVED"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => { setFilter(tab); setPage(1); }}
-                className={`px-4 py-1.5 rounded-full transition-all cursor-pointer ${filter === tab ? "bg-[#d3c8b4] text-[#0d2137] font-bold" : "text-[#0d2137]/50 hover:text-[#0d2137]"}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 space-y-4">
-          <div className="w-10 h-10 border-2 border-[#0d2137] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-serif italic text-[#8e6e53]">Reading Atelier Records...</p>
-        </div>
-      ) : paginatedForms.length === 0 ? (
-        <div className="bg-white/40 border border-dashed border-[#0d2137]/20 p-12 text-center rounded-lg max-w-lg mx-auto space-y-4 backdrop-blur-xs">
-          <h3 className="text-sm uppercase tracking-widest font-serif font-bold text-[#0d2137]">No Drawings Cataloged</h3>
-          <p className="text-xs text-[#0d2137]/60 font-serif leading-relaxed max-w-sm mx-auto">
-            We couldn&apos;t find any blueprint drafts matching your query. Initiate a new draft to begin.
-          </p>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="cf-display text-[20px] sm:text-[22px] leading-tight line-clamp-1">
+            {form.title}
+          </h3>
           <button
-            onClick={openCreateFormModal}
-            className="text-xs font-serif font-bold uppercase tracking-wider text-[#8e6e53] hover:underline cursor-pointer inline-flex items-center gap-1.5"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete();
+            }}
+            title="Delete form"
+            aria-label="Delete form"
+            className="p-1.5 rounded-md text-[color:var(--cf-ink-soft)]/60 hover:text-[color:var(--cf-orange)] hover:bg-[color:var(--cf-cream)] transition-colors cursor-pointer shrink-0"
           >
-            <span>Start a Blueprint</span>
-            <span>→</span>
+            <Trash2 className="size-3.5" />
           </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginatedForms.map((form, index) => {
-            const isPublished = form.isPublished;
-            const illustration = getIllustration(form.title, index);
-            const responses = form.submissionsCount ?? 0;
-            const isSecondCard = index % 3 === 1;
-            const isThirdCard = index % 3 === 2;
 
-            return (
-              <div
-                key={form.id}
-                className="relative overflow-visible bg-[#faf8f5] border border-[#0d2137]/10 p-4 rounded shadow-[0_1px_2px_rgba(13,33,55,0.05)] group hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(13,33,55,0.06)] transition-all duration-250 flex flex-col justify-between min-h-90 max-w-[320px] w-full mx-auto"
-              >
-                <div
-                  className="absolute inset-0 rounded bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
-                  style={{ backgroundImage: "url('/card-background.png')"}}
-                />
-
-                {isPublished && isThirdCard && (
-                  <div className="absolute top-3 right-3 z-20 text-[#8e6e53] pointer-events-none">
-                    <Pin className="size-4.5 rotate-45 fill-current" />
-                  </div>
-                )}
-
-                <div className="relative z-10 space-y-4">
-                  <div className="h-32 w-full border border-[#0d2137]/10 rounded overflow-hidden relative bg-[#faf7f0]">
-                    <div className="absolute inset-0 bg-cover bg-center opacity-70 mix-blend-luminosity group-hover:scale-103 transition-transform duration-500" style={{ backgroundImage: `url('${illustration}')` }} />
-                    {isPublished && isSecondCard && (
-                      <div className="absolute top-2 left-2 z-20 text-[#244f75] font-caveat font-bold text-lg -rotate-12 select-none pointer-events-none tracking-wide">
-                        Top Secret
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-start gap-2">
-                      <h3 className="font-serif font-bold text-xl text-[#0d2137] group-hover:text-[#8e6e53] transition-colors line-clamp-1">
-                        {form.title}
-                      </h3>
-
-                      {/* Delete button — always visible */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteId(form.id);
-                        }}
-                        title="Delete blueprint"
-                        className="text-[#0d2137]/30 hover:text-red-500 p-0.5 rounded cursor-pointer shrink-0 transition-colors"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
-                    <p className="text-[9px] text-[#0d2137]/50 tracking-wider font-serif uppercase font-bold">
-                      {isPublished ? getRefNo(form.id, form.title) : "STATUS: DRAFTING"}
-                    </p>
-                  </div>
-
-                  <div className="border-t border-b border-[#0d2137]/10 py-3 space-y-2 text-xs font-serif">
-                    <div className="flex justify-between text-[#0d2137]/65">
-                      <span className="italic">{isPublished ? "Commissioned" : "Last Modified"}</span>
-                      <span className="font-bold text-[#0d2137]">
-                        {isPublished ? formatDate(form.publishedAt || form.createdAt) : getRelativeTime(form.updatedAt)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-[#0d2137]/65">
-                      <span className="italic">Correspondence</span>
-                      <span className="font-bold text-[#0d2137]">
-                        {responses} Response{responses === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative z-10 flex gap-2 mt-5">
-                  {isPublished ? (
-                    <>
-                      <Link href={`/dashboard/sketches/${form.id}`} className="flex-1 bg-[#0d2137] hover:bg-[#1a3854] text-[#faf7f0] border border-[#0d2137] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
-                        Open Sketch
-                      </Link>
-                      <button className="border border-[#0d2137]/20 hover:border-[#0d2137] text-[#0d2137] p-2 rounded-md transition-colors cursor-pointer">
-                        <Share2 className="size-3.5" />
-                      </button>
-                    </>
-                  ) : (
-                    <Link href={`/dashboard/sketches/${form.id}`} className="w-full bg-[#3b5e82] hover:bg-[#4a729c] text-white border border-[#3b5e82] py-2 px-3 text-[10px] uppercase font-serif font-bold tracking-widest rounded-md transition-colors cursor-pointer text-center">
-                      Continue Drawing
-                    </Link>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {!isLoading && processedForms.length > 0 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center border-t border-[#0d2137]/10 pt-6 gap-4">
-          <div className="text-sm font-serif italic text-[#0d2137]/70 select-none">
-            Page {page} of {totalPages} <span className="font-sans not-italic text-[10px] mx-1">•</span> Cataloged in Atelier Records
+        <dl className="text-[12px] font-mono text-[color:var(--cf-ink-soft)] space-y-1">
+          <div className="flex justify-between">
+            <dt>{isPublished ? "Published" : "Edited"}</dt>
+            <dd className="text-[color:var(--cf-ink)]">
+              {isPublished
+                ? formatDate(form.publishedAt || form.createdAt)
+                : getRelativeTime(form.updatedAt)}
+            </dd>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="bg-[#faf7f0]/50 hover:bg-white text-[#0d2137] border border-[#0d2137]/15 p-2 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ArrowLeft className="size-4" />
-            </button>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="bg-[#faf7f0]/50 hover:bg-white text-[#0d2137] border border-[#0d2137]/15 p-2 rounded-md transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ArrowRight className="size-4" />
-            </button>
+          <div className="flex justify-between">
+            <dt>Responses</dt>
+            <dd className="text-[color:var(--cf-ink)]">{responses}</dd>
           </div>
-        </div>
-      )}
+        </dl>
+      </div>
+
+      {/* actions */}
+      <div className="flex gap-2 pt-1">
+        {isPublished ? (
+          <>
+            <Link
+              href={`/dashboard/sketches/${form.id}`}
+              className="group/btn flex-1 inline-flex items-center justify-center gap-1.5 h-[38px] px-4 bg-[color:var(--cf-ink)] hover:bg-black text-white rounded-full text-[12.5px] font-medium tracking-tight transition-colors"
+            >
+              Open
+              <ArrowUpRight className="size-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+            </Link>
+            <button
+              type="button"
+              title="Share form"
+              aria-label="Share form"
+              className="inline-flex items-center justify-center h-[38px] w-[38px] rounded-full ring-1 ring-[color:var(--cf-line-strong)] text-[color:var(--cf-ink)] hover:bg-[color:var(--cf-cream)] transition-colors cursor-pointer shrink-0"
+            >
+              <Share2 className="size-3.5" />
+            </button>
+          </>
+        ) : (
+          <Link
+            href={`/dashboard/sketches/${form.id}`}
+            className="group/btn flex-1 inline-flex items-center justify-center gap-1.5 h-[38px] px-4 bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white rounded-full text-[12.5px] font-medium tracking-tight transition-colors"
+          >
+            Continue editing
+            <ArrowUpRight className="size-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── empty state ────────────────────────────────────────────────────── */
+
+function EmptyState({
+  onCreate,
+  hasFilters,
+  onClearFilters,
+}: {
+  onCreate: () => void;
+  hasFilters: boolean;
+  onClearFilters: () => void;
+}) {
+  return (
+    <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-dashed ring-[color:var(--cf-line-strong)] p-12 text-center max-w-lg mx-auto space-y-4">
+      <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+        {hasFilters ? "Nothing found" : "Empty studio"}
+      </p>
+      <h3 className="cf-display text-[26px] leading-tight">
+        {hasFilters ? "No matches" : "Start your first form"}
+      </h3>
+      <p className="text-[13.5px] text-[color:var(--cf-ink-soft)] leading-relaxed max-w-sm mx-auto">
+        {hasFilters
+          ? "Try a different search or clear your filters to see all forms."
+          : "Sketch on an open canvas in minutes. Free to start, no card required."}
+      </p>
+      <div className="flex items-center justify-center gap-3 pt-1">
+        {hasFilters && (
+          <button
+            onClick={onClearFilters}
+            className="px-4 py-2 text-[13px] font-medium rounded-full text-[color:var(--cf-ink)] hover:bg-[color:var(--cf-cream)] transition-colors cursor-pointer"
+          >
+            Clear filters
+          </button>
+        )}
+        <button
+          onClick={onCreate}
+          className="inline-flex items-center justify-center gap-1.5 h-[42px] px-5 bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white rounded-full text-[13px] font-medium tracking-tight transition-colors"
+        >
+          <Plus className="size-4" />
+          New form
+        </button>
+      </div>
     </div>
   );
 }

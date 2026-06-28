@@ -1,7 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { Check, Sparkles, Building2, User, Zap, Flame } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import {
+  ArrowUpRight,
+  Building2,
+  Check,
+  Flame,
+  Sparkles,
+  User,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface Plan {
@@ -10,19 +18,99 @@ interface Plan {
   period: string;
   submissions: string;
   description: string;
-  icon: React.ComponentType<any>;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  buttonClass: string;
+  icon: React.ComponentType<{ className?: string }>;
   features: string[];
   popular?: boolean;
 }
 
-export default function SettingsPricingPage() {
+const PLANS: Plan[] = [
+  {
+    name: "Free",
+    price: "₹0",
+    period: "forever",
+    submissions: "1,000 submissions / mo",
+    description: "For students, side projects, and small launches.",
+    icon: User,
+    features: [
+      "10 active forms",
+      "All field types",
+      "Basic analytics · 30-day history",
+      "CSV export",
+      "&quot;Made with CanvasFlow&quot; footer on forms",
+      "Community support",
+    ],
+  },
+  {
+    name: "Pro",
+    price: "₹299",
+    period: "month",
+    submissions: "10,000 submissions / mo",
+    description: "For solo creators and small studios.",
+    icon: Zap,
+    features: [
+      "50 active forms",
+      "Remove &quot;Made with CanvasFlow&quot; footer",
+      "Webhooks & email notifications",
+      "1-year submission history",
+      "Email support",
+    ],
+  },
+  {
+    name: "Pro+",
+    price: "₹899",
+    period: "month",
+    submissions: "50,000 submissions / mo",
+    description: "For active teams and high-traffic launches.",
+    icon: Flame,
+    popular: true,
+    features: [
+      "200 active forms",
+      "Detailed analytics · per-question breakdowns",
+      "3-year submission history",
+      "File uploads & e-signatures",
+      "Conditional logic & branching",
+      "Slack & Zapier integrations",
+      "Priority support · 24-hour response",
+    ],
+  },
+  {
+    name: "Business",
+    price: "₹2,499",
+    period: "month",
+    submissions: "500,000 submissions / mo",
+    description: "Compliance, scale, and team workflows.",
+    icon: Building2,
+    features: [
+      "Unlimited forms",
+      "5 team seats (add more)",
+      "SSO & role-based access",
+      "Custom domain & branding",
+      "Audit log & data retention controls",
+      "Unlimited submission history",
+      "Dedicated CSM · 99.95% SLA",
+    ],
+  },
+];
+
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: "Can I switch plans later?",
+    a: "Yes — upgrade or downgrade any time. Changes apply at the next billing cycle and unused credit is prorated.",
+  },
+  {
+    q: "What counts as a submission?",
+    a: "A submission is one completed response from a respondent. Views, drafts, and partial completions don't count.",
+  },
+  {
+    q: "Do I need a credit card to start?",
+    a: "No. The Free tier is free forever — no card required.",
+  },
+];
+
+export default function PricingPage() {
   const [activePlan, setActivePlan] = useState<string>("Free");
 
-  React.useEffect(() => {
+  useEffect(() => {
     const saved = localStorage.getItem("cf-active-plan");
     if (saved === "Free") {
       setActivePlan(saved);
@@ -33,176 +121,192 @@ export default function SettingsPricingPage() {
     }
   }, []);
 
-  const plans: Plan[] = [
-    {
-      name: "Free",
-      price: "₹0",
-      period: "forever",
-      submissions: "100 submissions / mo",
-      description: "Ideal for testing forms and personal projects.",
-      icon: User,
-      color: "text-[#0d2137]",
-      bgColor: "bg-[#faf8f5]",
-      borderColor: "border-[#0d2137]/15",
-      buttonClass: "border-2 border-[#0d2137] text-[#0d2137] hover:bg-[#0d2137] hover:text-[#faf7f0]",
-      features: [
-        "100 Submissions per month",
-        "5 Forms per month"
-      ]
-    },
-    {
-      name: "Pro",
-      price: "₹49.99",
-      period: "month",
-      submissions: "1,000 submissions / mo",
-      description: "Great for freelancers and growing creators.",
-      icon: Zap,
-      color: "text-[#8e6e53]",
-      bgColor: "bg-[#faf8f5]",
-      borderColor: "border-[#8e6e53]/30",
-      buttonClass: "border-2 border-[#8e6e53] text-[#8e6e53] hover:bg-[#8e6e53] hover:text-[#faf7f0]",
-      features: [
-        "1,000 Submissions per month",
-        "15 Forms per month",
-        "Basic data analytics"
-      ]
-    },
-    {
-      name: "Pro+",
-      price: "₹119",
-      period: "month",
-      submissions: "5,000 submissions / mo",
-      description: "Perfect for active teams and high traffic forms.",
-      icon: Flame,
-      color: "text-[#d4af37]",
-      bgColor: "bg-[#fffdf9]",
-      borderColor: "border-[#d4af37]",
-      buttonClass: "bg-[#d4af37] text-[#0d2137] hover:bg-[#c29e2f] border-2 border-[#d4af37]",
-      popular: true,
-      features: [
-        "5,000 Submissions per month",
-        "30 Forms per month",
-        "Basic data analytics"
-      ]
-    },
-    {
-      name: "Business",
-      price: "₹499",
-      period: "month",
-      submissions: "25,000 submissions / mo",
-      description: "Built for companies requiring scale and security.",
-      icon: Building2,
-      color: "text-[#0d2137]",
-      bgColor: "bg-[#faf8f5]",
-      borderColor: "border-[#0d2137]/30",
-      buttonClass: "bg-[#0d2137] text-[#faf7f0] hover:bg-[#1a3854] border-2 border-[#0d2137]",
-      features: [
-        "25,000 Submissions per month",
-        "Unlimited forms",
-        "Basic data analytics"
-      ]
-    }
-  ];
-
   const handleSelectPlan = (planName: string) => {
     setActivePlan(planName);
     localStorage.setItem("cf-active-plan", planName);
     window.dispatchEvent(new Event("activePlanChanged"));
-    toast.success(`Switched to the ${planName} Plan!`);
+    toast.success(`Switched to the ${planName} plan`);
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-12 bg-[#faf7f0] min-h-screen">
-      {/* Header Section */}
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f3ebd8] border border-[#0d2137]/15 text-xs font-serif font-semibold text-[#0d2137]">
-          <Sparkles className="size-3.5 text-[#8e6e53]" />
-          <span>Flexible Plans for Everyone</span>
+    <div className="space-y-12">
+      {/* ───── hero ───── */}
+      <div className="text-center space-y-5 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[color:var(--cf-cream-2)] ring-1 ring-[color:var(--cf-line-strong)]">
+          <Sparkles className="size-3 text-[color:var(--cf-orange)]" />
+          <span className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+            Plans
+          </span>
         </div>
-        <h1 className="text-4xl font-serif font-bold text-[#0d2137] tracking-tight md:text-5xl">
-          Simple, Transparent Pricing
+        <h1 className="cf-display text-[40px] sm:text-[52px] leading-[0.95]">
+          Simple, transparent pricing
         </h1>
-        <p className="max-w-2xl mx-auto text-sm text-[#0d2137]/70 font-sans leading-relaxed">
-          Unlock high-fidelity form designs, real-time submission metrics, and unlimited responses tailored to your project scaling.
+        <p className="text-[14.5px] text-[color:var(--cf-ink-soft)] leading-relaxed">
+          Start free. Upgrade when you outgrow it. Every plan includes durable
+          data keys, real-time analytics, and unlimited respondents — only your
+          monthly submissions and form count scale.
         </p>
       </div>
 
-      {/* Grid Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
-        {plans.map((plan) => {
-          const IconComponent = plan.icon;
+      {/* ───── plan grid ───── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {PLANS.map((plan) => {
+          const Icon = plan.icon;
           const isCurrent = activePlan === plan.name;
+          const isFree = plan.name === "Free";
 
           return (
             <div
               key={plan.name}
-              className={`relative flex flex-col justify-between p-6 rounded-xl border-2 transition-all duration-300 ${plan.bgColor} ${
-                isCurrent 
-                  ? "border-[#0d2137] shadow-[6px_6px_0px_0px_#8e6e53] scale-[1.02]" 
-                  : `${plan.borderColor} hover:shadow-[4px_4px_0px_0px_#8e6e53]/35 hover:scale-[1.01]`
+              className={`relative flex flex-col bg-[color:var(--cf-cream-2)] rounded-2xl p-6 transition-all ${
+                plan.popular
+                  ? "ring-2 ring-[color:var(--cf-orange)] shadow-[0_30px_60px_-30px_rgba(246,111,0,0.45)]"
+                  : "ring-1 ring-[color:var(--cf-line)] hover:ring-[color:var(--cf-line-strong)]"
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#d4af37] text-[#0d2137] text-[10px] font-sans font-bold uppercase tracking-wider">
-                  Popular
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[color:var(--cf-orange)] text-white text-[10px] font-mono uppercase tracking-wider">
+                  Most popular
                 </div>
               )}
 
-              <div className="space-y-5">
+              <div className="space-y-5 flex-1">
+                {/* header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className={`p-2 rounded-lg bg-[#f3ebd8] ${plan.color}`}>
-                      <IconComponent className="size-5" />
+                    <div className="size-9 rounded-md bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] flex items-center justify-center">
+                      <Icon className="size-4 text-[color:var(--cf-orange)]" />
                     </div>
-                    <span className="font-serif font-bold text-lg text-[#0d2137]">{plan.name}</span>
+                    <span className="cf-display text-[18px] leading-none text-[color:var(--cf-ink)]">
+                      {plan.name}
+                    </span>
                   </div>
                   {isCurrent && (
-                    <span className="px-2 py-0.5 rounded bg-[#0d2137] text-[#faf7f0] text-[9px] font-sans uppercase font-bold tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[color:var(--cf-orange)]/15 text-[color:var(--cf-orange)] ring-1 ring-[color:var(--cf-orange)]/30 text-[10px] font-mono uppercase tracking-wider">
+                      <span className="size-1 rounded-full bg-[color:var(--cf-orange)]" />
                       Active
                     </span>
                   )}
                 </div>
 
+                {/* price */}
                 <div className="space-y-1">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-serif font-bold text-[#0d2137]">{plan.price}</span>
-                    <span className="text-xs text-[#0d2137]/60">/{plan.period}</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="cf-display text-[36px] leading-none tabular-nums text-[color:var(--cf-ink)]">
+                      {plan.price}
+                    </span>
+                    <span className="text-[12px] font-mono text-[color:var(--cf-ink-soft)]">
+                      / {plan.period}
+                    </span>
                   </div>
-                  <p className="text-xs font-serif font-semibold text-[#8e6e53]">{plan.submissions}</p>
+                  <p className="text-[12px] font-mono text-[color:var(--cf-ink-soft)]">
+                    {plan.submissions}
+                  </p>
                 </div>
 
-                <p className="text-xs text-[#0d2137]/70 font-sans leading-relaxed min-h-[40px]">
+                {/* description */}
+                <p className="text-[13.5px] text-[color:var(--cf-ink-soft)] leading-relaxed min-h-[42px]">
                   {plan.description}
                 </p>
 
-                <hr className="border-[#0d2137]/10" />
+                {/* divider */}
+                <div className="h-px bg-[color:var(--cf-line)]" />
 
+                {/* features */}
                 <ul className="space-y-2.5">
                   {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-xs text-[#0d2137]/80">
-                      <Check className="size-4 text-[#8e6e53] shrink-0 mt-0.5" />
-                      <span className="font-sans leading-tight">{feature}</span>
+                    <li
+                      key={i}
+                      className="flex items-start gap-2.5 text-[13px] text-[color:var(--cf-ink)]"
+                    >
+                      <span className="size-4 rounded-full bg-[color:var(--cf-orange)]/12 ring-1 ring-[color:var(--cf-orange)]/25 flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="size-2.5 text-[color:var(--cf-orange)]" />
+                      </span>
+                      <span className="leading-snug">{feature}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="pt-6 mt-auto">
+              {/* CTA */}
+              <div className="pt-6">
                 <button
-                  disabled={plan.name !== "Free"}
-                  onClick={() => handleSelectPlan(plan.name)}
-                  className={`w-full py-2.5 px-4 rounded text-xs font-serif font-semibold uppercase tracking-wider transition-all duration-200 ${
-                    plan.name !== "Free"
-                      ? "bg-[#faf8f5] text-[#0d2137]/45 border-2 border-[#0d2137]/10 cursor-not-allowed"
-                      : plan.buttonClass
+                  disabled={!isFree || isCurrent}
+                  onClick={() => isFree && handleSelectPlan(plan.name)}
+                  className={`group w-full inline-flex items-center justify-center gap-1.5 h-[42px] rounded-full text-[13px] font-medium tracking-tight transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                    isCurrent
+                      ? "bg-[color:var(--cf-ink)] text-white"
+                      : isFree
+                      ? plan.popular
+                        ? "bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white"
+                        : "ring-1 ring-[color:var(--cf-line-strong)] bg-[color:var(--cf-cream)] hover:bg-[color:var(--cf-cream-2)] text-[color:var(--cf-ink)]"
+                      : "ring-1 ring-[color:var(--cf-line)] bg-transparent text-[color:var(--cf-ink-soft)]"
                   }`}
                 >
-                  {isCurrent ? "Current Plan" : plan.name === "Free" ? "Select Plan" : "Coming Soon"}
+                  {isCurrent
+                    ? "Current plan"
+                    : isFree
+                    ? "Select plan"
+                    : "Coming soon"}
+                  {isFree && !isCurrent && (
+                    <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  )}
                 </button>
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* ───── compare strip ───── */}
+      <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-1.5">
+          <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+            Built into every plan
+          </p>
+          <h3 className="cf-display text-[20px] leading-tight">
+            The same canvas, the same data layer
+          </h3>
+        </div>
+        <ul className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-mono text-[color:var(--cf-ink-soft)]">
+          {[
+            "Drag-and-drop builder",
+            "All field types",
+            "Real-time submissions",
+            "Durable data keys",
+            "CSV export",
+          ].map((item) => (
+            <li key={item} className="inline-flex items-center gap-1.5">
+              <Check className="size-3 text-[color:var(--cf-orange)]" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ───── FAQ ───── */}
+      <div className="space-y-5">
+        <div className="text-center space-y-2 max-w-md mx-auto">
+          <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">FAQ</p>
+          <h2 className="cf-display text-[28px] leading-tight">
+            Common questions
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {FAQ.map((item, i) => (
+            <div
+              key={i}
+              className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5 space-y-2"
+            >
+              <h3 className="cf-display text-[16px] leading-tight text-[color:var(--cf-ink)]">
+                {item.q}
+              </h3>
+              <p className="text-[13px] text-[color:var(--cf-ink-soft)] leading-relaxed">
+                {item.a}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

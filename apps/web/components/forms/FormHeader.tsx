@@ -1,46 +1,53 @@
 "use client";
 
 import React from "react";
-
-const DraftingCompass = () => (
-  <svg
-    className="size-6 text-[#0d2137] transition-colors"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.2"
-  >
-    <path d="M12 3v3M9 8.5L5 21M15 8.5L19 21M9 14h6M12 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
-  </svg>
-);
+import Image from "next/image";
 
 interface FormHeaderProps {
   progressPercent: number;
   submitted: boolean;
   formCode: string;
+  formTitle?: string;
 }
 
-export function FormHeader({ progressPercent, submitted, formCode }: FormHeaderProps) {
+export function FormHeader({
+  progressPercent,
+  submitted,
+  formCode,
+  formTitle,
+}: FormHeaderProps) {
+  const pct = submitted ? 100 : progressPercent;
+
   return (
-    <header className="w-full max-w-6xl flex justify-between items-start z-10 text-[10px] tracking-[0.25em] font-serif uppercase font-bold text-[#0d2137]/45">
-      <div className="pt-2 flex flex-col gap-1.5">
-        <div>SURVEY PROGRESS: {submitted ? "100" : progressPercent}%</div>
-        <div className="w-24 h-0.5 bg-[#0d2137]/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#0d2137]/40 rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${submitted ? 100 : progressPercent}%` }}
-          />
-        </div>
+    <header className="w-full max-w-2xl flex items-center justify-between gap-4">
+      {/* brand */}
+      <div className="flex items-center gap-2 min-w-0">
+        <Image
+          src="/logo.svg"
+          alt=""
+          width={20}
+          height={20}
+          className="object-contain shrink-0"
+        />
+        <span className="cf-display text-[16px] leading-none text-[color:var(--cf-ink)] truncate">
+          {formTitle || "CanvasFlow"}
+        </span>
       </div>
 
-      <div className="flex flex-col items-center gap-1.5 text-right">
-        <div>{formCode}</div>
-        <div className="pt-2 flex flex-col items-center">
-          <DraftingCompass />
-          <span className="text-[7px] tracking-[0.2em] font-serif uppercase font-bold text-[#0d2137]/50 mt-1.5">
-            CANVASFLOW FORMS
-          </span>
+      {/* progress + code */}
+      <div className="flex items-center gap-3 shrink-0">
+        <span className="hidden sm:inline-flex items-center gap-2 cf-eyebrow text-[color:var(--cf-ink-soft)]">
+          <span>{pct}%</span>
+        </span>
+        <div className="w-20 sm:w-28 h-1 rounded-full bg-[color:var(--cf-cream-2)] ring-1 ring-[color:var(--cf-line)] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[color:var(--cf-orange)] transition-all duration-500 ease-out"
+            style={{ width: `${pct}%` }}
+          />
         </div>
+        <span className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+          {formCode}
+        </span>
       </div>
     </header>
   );

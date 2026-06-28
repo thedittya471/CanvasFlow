@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Calendar, BarChart2, CheckCircle, Zap, RefreshCw } from "lucide-react";
+import { BarChart2, Calendar, CheckCircle, RefreshCw, Zap } from "lucide-react";
 
 interface StatsRowProps {
   peakDay: string | null;
@@ -25,32 +25,48 @@ export function StatsRow({
   returningRate,
 }: StatsRowProps) {
   const chips: ChipDef[] = [
-    { label: "Peak Day", value: peakDay ?? "—", icon: Calendar },
-    { label: "Avg / Week", value: avgPerWeek.toFixed(1), icon: BarChart2 },
-    { label: "Completion", value: completionRate > 0 ? completionRate.toFixed(1) + "%" : "—", icon: CheckCircle },
-    ...(velocityFirst24h !== undefined ? [{ label: "Launch Velocity", value: velocityFirst24h.toLocaleString(), icon: Zap }] : []),
-    ...(returningRate !== undefined ? [{ label: "Returning", value: returningRate > 0 ? returningRate.toFixed(1) + "%" : "—", icon: RefreshCw }] : []),
+    { label: "Peak day", value: peakDay ?? "—", icon: Calendar },
+    { label: "Avg / week", value: avgPerWeek.toFixed(1), icon: BarChart2 },
+    {
+      label: "Completion",
+      value: completionRate > 0 ? completionRate.toFixed(1) + "%" : "—",
+      icon: CheckCircle,
+    },
+    ...(velocityFirst24h !== undefined
+      ? [
+          {
+            label: "Launch velocity",
+            value: velocityFirst24h.toLocaleString(),
+            icon: Zap,
+          },
+        ]
+      : []),
+    ...(returningRate !== undefined
+      ? [
+          {
+            label: "Returning",
+            value: returningRate > 0 ? returningRate.toFixed(1) + "%" : "—",
+            icon: RefreshCw,
+          },
+        ]
+      : []),
   ];
 
   return (
-    <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] px-5 py-3.5 rounded shadow-[3px_3px_0px_0px_#0d2137]">
-      <div
-        className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
-        style={{ backgroundImage: "url('/assest1.png')"}}
-      />
-      <div className="relative z-10 flex flex-wrap gap-3 items-center">
+    <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] px-4 py-3">
+      <div className="flex flex-wrap gap-2.5 items-center">
         {chips.map((chip, idx) => {
           const Icon = chip.icon;
           return (
             <div
               key={idx}
-              className="flex items-center gap-2.5 border border-[#0d2137]/15 bg-[#faf7f0]/50 px-3.5 py-2 rounded"
+              className="flex items-center gap-2 bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line)] px-3 py-1.5 rounded-full"
             >
-              <Icon className="size-3 text-[#8e6e53] shrink-0" />
-              <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-[#0d2137]/55">
+              <Icon className="size-3 text-[color:var(--cf-orange)] shrink-0" />
+              <span className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
                 {chip.label}
               </span>
-              <span className="text-sm font-serif font-bold text-[#0d2137]">
+              <span className="text-[13px] font-medium text-[color:var(--cf-ink)] tabular-nums">
                 {chip.value}
               </span>
             </div>

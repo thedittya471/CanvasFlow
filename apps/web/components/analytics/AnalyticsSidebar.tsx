@@ -22,55 +22,82 @@ export function AnalyticsSidebar({
   setSelectedFormId,
 }: AnalyticsSidebarProps) {
   return (
-    <aside className="w-full lg:w-64 shrink-0 bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137] relative overflow-hidden flex flex-col gap-4">
-      <div
-        className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-85 pointer-events-none select-none"
-        style={{ backgroundImage: "url('/assest1.png')"}}
-      />
-
-      <div className="relative z-10 space-y-1">
-        <h3 className="text-xl font-serif font-bold text-[#0d2137]">Analytics</h3>
-        <p className="text-[10px] tracking-wider text-[#0d2137]/50 uppercase font-serif font-bold">
-          Select form for insights
-        </p>
+    <aside className="w-full lg:w-64 shrink-0 bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-4 lg:p-5 flex flex-col gap-3 lg:gap-4">
+      <div className="space-y-1.5">
+        <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Analytics</p>
+        <h3 className="cf-display text-[20px] lg:text-[22px] leading-tight">
+          Forms
+        </h3>
       </div>
 
-      <div className="relative z-10 border-t border-[#0d2137]/10 pt-3">
-        <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-[#8e6e53] block mb-2">
-          My Sketches
-        </span>
+      <div className="border-t border-[color:var(--cf-line)] pt-3">
         {isLoadingForms ? (
-          <div className="py-8 text-center text-xs font-serif italic text-[#0d2137]/50">
+          <div className="py-6 text-center text-[12px] text-[color:var(--cf-ink-soft)]">
             Loading...
           </div>
         ) : !forms || forms.length === 0 ? (
-          <div className="py-8 text-center text-xs font-serif italic text-[#0d2137]/50">
-            No sketches found.
+          <div className="py-6 text-center text-[12px] text-[color:var(--cf-ink-soft)]">
+            No forms yet.
           </div>
         ) : (
-          <div className="space-y-1.5 max-h-87.5 overflow-y-auto pr-1">
-            {forms.map((f) => {
-              const isActive = selectedFormId === f.id;
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => setSelectedFormId(f.id)}
-                  className={`w-full text-left px-3.5 py-2.5 rounded font-serif text-xs font-bold transition-all border flex items-center justify-between cursor-pointer ${
-                    isActive
-                      ? "bg-[#0d2137] border-[#0d2137] text-white shadow-[2px_2px_0px_0px_#8e6e53]"
-                      : "border-transparent hover:bg-[#0d2137]/5 text-[#0d2137]"
-                  }`}
-                >
-                  <span className="truncate pr-2"># {f.title}</span>
-                  <span
-                    className={`size-1.5 rounded-full shrink-0 ${
-                      f.isPublished ? "bg-green-500" : "bg-amber-500"
+          <>
+            {/* Mobile / tablet: horizontal scrolling chip strip
+                so the form list doesn't push the analytics off screen */}
+            <div className="lg:hidden -mx-1 px-1 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {forms.map((f) => {
+                const isActive = selectedFormId === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setSelectedFormId(f.id)}
+                    className={`shrink-0 inline-flex items-center gap-2 max-w-[14rem] px-3 py-1.5 rounded-full text-[12.5px] transition-colors cursor-pointer ring-1 ${
+                      isActive
+                        ? "bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] ring-[color:var(--cf-line-strong)]"
+                        : "bg-transparent text-[color:var(--cf-ink-soft)] ring-[color:var(--cf-line)] hover:bg-[color:var(--cf-cream)]/60 hover:text-[color:var(--cf-ink)]"
                     }`}
-                  />
-                </button>
-              );
-            })}
-          </div>
+                  >
+                    <span
+                      className={`size-1.5 rounded-full shrink-0 ${
+                        f.isPublished
+                          ? "bg-[color:var(--cf-orange)]"
+                          : "bg-[color:var(--cf-ink-soft)]/40"
+                      }`}
+                      aria-label={f.isPublished ? "Published" : "Draft"}
+                    />
+                    <span className="truncate">{f.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Desktop: vertical list */}
+            <div className="hidden lg:block space-y-1 max-h-[28rem] overflow-y-auto pr-1">
+              {forms.map((f) => {
+                const isActive = selectedFormId === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setSelectedFormId(f.id)}
+                    className={`w-full text-left px-3 py-2 rounded-md text-[13px] transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                      isActive
+                        ? "bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] ring-1 ring-[color:var(--cf-line-strong)]"
+                        : "text-[color:var(--cf-ink-soft)] hover:bg-[color:var(--cf-cream)]/60 hover:text-[color:var(--cf-ink)]"
+                    }`}
+                  >
+                    <span className="truncate">{f.title}</span>
+                    <span
+                      className={`size-1.5 rounded-full shrink-0 ${
+                        f.isPublished
+                          ? "bg-[color:var(--cf-orange)]"
+                          : "bg-[color:var(--cf-ink-soft)]/40"
+                      }`}
+                      aria-label={f.isPublished ? "Published" : "Draft"}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </aside>

@@ -1,69 +1,77 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
-import { EB_Garamond, Caveat } from "next/font/google";
 import React from "react";
 
-const ebGaramond = EB_Garamond({
-  subsets: ["latin"],
-  variable: "--font-garamond",
-});
-
-const caveat = Caveat({
-  subsets: ["latin"],
-  variable: "--font-caveat",
-});
-
+/**
+ * Auth shell — Daylight-style.
+ *  - Cream paper background, hairline ring, editorial serif copy
+ *  - Left panel: a quiet brand column (md+ only) with the wordmark + a big
+ *    serif quote + a small "live" status colophon at the bottom
+ *  - Right panel: the form (signIn / signUp) centered on cream
+ */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isSignIn = pathname ? pathname.includes("signIn") : true;
-
   return (
-    <div className={`${ebGaramond.variable} ${caveat.variable} min-h-screen w-full bg-[#faf7f0] text-[#0d2137] flex font-sans transition-colors duration-300 selection:bg-[#0d2137] selection:text-white`}>
-      
-      {/* Outer framing container */}
-      <div className="relative w-full min-h-screen h-screen overflow-hidden flex flex-row">
-        
-        {/* Background panel (watercolor drawing) */}
-        <div 
-          className="absolute top-0 bottom-0 left-0 w-1/2 h-full z-20 transition-transform duration-700 ease-in-out hidden md:block overflow-hidden border-r-2 border-[#0d2137]"
-          style={{
-            transform: isSignIn ? "translateX(0%)" : "translateX(100%)",
-          }}
-        >
-          <div className="relative w-full h-full bg-[#faf7f0]">
-            <Image 
-              src="/background-image.png" 
-              alt="Blueprint Forms Studio" 
-              fill 
-              priority
-              className="object-cover opacity-95 transition-all duration-500"
-            />
-            {/* Dark blueprint gradient overlay */}
-            <div className="absolute inset-0 bg-linear-to-t from-[#0d2137]/35 via-transparent to-[#0d2137]/10" />
-            
-            {/* Branding title and subtitle */}
-            <div className="absolute bottom-10 left-10 text-[#faf7f0] select-none">
-              <h2 className="text-4xl font-bold tracking-tight font-serif italic text-white drop-shadow-md">
-                CanvasFlow
-              </h2>
-              <p className="text-[10px] tracking-[0.25em] text-[#faf7f0]/90 uppercase font-sans mt-2 drop-shadow-sm font-semibold">
-                Architectural Integrity Guaranteed
-              </p>
-            </div>
+    <div className="cf-landing min-h-screen w-full bg-[color:var(--cf-cream)] text-[color:var(--cf-ink)] antialiased">
+      <div className="relative min-h-screen w-full flex flex-col md:flex-row">
+        {/* LEFT: editorial brand panel (md+ only) */}
+        <aside className="relative hidden md:flex md:w-1/2 lg:w-[45%] border-r border-[color:var(--cf-line)] flex-col justify-between p-10 lg:p-14 bg-[color:var(--cf-cream-2)] overflow-hidden">
+          {/* faint blueprint guides */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-y-0 left-1/4 w-px bg-[color:var(--cf-line)]" />
+            <div className="absolute inset-y-0 left-2/4 w-px bg-[color:var(--cf-line)]" />
+            <div className="absolute inset-y-0 left-3/4 w-px bg-[color:var(--cf-line)]" />
           </div>
-        </div>
 
-        {/* Form panel container (swaps placement) */}
-        <div 
-          style={{
-            "--form-translate-x": isSignIn ? "100%" : "0%",
-          } as React.CSSProperties}
-          className="absolute top-0 bottom-0 left-0 w-full md:w-1/2 h-full z-10 transition-transform duration-700 ease-in-out flex flex-col justify-between p-8 md:p-12 bg-[#faf7f0] md:translate-x-(--form-translate-x)"
-        >
+          {/* brand mark */}
+          <Link
+            href="/"
+            className="relative inline-flex items-center gap-3 z-10"
+            aria-label="CanvasFlow home"
+          >
+            <Image
+              src="/logo.svg"
+              alt=""
+              width={32}
+              height={32}
+              className="object-contain"
+            />
+            <span className="cf-display text-[22px] leading-none">
+              CanvasFlow
+            </span>
+          </Link>
+
+          {/* big serif quote */}
+          <div className="relative z-10 max-w-md">
+            <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Welcome</p>
+            <h2 className="mt-5 cf-display text-[44px] lg:text-[60px] leading-[0.95]">
+              Build forms
+              <span className="block">in golden hour.</span>
+            </h2>
+            <p className="mt-5 max-w-sm text-[14.5px] leading-relaxed text-[color:var(--cf-ink-soft)]">
+              A studio for makers of beautiful data. Sketch on an open canvas,
+              ship durable forms, watch responses land in real time.
+            </p>
+          </div>
+
+          {/* colophon */}
+          <div className="relative z-10 flex items-center justify-between text-[12px] font-mono text-[color:var(--cf-ink-soft)]">
+            <span className="inline-flex items-center gap-2 text-[color:var(--cf-ink)]">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-[color:var(--cf-orange)] opacity-60 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--cf-orange)]" />
+              </span>
+              Studio · live
+            </span>
+            <span>© 2026</span>
+          </div>
+        </aside>
+
+        {/* RIGHT: form */}
+        <main className="relative flex-1 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );

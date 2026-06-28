@@ -8,77 +8,98 @@ interface TrafficSourcesProps {
   utmSources: Array<{ source: string; count: number }>;
 }
 
-function SourceBar({ label, count, max }: { label: string; count: number; max: number }) {
+function SourceBar({
+  label,
+  count,
+  max,
+}: {
+  label: string;
+  count: number;
+  max: number;
+}) {
   const pct = max > 0 ? Math.round((count / max) * 100) : 0;
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between items-center text-[10px] font-serif">
-        <span className="text-[#0d2137] truncate pr-2">{label}</span>
-        <span className="text-[#0d2137]/55 tabular-nums shrink-0">{count}</span>
+    <div className="space-y-1.5">
+      <div className="flex justify-between items-center text-[12px] gap-3">
+        <span className="text-[color:var(--cf-ink)] truncate">{label}</span>
+        <span className="font-mono text-[color:var(--cf-ink-soft)] tabular-nums shrink-0">
+          {count}
+        </span>
       </div>
-      <div className="h-1.5 bg-[#0d2137]/8 rounded-full overflow-hidden">
-        <div className="h-full rounded-full"
-          style={{ width: `${pct}%`, background: "#3b5e82"}} />
+      <div className="h-1.5 bg-[color:var(--cf-cream)] rounded-full overflow-hidden ring-1 ring-[color:var(--cf-line)]">
+        <div
+          className="h-full rounded-full bg-[color:var(--cf-orange)] transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );
 }
 
-export function TrafficSources({ topReferrers, utmSources }: TrafficSourcesProps) {
-  const refMax = Math.max(...topReferrers.map(r => r.count), 1);
-  const utmMax = Math.max(...utmSources.map(u => u.count), 1);
+export function TrafficSources({
+  topReferrers,
+  utmSources,
+}: TrafficSourcesProps) {
+  const refMax = Math.max(...topReferrers.map((r) => r.count), 1);
+  const utmMax = Math.max(...utmSources.map((u) => u.count), 1);
   const hasReferrers = topReferrers.length > 0;
   const hasUtm = utmSources.length > 0;
 
   if (!hasReferrers && !hasUtm) {
     return (
-      <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137]">
-        <div className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
-          style={{ backgroundImage: "url('/assest1.png')"}} />
-        <div className="relative z-10 space-y-1">
-          <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">Traffic Sources</h4>
-          <p className="text-xs font-serif italic text-[#0d2137]/45">
-            No referrer data yet. Attribution is collected when visitors open the form via a link.
-          </p>
-        </div>
+      <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5">
+        <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Traffic</p>
+        <h4 className="mt-2 cf-display text-[20px] leading-tight">
+          Traffic sources
+        </h4>
+        <p className="mt-2 text-[13px] text-[color:var(--cf-ink-soft)] leading-relaxed">
+          No referrer data yet. Attribution is collected when visitors open the
+          form via a link.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
       {hasReferrers && (
-        <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137]">
-          <div className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
-            style={{ backgroundImage: "url('/assest1.png')"}} />
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-center gap-2">
-              <Globe className="size-4 text-[#8e6e53]" />
-              <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">Top Referrers</h4>
-            </div>
-            <div className="space-y-2.5">
-              {topReferrers.map((r, i) => (
-                <SourceBar key={i} label={r.referrer} count={r.count} max={refMax} />
-              ))}
-            </div>
+        <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Globe className="size-4 text-[color:var(--cf-orange)]" />
+            <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Referrers</p>
+          </div>
+          <h4 className="cf-display text-[20px] leading-tight">
+            Top referrers
+          </h4>
+          <div className="mt-5 space-y-3">
+            {topReferrers.map((r, i) => (
+              <SourceBar
+                key={i}
+                label={r.referrer}
+                count={r.count}
+                max={refMax}
+              />
+            ))}
           </div>
         </div>
       )}
 
       {hasUtm && (
-        <div className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-5 rounded shadow-[3px_3px_0px_0px_#0d2137]">
-          <div className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none"
-            style={{ backgroundImage: "url('/assest1.png')"}} />
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-center gap-2">
-              <Tag className="size-4 text-[#8e6e53]" />
-              <h4 className="text-sm font-serif font-bold text-[#0d2137] uppercase tracking-wider">UTM Sources</h4>
-            </div>
-            <div className="space-y-2.5">
-              {utmSources.map((u, i) => (
-                <SourceBar key={i} label={u.source} count={u.count} max={utmMax} />
-              ))}
-            </div>
+        <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Tag className="size-4 text-[color:var(--cf-orange)]" />
+            <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Campaigns</p>
+          </div>
+          <h4 className="cf-display text-[20px] leading-tight">UTM sources</h4>
+          <div className="mt-5 space-y-3">
+            {utmSources.map((u, i) => (
+              <SourceBar
+                key={i}
+                label={u.source}
+                count={u.count}
+                max={utmMax}
+              />
+            ))}
           </div>
         </div>
       )}

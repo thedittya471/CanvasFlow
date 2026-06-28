@@ -1,0 +1,2 @@
+ALTER TABLE "form_views" ADD COLUMN "visitor_id" varchar(64);--> statement-breakpoint
+CREATE INDEX "form_views_form_visitor_created_idx" ON "form_views" USING btree ("form_id","visitor_id","created_at");

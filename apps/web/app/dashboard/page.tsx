@@ -1,256 +1,415 @@
 "use client";
 
-import React from "react";
-import { 
-  Plus, 
-  Layers, 
-  FileText, 
-  TrendingUp, 
-  PencilRuler, 
-  DraftingCompass,
-  Inbox
-} from "lucide-react";
-import { useDashboard } from "~/providers/dashboard-provider";
-import { useGetDashboardStats } from "~/hooks/api/form";
+import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import {
-  ResponsiveContainer,
+  ArrowUpRight,
+  DraftingCompass,
+  FileText,
+  Inbox,
+  Layers,
+  PencilRuler,
+  Plus,
+  TrendingUp,
+} from "lucide-react";
+import {
+  Area,
   AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
   XAxis,
   YAxis,
-  Tooltip as ChartTooltip,
-  Area
 } from "recharts";
+
+import { useDashboard } from "~/providers/dashboard-provider";
+import { useGetDashboardStats } from "~/hooks/api/form";
 
 export default function DashboardPage() {
   const { openCreateFormModal } = useDashboard();
-
   const { stats, isLoading } = useGetDashboardStats();
+
+  // Time-range tabs for the "Response trends" chart. The server returns 90
+  // days of daily counts; slicing here keeps tab switching instant.
+  type TrendRange = "7d" | "30d" | "3m";
+  const [trendRange, setTrendRange] = useState<TrendRange>("30d");
+
+  const RANGE_TABS: Array<{ id: TrendRange; label: string; days: number; subtitle: string }> = [
+    { id: "3m", label: "3 months", days: 90, subtitle: "Submissions over the past 90 days" },
+    { id: "30d", label: "30 days", days: 30, subtitle: "Submissions over the past 30 days" },
+    { id: "7d", label: "7 days", days: 7, subtitle: "Submissions over the past 7 days" },
+  ];
+  const activeRange = RANGE_TABS.find((r) => r.id === trendRange) ?? RANGE_TABS[1]!;
+
+  const trendData = useMemo(() => {
+    const all = stats?.trends ?? [];
+    return all.slice(-activeRange.days);
+  }, [stats?.trends, activeRange.days]);
+
+  // ── chart summary stats (for the strip above the chart) ──────────────
+  const trendSummary = useMemo(() => {
+    if (trendData.length === 0)
+      return { total: 0, avgPerDay: 0, peakLabel: "—", peakCount: 0 };
+    const total = trendData.reduce((sum, d) => sum + d.count, 0);
+    const peak = trendData.reduce(
+      (best, d) => (d.count > best.count ? d : best),
+      trendData[0]!
+    );
+    return {
+      total,
+      avgPerDay: total / trendData.length,
+      peakLabel: peak.count > 0 ? peak.date : "—",
+      peakCount: peak.count,
+    };
+  }, [trendData]);
+
+  // tick density per range: 7d shows all, 30d every 4th, 3m every ~8th
+  const xTickInterval =
+    activeRange.id === "7d" ? 0 : activeRange.id === "30d" ? 3 : 7;
 
   const totalSketches = stats?.totalSketches ?? 0;
   const publishedSketches = stats?.publishedSketches ?? 0;
   const totalResponses = stats?.totalResponses ?? 0;
   const responsesThisMonth = stats?.responsesThisMonth ?? 0;
-  const activePercent = totalSketches > 0 ? Math.round((publishedSketches / totalSketches) * 100) : 0;
+  const activePercent =
+    totalSketches > 0
+      ? Math.round((publishedSketches / totalSketches) * 100)
+      : 0;
+
+  const STATS = [
+    {
+      title: "Total forms",
+      val: isLoading ? "—" : String(totalSketches),
+      sub: `${publishedSketches} published`,
+      icon: DraftingCompass,
+    },
+    {
+      title: "Active forms",
+      val: isLoading ? "—" : String(publishedSketches),
+      sub: `${activePercent}% of all forms`,
+      icon: PencilRuler,
+    },
+    {
+      title: "Total responses",
+      val: isLoading ? "—" : String(totalResponses),
+      sub: "Across all forms",
+      icon: Layers,
+    },
+    {
+      title: "This month",
+      val: isLoading ? "—" : String(responsesThisMonth),
+      sub: "Submissions collected",
+      icon: TrendingUp,
+    },
+  ];
+
+  const hasTrendData =
+    trendData.length > 0 && trendData.some((t) => t.count > 0);
 
   return (
-    <div className="space-y-8">
-      {/* Hero Welcome */}
-      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
+    <div className="space-y-10">
+      {/* ───── hero ───── */}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
         <div>
-          <h2 className="text-4xl md:text-5xl font-serif text-[#0d2137] font-bold tracking-tight">
-            Good morning, Architect.
-          </h2>
-          <p className="text-lg md:text-xl font-caveat text-[#8e6e53] mt-2 italic">
+          <h1 className="cf-display text-[36px] sm:text-[48px] md:text-[56px] leading-[0.95]">
+            Good morning.
+          </h1>
+          <p className="mt-3 text-[14.5px] text-[color:var(--cf-ink-soft)] leading-relaxed max-w-md">
             Here&apos;s what&apos;s happening in your studio today.
           </p>
         </div>
-        <div className="hidden lg:block text-right text-[10px] tracking-[0.2em] font-serif font-semibold text-[#0d2137]/40 uppercase select-none leading-relaxed">
-          Studio Report
-          <br />
-          CanvasFlow • 2026
-        </div>
+        <button
+          onClick={openCreateFormModal}
+          className="group inline-flex items-center justify-center gap-1.5 h-[44px] px-5 bg-[color:var(--cf-orange)] hover:bg-[color:var(--cf-orange-hover)] text-white rounded-full text-[13.5px] font-medium tracking-tight transition-colors self-start md:self-auto"
+        >
+          <Plus className="size-4" />
+          New form
+        </button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          {
-            title: "Total Sketches",
-            val: isLoading ? "..." : String(totalSketches),
-            sub: `${publishedSketches} published`,
-            footer: "Forms Created",
-            icon: DraftingCompass
-          },
-          {
-            title: "Active Sketches",
-            val: isLoading ? "..." : String(publishedSketches),
-            sub: `${activePercent}% of all forms`,
-            footer: "Currently Published",
-            icon: PencilRuler
-          },
-          {
-            title: "Total Responses",
-            val: isLoading ? "..." : String(totalResponses),
-            sub: "Across all active forms",
-            footer: "Across All Forms",
-            icon: Layers
-          },
-          {
-            title: "This Month",
-            val: isLoading ? "..." : String(responsesThisMonth),
-            sub: "Submissions collected",
-            footer: "Responses Collected",
-            icon: TrendingUp
-          }
-        ].map((stat, i) => {
+      {/* ───── stats grid ───── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {STATS.map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <div 
-              key={i} 
-              className="relative overflow-hidden bg-white border-2 border-[#0d2137] p-6 rounded shadow-[4px_4px_0px_0px_#0d2137] group hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#0d2137] transition-all duration-300"
+            <div
+              key={i}
+              className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] hover:ring-[color:var(--cf-line-strong)] transition-shadow p-5"
             >
-              {/* Paper texture overlay */}
-              <div className="absolute inset-0 bg-cover bg-center mix-blend-multiply opacity-80 pointer-events-none select-none" style={{ backgroundImage: "url('/assest1.png')"}} />
-              
-              <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] tracking-wider font-serif font-bold uppercase text-[#0d2137]/65">{stat.title}</span>
-                  <Icon className="size-4.5 text-[#8e6e53]" />
-                </div>
-                <div>
-                  <h3 className="text-4xl md:text-5xl font-serif font-bold tracking-tight text-[#0d2137] leading-none">{stat.val}</h3>
-                  <p className="text-xs text-[#0d2137]/50 mt-1 font-serif">{stat.sub}</p>
-                </div>
-                <div className="border-t border-[#0d2137]/10 pt-2 text-[9px] uppercase tracking-widest font-serif font-bold text-[#8e6e53]">
-                  {stat.footer}
-                </div>
+              <div className="flex items-start justify-between">
+                <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+                  {stat.title}
+                </p>
+                <Icon className="size-4 text-[color:var(--cf-orange)]" />
               </div>
+              <p className="mt-5 cf-display text-[40px] leading-none">
+                {stat.val}
+              </p>
+              <p className="mt-2 text-[12px] text-[color:var(--cf-ink-soft)]">
+                {stat.sub}
+              </p>
             </div>
           );
         })}
       </div>
 
-      {/* Response Trends Card */}
-      <div className="bg-[#faf7f0] border-2 border-[#0d2137] rounded overflow-hidden shadow-[6px_6px_0px_0px_#0d2137] transition-colors duration-300">
-        {/* Header section */}
-        <div className="p-6 border-b border-[#0d2137]/15 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
+      {/* ───── response trends ───── */}
+      <div className="bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-[color:var(--cf-line)] flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3">
           <div>
-            <span className="text-[9px] uppercase tracking-widest font-serif font-bold text-[#8e6e53]">— Analytics</span>
-            <h3 className="text-2xl font-serif font-bold text-[#0d2137] mt-0.5">Response Trends</h3>
-            <p className="text-xs text-[#0d2137]/60 font-serif">Submissions over time</p>
+            <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+              Analytics
+            </p>
+            <h3 className="mt-2 cf-display text-[24px] sm:text-[28px] leading-tight">
+              Response trends
+            </h3>
+            <p className="mt-1 text-[13px] text-[color:var(--cf-ink-soft)]">
+              {activeRange.subtitle}
+            </p>
           </div>
-          
-          {/* View selectors */}
-          <div className="flex bg-[#faf7f0] p-1 border-2 border-[#0d2137] rounded text-[10px] font-serif font-bold uppercase tracking-wider select-none shrink-0">
-            {["3 Months", "30 Days", "7 Days"].map((tab, idx) => (
-              <button 
-                key={tab}
-                className={`px-3 py-1.5 rounded transition-all cursor-pointer ${idx === 0 ? "bg-[#0d2137] text-[#faf7f0] font-semibold" : "text-[#0d2137]/60 hover:text-[#0d2137]"}`}
-              >
-                {tab}
-              </button>
-            ))}
+
+          <div className="inline-flex bg-[color:var(--cf-cream)] p-1 rounded-full text-[12px] font-medium select-none shrink-0 self-start sm:self-auto ring-1 ring-[color:var(--cf-line)]">
+            {RANGE_TABS.map((tab) => {
+              const isActive = tab.id === trendRange;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setTrendRange(tab.id)}
+                  className={`px-3.5 py-1.5 rounded-full transition-colors cursor-pointer ${
+                    isActive
+                      ? "bg-[color:var(--cf-cream-2)] text-[color:var(--cf-ink)] ring-1 ring-[color:var(--cf-line-strong)]"
+                      : "text-[color:var(--cf-ink-soft)] hover:text-[color:var(--cf-ink)]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Blueprint Display panel */}
-        <div className="relative h-96 w-full flex items-center justify-center overflow-hidden bg-[#244f75]">
-          {/* Blueprint background image */}
-          <div className="absolute inset-0 opacity-40 pointer-events-none select-none bg-cover bg-center mix-blend-luminosity" style={{ backgroundImage: "url('/asset2.png')"}} />
-          
-          {/* Blueprint grid lines overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.075)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.075)_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none" />
+        {/* mini summary row */}
+        <div className="px-5 sm:px-6 py-4 border-b border-[color:var(--cf-line)] grid grid-cols-3 gap-4 sm:gap-8">
+          <SummaryMetric
+            label="Total in range"
+            value={trendSummary.total.toLocaleString()}
+          />
+          <SummaryMetric
+            label="Avg / day"
+            value={trendSummary.avgPerDay.toFixed(1)}
+          />
+          <SummaryMetric
+            label="Peak day"
+            value={trendSummary.peakLabel}
+            sub={
+              trendSummary.peakCount > 0
+                ? `${trendSummary.peakCount} response${
+                    trendSummary.peakCount === 1 ? "" : "s"
+                  }`
+                : undefined
+            }
+          />
+        </div>
 
-          {/* Blueprint Specs overlay */}
-          <div className="absolute top-6 left-6 text-white/50 border border-white/20 p-2.5 rounded font-mono text-[9px] uppercase leading-relaxed select-none tracking-wider bg-[#0d2137]/20 backdrop-blur-sm pointer-events-none z-20">
-            Fig. 01 — Flow Analysis
-            <br />
-            Scale: 1:100
-            <br />
-            Section A-A
-            <br />
-            Elevation North
-          </div>
-
-          {!stats || stats.trends.length === 0 || stats.trends.every(t => t.count === 0) ? (
-            /* Centered Empty Overlay Card */
-            <div className="relative z-10 bg-white p-8 max-w-sm mx-4 text-center border-2 border-[#0d2137] shadow-[4px_4px_0px_0px_#0d2137] rounded">
-              <div className="w-12 h-12 rounded-full border border-[#0d2137]/15 flex items-center justify-center mx-auto mb-4 bg-[#faf7f0]">
-                <Inbox className="size-6 text-[#8e6e53]" />
+        <div className="relative h-80 sm:h-96 w-full px-2 pt-3 pb-4 sm:px-3">
+          {!hasTrendData ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center max-w-sm px-6">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[color:var(--cf-cream)] flex items-center justify-center ring-1 ring-[color:var(--cf-line)]">
+                  <Inbox className="size-5 text-[color:var(--cf-orange)]" />
+                </div>
+                <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">
+                  Awaiting data
+                </p>
+                <p className="mt-3 text-[13.5px] text-[color:var(--cf-ink-soft)] leading-relaxed">
+                  Publish your first form to start collecting responses and
+                  watch trends light up here.
+                </p>
               </div>
-              <h4 className="text-xs uppercase tracking-widest font-serif font-bold text-[#0d2137]">Awaiting Input Data</h4>
-              <p className="text-xs text-[#0d2137]/60 font-serif mt-2 leading-relaxed">
-                Publish your first sketch to begin tracking audience engagement and architectural metrics.
-              </p>
             </div>
           ) : (
-            <div className="absolute inset-x-8 bottom-6 top-20 text-[10px] font-mono text-white/70">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.trends}>
-                  <XAxis dataKey="date" stroke="#ffffff" opacity={0.4} />
-                  <YAxis stroke="#ffffff" opacity={0.4} />
-                  <ChartTooltip 
-                    contentStyle={{ 
-                      background: "#1c1c1e", 
-                      borderColor: "#2a2a2a", 
-                      color: "#ffffff",
-                      fontFamily: "var(--font-garamond)" 
-                    }} 
-                  />
-                  <Area type="monotone" dataKey="count" stroke="#b9c9df" fill="#b9c9df" fillOpacity={0.25} strokeWidth={2.5} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={trendData}
+                margin={{ top: 24, right: 24, left: 4, bottom: 12 }}
+              >
+                <defs>
+                  <linearGradient id="cf-trend-gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f66f00" stopOpacity={0.32} />
+                    <stop offset="100%" stopColor="#f66f00" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  stroke="rgba(22,19,17,0.06)"
+                  strokeDasharray="2 4"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="date"
+                  stroke="#56504a"
+                  opacity={0.55}
+                  tick={{ fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={xTickInterval}
+                  minTickGap={16}
+                />
+                <YAxis
+                  stroke="#56504a"
+                  opacity={0.55}
+                  tick={{ fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={28}
+                  allowDecimals={false}
+                />
+                <ChartTooltip
+                  cursor={{
+                    stroke: "#f66f00",
+                    strokeOpacity: 0.35,
+                    strokeWidth: 1,
+                    strokeDasharray: "4 3",
+                  }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const count = Number(payload[0]?.value ?? 0);
+                    return (
+                      <div className="bg-[color:var(--cf-cream)] ring-1 ring-[color:var(--cf-line-strong)] rounded-lg px-3 py-2 shadow-[0_10px_30px_-12px_rgba(22,19,17,0.18)]">
+                        <p className="cf-eyebrow text-[color:var(--cf-ink-soft)] text-[10px]">
+                          {label}
+                        </p>
+                        <p className="mt-1 text-[13px] font-medium text-[color:var(--cf-ink)] tabular-nums">
+                          <span className="text-[color:var(--cf-orange)]">
+                            {count}
+                          </span>{" "}
+                          response{count === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#f66f00"
+                  strokeWidth={2.5}
+                  fill="url(#cf-trend-gradient)"
+                  activeDot={{
+                    r: 4,
+                    stroke: "#f66f00",
+                    strokeWidth: 2,
+                    fill: "var(--cf-cream)",
+                  }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* Recent Blueprints */}
+      {/* ───── recent forms ───── */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center pb-2 border-b border-[#0d2137]/10">
-          <h3 className="text-2xl font-serif font-bold text-[#0d2137]">Recent Canvas</h3>
-          <button className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#8e6e53] hover:underline cursor-pointer flex items-center gap-1">
-            <span>View All</span>
-            <span>→</span>
-          </button>
+        <div className="flex justify-between items-end pb-3 border-b border-[color:var(--cf-line)]">
+          <div>
+            <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">Recent</p>
+            <h3 className="mt-2 cf-display text-[24px] sm:text-[28px] leading-tight">
+              Forms
+            </h3>
+          </div>
+          <Link
+            href="/dashboard/sketches"
+            className="group inline-flex items-center gap-1 text-[13px] font-medium text-[color:var(--cf-ink-soft)] hover:text-[color:var(--cf-orange)] transition-colors"
+          >
+            View all
+            <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {isLoading ? (
-            <div className="py-8 text-center text-xs font-serif italic text-[#0d2137]/50 md:col-span-2">Loading...</div>
+            <div className="py-8 text-center text-[13px] text-[color:var(--cf-ink-soft)] md:col-span-2">
+              Loading...
+            </div>
           ) : !stats || stats.recentForms.length === 0 ? (
-            <div className="py-8 text-center text-xs font-serif italic text-[#0d2137]/50 md:col-span-2">No canvas found.</div>
+            <div className="py-12 text-center text-[13px] text-[color:var(--cf-ink-soft)] md:col-span-2">
+              No forms yet. Create your first one below.
+            </div>
           ) : (
-            stats.recentForms.map((item) => {
-              const initials = "DM";
-              return (
-                <div key={item.id} className="bg-white border-2 border-[#0d2137] p-5 rounded shadow-[4px_4px_0px_0px_#0d2137] flex items-center justify-between hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-16 border border-[#0d2137]/15 bg-[#faf7f0] rounded flex flex-col items-center justify-center p-2 text-center select-none shrink-0">
-                      <FileText className="size-5 text-[#8e6e53] mb-1" />
-                      <span className="text-[8px] font-bold tracking-widest text-[#0d2137]/50 uppercase font-sans">
-                        {item.isPublished ? "Public" : "Draft"}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="font-serif font-bold text-lg text-[#0d2137]">{item.title}</h4>
-                      <p className="text-xs text-[#0d2137]/50 font-serif mt-0.5">
-                        Created {new Date(item.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                      </p>
-                    </div>
+            stats.recentForms.map((item) => (
+              <Link
+                key={item.id}
+                href={`/dashboard/sketches/${item.id}`}
+                className="group bg-[color:var(--cf-cream-2)] rounded-xl ring-1 ring-[color:var(--cf-line)] hover:ring-[color:var(--cf-line-strong)] p-4 flex items-center justify-between gap-4 transition-shadow"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-10 h-10 rounded-md bg-[color:var(--cf-cream)] flex items-center justify-center shrink-0 ring-1 ring-[color:var(--cf-line)]">
+                    <FileText className="size-4 text-[color:var(--cf-orange)]" />
                   </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full border border-[#0d2137] bg-[#0d2137] text-white flex items-center justify-center font-bold text-[9px]">
-                        {initials}
-                      </div>
-                      <span className="text-[10px] font-serif font-bold uppercase tracking-wider text-[#0d2137]/70">
-                        {item.submissionsCount} Responses
-                      </span>
-                    </div>
+                  <div className="min-w-0">
+                    <h4 className="cf-display text-[18px] leading-tight truncate">
+                      {item.title}
+                    </h4>
+                    <p className="text-[12px] text-[color:var(--cf-ink-soft)] mt-0.5">
+                      {item.isPublished ? "Published" : "Draft"}
+                      <span className="mx-1.5">·</span>
+                      {new Date(item.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </p>
                   </div>
                 </div>
-              );
-            })
+                <div className="flex items-center gap-2 text-[12px] font-mono text-[color:var(--cf-ink-soft)] shrink-0">
+                  <span className="text-[color:var(--cf-ink)]">
+                    {item.submissionsCount}
+                  </span>
+                  <span>resp.</span>
+                  <ArrowUpRight className="size-3.5 text-[color:var(--cf-ink-soft)] group-hover:text-[color:var(--cf-orange)] transition-colors" />
+                </div>
+              </Link>
+            ))
           )}
 
-          {/* Start New Blueprint Item */}
-          <button 
+          {/* "start new form" placeholder card */}
+          <button
             onClick={openCreateFormModal}
-            className="relative overflow-hidden bg-[#faf7f0] border-2 border-dashed border-[#0d2137]/40 p-5 rounded shadow-[4px_4px_0px_0px_#0d2137]/15 flex items-center justify-center min-h-23 group hover:border-[#0d2137] transition-all duration-300 cursor-pointer"
+            className="group bg-[color:var(--cf-cream)]/40 rounded-xl ring-1 ring-dashed ring-[color:var(--cf-line-strong)] hover:ring-[color:var(--cf-orange)] p-5 flex items-center justify-center min-h-[88px] transition-all cursor-pointer"
           >
-            {/* Paper overlay */}
-            <div className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none select-none" style={{ backgroundImage: "url('/assest1.png')"}} />
-            
-            <div className="flex flex-col items-center justify-center gap-2 relative z-10">
-              <div className="w-8 h-8 rounded-full border border-[#0d2137]/25 flex items-center justify-center bg-white group-hover:scale-105 transition-transform">
-                <Plus className="size-4 text-[#8e6e53]" />
-              </div>
-              <span className="text-xs uppercase tracking-widest font-serif font-bold text-[#8e6e53]">Start New Canvas</span>
-            </div>
+            <span className="inline-flex items-center gap-2 text-[13px] font-medium text-[color:var(--cf-ink-soft)] group-hover:text-[color:var(--cf-orange)] transition-colors">
+              <Plus className="size-4" />
+              Start a new form
+            </span>
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── chart summary metric ──────────────────────────────────────────── */
+
+function SummaryMetric({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="cf-eyebrow text-[color:var(--cf-ink-soft)]">{label}</p>
+      <p className="mt-1.5 cf-display text-[22px] sm:text-[24px] leading-none tabular-nums truncate">
+        {value}
+      </p>
+      {sub && (
+        <p className="mt-1 text-[11px] font-mono text-[color:var(--cf-ink-soft)] truncate">
+          {sub}
+        </p>
+      )}
     </div>
   );
 }
